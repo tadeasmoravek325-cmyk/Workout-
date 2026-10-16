@@ -356,6 +356,7 @@ export const useStore = create<State>()(
       resetAll: () => setState({ ...initialData(), active: null, rest: null }),
     }),
     {
+      // Storage key kept from the original working name so existing data is not lost.
       name: 'silak-data',
       version: 1,
       storage: createJSONStorage(() => idbStorage),

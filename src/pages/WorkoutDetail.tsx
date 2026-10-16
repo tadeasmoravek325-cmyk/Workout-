@@ -107,13 +107,13 @@ export default function WorkoutDetail() {
         levelTitle: game.level.title,
         streak: game.streak.streak,
       });
-      const file = new File([blob], 'silak-trenink.png', { type: 'image/png' });
+      const file = new File([blob], 'setsmith-trenink.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: w.name });
       else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'silak-trenink.png';
+        a.download = 'setsmith-trenink.png';
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         toast('Obrázek stažen');

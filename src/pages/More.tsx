@@ -31,7 +31,7 @@ export default function More() {
           </Link>
         ))}
       </div>
-      <div className="center tiny muted mt-l">Silák · data jsou uložená jen v tomto zařízení</div>
+      <div className="center tiny muted mt-l">Setsmith · Ukuj si sílu · data jsou uložená jen v tomto zařízení</div>
     </div>
   );
 }

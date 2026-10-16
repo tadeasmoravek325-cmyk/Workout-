@@ -129,11 +129,11 @@ export interface LevelInfo {
 const TITLES: [number, string, string][] = [
   [1, 'Nováček', '🌱'],
   [5, 'Učeň', '🔰'],
-  [10, 'Pravidelák', '💪'],
-  [15, 'Bojovník', '⚔️'],
-  [20, 'Silák', '🦾'],
-  [30, 'Titán', '🗿'],
-  [40, 'Bestie', '🦍'],
+  [10, 'Tovaryš', '🔨'],
+  [15, 'Kovář', '⚒️'],
+  [20, 'Zbrojíř', '🛡️'],
+  [30, 'Mistr kovář', '🔥'],
+  [40, 'Velmistr', '⚔️'],
   [50, 'Legenda', '👑'],
 ];
 

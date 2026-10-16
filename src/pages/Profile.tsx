@@ -84,7 +84,7 @@ export default function Profile() {
             <span className="n">Lv {game.level.level}</span>
           </div>
           <div className="grow">
-            <h1 style={{ fontSize: 26 }}>{settings.name || 'Silák'}</h1>
+            <h1 style={{ fontSize: 26 }}>{settings.name || 'Setsmith'}</h1>
             <div className="bold" style={{ opacity: 0.9 }}>
               {game.level.title}
             </div>
