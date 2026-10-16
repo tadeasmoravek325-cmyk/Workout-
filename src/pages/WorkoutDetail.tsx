@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ImageDown, Pencil, Repeat2, Share2, Trash2 } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import {
@@ -16,6 +17,9 @@ import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements
 import { describeSet } from '../components/WorkoutEditor';
 import { toast } from '../components/ui';
 import type { Routine } from '../types';
+import { useGame } from '../lib/useGame';
+import { Celebration } from '../components/Celebration';
+import { renderShareCard } from '../lib/shareCard';
 
 const PR_LABEL: Record<PrHit['kind'], string> = {
   weight: 'Nejvyšší váha',
@@ -43,6 +47,9 @@ export default function WorkoutDetail() {
   const navigate = useNavigate();
   const w = workouts.find((x) => x.id === id);
   const unit = settings.unit;
+  const game = useGame();
+  const [celebrating, setCelebrating] = useState(isSummary);
+  const xp = game.progress.perWorkout.get(id)?.xp ?? 0;
 
   const older = useMemo(() => (w ? workouts.filter((x) => x.startedAt < w.startedAt) : []), [workouts, w]);
   const prs = useMemo(() => (w ? detectPRs(w, older, exMap) : []), [w, older, exMap]);
@@ -92,6 +99,30 @@ export default function WorkoutDetail() {
     return lines.join('\n');
   };
 
+  const shareImage = async () => {
+    try {
+      const blob = await renderShareCard(w, exMap, settings, {
+        prs: prs.filter((p) => p.kind !== 'volume').length,
+        level: game.level.level,
+        levelTitle: game.level.title,
+        streak: game.streak.streak,
+      });
+      const file = new File([blob], 'silak-trenink.png', { type: 'image/png' });
+      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: w.name });
+      else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'silak-trenink.png';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        toast('Obrázek stažen');
+      }
+    } catch {
+      /* cancelled */
+    }
+  };
+
   const share = async () => {
     const text = shareText();
     try {
@@ -112,20 +143,23 @@ export default function WorkoutDetail() {
           {isSummary ? 'Hotovo' : '‹ Zpět'}
         </button>
         <Link to={`/history/${w.id}/edit`} className="btn ghost">
-          Upravit
+          <Pencil size={16} /> Upravit
         </Link>
       </div>
 
       {isSummary && (
-        <div className="card center" style={{ borderColor: 'var(--accent)', marginBottom: 16 }}>
+        <div className="hero center" style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 44 }}>🎉</div>
           <h1 style={{ fontSize: 24 }}>Skvělá práce!</h1>
-          <div className="muted small">
+          <div className="badge white" style={{ marginTop: 8 }}>
+            +{xp} XP
+          </div>
+          <div className="muted small" style={{ marginTop: 8 }}>
             Trénink č. {older.length + 1}
             {diff !== null && (
               <>
                 {' · '}
-                <span className={diff >= 0 ? 'ok' : 'danger'}>
+                <span className="bold">
                   objem {diff >= 0 ? '+' : ''}
                   {fmtNum(diff, 0)} % oproti minule
                 </span>
@@ -276,12 +310,15 @@ export default function WorkoutDetail() {
         })}
       </div>
 
-      <div className="section grid-3">
+      <button className="btn primary block section" onClick={shareImage}>
+        <ImageDown size={18} /> Sdílet obrázek tréninku
+      </button>
+      <div className="grid-3 mt">
         <button className="btn sm" onClick={repeat}>
-          🔁 Zopakovat
+          <Repeat2 size={16} /> Znovu
         </button>
         <button className="btn sm" onClick={share}>
-          📤 Sdílet
+          <Share2 size={16} /> Text
         </button>
         <button
           className="btn sm danger"
@@ -292,9 +329,18 @@ export default function WorkoutDetail() {
             }
           }}
         >
-          🗑 Smazat
+          <Trash2 size={16} /> Smazat
         </button>
       </div>
+      {celebrating && (
+        <Celebration
+          xp={xp}
+          totalXp={game.totalXp}
+          prs={prs.filter((p) => p.kind !== 'volume').length}
+          achievements={newAchievements.map((a) => a.icon)}
+          onClose={() => setCelebrating(false)}
+        />
+      )}
       {!isSummary && !routine && (
         <button
           className="btn block mt"

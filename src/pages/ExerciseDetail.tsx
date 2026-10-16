@@ -10,6 +10,8 @@ import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
 import { Empty, Segmented } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
+import { strengthRank } from '../lib/strength';
+import { PlayCircle } from 'lucide-react';
 import type { Exercise } from '../types';
 
 type Tab = 'about' | 'history' | 'charts' | 'records';
@@ -65,6 +67,8 @@ export default function ExerciseDetail() {
   const workouts = useStore((s) => s.workouts);
   const settings = useStore((s) => s.settings);
   const deleteExercise = useStore((s) => s.deleteExercise);
+  const measurements = useStore((s) => s.measurements);
+  const pinned = useStore((s) => s.exerciseNotes?.[id]);
   const navigate = useNavigate();
   const ex = exMap.get(id);
   const [tab, setTab] = useState<Tab>('charts');
@@ -78,6 +82,8 @@ export default function ExerciseDetail() {
 
   if (!ex) return <Navigate to="/exercises" replace />;
   const unit = settings.unit;
+  const bodyweight = [...measurements].reverse().find((m) => m.type === 'bodyweight')?.value;
+  const rank = bodyweight ? strengthRank(ex.id, ex.id === 'pull-up' ? records.maxReps : records.maxE1rm, bodyweight, settings.sex) : null;
   const isWeight = metric === 'e1rm' || metric === 'weight' || metric === 'volume';
 
   const cutoff =
@@ -230,6 +236,26 @@ export default function ExerciseDetail() {
 
       {tab === 'records' && (
         <div className="mt-l">
+          {rank && (rank.value > 0) && (
+            <div className="card row" style={{ marginBottom: 12, gap: 14 }}>
+              <div style={{ fontSize: 40 }}>{rank.tier.icon}</div>
+              <div className="grow">
+                <div className="small muted bold">Silový rank</div>
+                <div style={{ fontSize: 20, fontWeight: 900, color: rank.tier.color }}>{rank.tier.name}</div>
+                {rank.next && rank.nextTarget !== undefined && (
+                  <>
+                    <div className="progress" style={{ height: 6, marginTop: 6 }}>
+                      <div style={{ width: `${rank.progress * 100}%`, background: rank.next.color }} />
+                    </div>
+                    <div className="tiny muted" style={{ marginTop: 4 }}>
+                      {rank.next.icon} {rank.next.name} při{' '}
+                      {rank.byReps ? `${rank.nextTarget} opak.` : `1RM ${fmtNum(toDisplayWeight(rank.nextTarget, unit), 0)} ${unit}`}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
           {ex.type === 'weight_reps' || ex.type === 'weighted_bodyweight' ? (
             <>
               <div className="grid-2">
@@ -313,7 +339,16 @@ export default function ExerciseDetail() {
             <div>
               <span className="muted">Typ záznamu:</span> {EXERCISE_TYPE_LABELS[ex.type]}
             </div>
+            {pinned && <div className="sticky-note">📌 {pinned}</div>}
           </div>
+          <a
+            className="btn cool block"
+            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' technika provedení')}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <PlayCircle size={18} /> Video návod na YouTube
+          </a>
           {ex.instructions?.length ? (
             <div className="card">
               <h3>Postup</h3>

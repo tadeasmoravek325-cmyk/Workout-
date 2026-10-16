@@ -3,6 +3,7 @@ import type { BodyPart, Equipment, Exercise, ExerciseType, Muscle } from '../typ
 import { useAllExercises, useStore } from '../store/store';
 import {
   ALL_MUSCLES,
+  BODY_PART_COLORS,
   BODY_PART_LABELS,
   EQUIPMENT_LABELS,
   EXERCISE_TYPE_LABELS,
@@ -72,7 +73,12 @@ export function ExerciseFilters({
 }
 
 export function ExerciseAvatar({ ex }: { ex: Exercise }) {
-  return <div className="avatar">{ex.name.charAt(0).toUpperCase()}</div>;
+  const c = BODY_PART_COLORS[ex.bodyPart];
+  return (
+    <div className="avatar" style={{ background: `${c}22`, color: c }}>
+      {ex.name.charAt(0).toUpperCase()}
+    </div>
+  );
 }
 
 export function ExercisePicker({

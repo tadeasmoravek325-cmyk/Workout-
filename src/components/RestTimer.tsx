@@ -35,10 +35,10 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
   if (!rest || left <= 0) return null;
   const pct = Math.max(0, Math.min(1, left / rest.durationSec));
   return (
-    <div className="rest" style={aboveNav ? { bottom: 'calc(var(--nav-h) + var(--safe-b) + 8px)' } : undefined}>
+    <div className={`rest ${left <= 5 ? 'ending' : ''}`} style={aboveNav ? { bottom: 'calc(var(--nav-h) + var(--safe-b) + 8px)' } : undefined}>
       <div className="bar" style={{ width: `${pct * 100}%` }} />
       <div className="content">
-        <span className="small muted bold">Pauza</span>
+        <span style={{ fontSize: 20 }}>⏱️</span>
         <span className="time">{fmtClock(left)}</span>
         <button className="btn sm" onClick={() => adjust(-15)}>
           −15

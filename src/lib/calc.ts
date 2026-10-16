@@ -392,6 +392,11 @@ export function muscleRecovery(workouts: Workout[], exMap: Map<string, Exercise>
 
 export function defaultSettings(): Settings {
   return {
+    name: '',
+    goal: 'muscle',
+    experience: 'beginner',
+    onboarded: false,
+    equipment: ['barbell', 'dumbbell', 'machine', 'cable', 'kettlebell', 'bodyweight', 'band', 'other'],
     unit: 'kg',
     defaultRestSec: 120,
     autoStartRest: true,

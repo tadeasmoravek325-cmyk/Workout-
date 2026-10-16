@@ -133,7 +133,18 @@ export interface Measurement {
 
 export type Unit = 'kg' | 'lb';
 
+export type Goal = 'strength' | 'muscle' | 'fitness' | 'weightloss';
+export type Experience = 'beginner' | 'intermediate' | 'advanced';
+export type Sex = 'm' | 'f';
+
 export interface Settings {
+  name: string;
+  sex?: Sex;
+  goal: Goal;
+  experience: Experience;
+  onboarded: boolean;
+  /** Equipment available for the workout generator. */
+  equipment: Equipment[];
   unit: Unit;
   defaultRestSec: number;
   autoStartRest: boolean;

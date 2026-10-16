@@ -5,7 +5,8 @@ import { exportCsv, importStrongCsv, type StrongImportResult } from '../lib/csv'
 import { download } from '../lib/feedback';
 import { fmtClock, fmtNum, plural } from '../lib/format';
 import { Segmented, Sheet, Switch, toast } from '../components/ui';
-import type { Unit } from '../types';
+import type { Equipment, Experience, Goal, Sex, Unit } from '../types';
+import { EQUIPMENT_LABELS } from '../data/exercises';
 
 function Row({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
   return (
@@ -71,6 +72,37 @@ export default function SettingsPage() {
       <h1 style={{ marginBottom: 16 }}>Nastavení</h1>
 
       <div className="section-title">
+        <h2>Profil</h2>
+      </div>
+      <div className="list">
+        <Row title="Jméno">
+          <input style={{ width: 160 }} value={settings.name} placeholder="Tvoje jméno" onChange={(e) => update({ name: e.target.value })} />
+        </Row>
+        <Row title="Pohlaví" desc="Pro silové ranky">
+          <select style={{ width: 130 }} value={settings.sex ?? ''} onChange={(e) => update({ sex: (e.target.value || undefined) as Sex | undefined })}>
+            <option value="">Neuvádět</option>
+            <option value="m">Muž</option>
+            <option value="f">Žena</option>
+          </select>
+        </Row>
+        <Row title="Cíl">
+          <select style={{ width: 130 }} value={settings.goal} onChange={(e) => update({ goal: e.target.value as Goal })}>
+            <option value="strength">Síla</option>
+            <option value="muscle">Svaly</option>
+            <option value="fitness">Kondice</option>
+            <option value="weightloss">Hubnutí</option>
+          </select>
+        </Row>
+        <Row title="Zkušenosti">
+          <select style={{ width: 150 }} value={settings.experience} onChange={(e) => update({ experience: e.target.value as Experience })}>
+            <option value="beginner">Začátečník</option>
+            <option value="intermediate">Mírně pokročilý</option>
+            <option value="advanced">Pokročilý</option>
+          </select>
+        </Row>
+      </div>
+
+      <div className="section-title mt-l">
         <h2>Obecné</h2>
       </div>
       <div className="list">
@@ -149,6 +181,37 @@ export default function SettingsPage() {
         <Row title="Chytrý trenér" desc="Návrh váhy a opakování podle minulého tréninku">
           <Switch on={settings.smartCoach} onChange={(smartCoach) => update({ smartCoach })} />
         </Row>
+      </div>
+
+      <div className="section-title mt-l">
+        <h2>Moje vybavení</h2>
+      </div>
+      <div className="card">
+        <div className="small muted" style={{ marginBottom: 10 }}>
+          Generátor tréninku vybírá jen cviky s tímto vybavením.
+        </div>
+        <div className="row wrap" style={{ gap: 6 }}>
+          {(Object.keys(EQUIPMENT_LABELS) as Equipment[]).map((eq) => {
+            const on = settings.equipment.includes(eq);
+            return (
+              <button
+                key={eq}
+                className={`chip ${on ? 'on' : ''}`}
+                onClick={() => update({ equipment: on ? settings.equipment.filter((x) => x !== eq) : [...settings.equipment, eq] })}
+              >
+                {EQUIPMENT_LABELS[eq]}
+              </button>
+            );
+          })}
+        </div>
+        <div className="row mt" style={{ gap: 8 }}>
+          <button className="btn sm grow" onClick={() => update({ equipment: Object.keys(EQUIPMENT_LABELS) as Equipment[] })}>
+            🏋️ Posilovna
+          </button>
+          <button className="btn sm grow" onClick={() => update({ equipment: ['dumbbell', 'bodyweight', 'band', 'other'] })}>
+            🏠 Doma
+          </button>
+        </div>
       </div>
 
       <div className="section-title mt-l">

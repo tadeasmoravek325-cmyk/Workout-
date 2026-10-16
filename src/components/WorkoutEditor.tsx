@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
 import { newSet, newWorkoutExercise, useAllExercises, useExerciseMap, useStore } from '../store/store';
@@ -16,9 +17,12 @@ import {
 import { fmtClock, fmtNum, fromDisplayWeight, parseClock, toDisplayWeight } from '../lib/format';
 import { findSubstitutes } from '../lib/substitutes';
 import { unlockAudio } from '../lib/feedback';
+import { haptic, smallConfetti } from '../lib/celebrate';
+import { plateCalc } from '../lib/calc';
+import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, Sheet, toast } from './ui';
-import { BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
+import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
 
 type Mutate = (fn: (w: Workout) => void) => void;
 
@@ -184,7 +188,11 @@ function ExerciseCard({
   const startRest = useStore((s) => s.startRest);
   const allEx = useAllExercises();
   const [menu, setMenu] = useState(false);
-  const [sheet, setSheet] = useState<null | 'rest' | 'substitute' | 'warmup'>(null);
+  const [sheet, setSheet] = useState<null | 'rest' | 'substitute' | 'warmup' | 'pin' | 'plates'>(null);
+  const [justDone, setJustDone] = useState<string | null>(null);
+  const pinned = useStore((s) => s.exerciseNotes?.[ex.id]);
+  const setExerciseNote = useStore((s) => s.setExerciseNote);
+  const [pinDraft, setPinDraft] = useState('');
 
   const sessions: Session[] = useMemo(() => exerciseHistory(history, ex.id), [history, ex.id]);
   const prev = sessions[0];
@@ -243,6 +251,9 @@ function ExerciseCard({
     upd((x) => {
       x.sets[idx] = filled;
     });
+    haptic(12);
+    setJustDone(filled.id);
+    setTimeout(() => setJustDone((j) => (j === filled.id ? null : j)), 700);
     if (!live) return;
 
     // Live PR check against history and sets already completed in this workout.
@@ -254,8 +265,17 @@ function ExerciseCard({
       const best1 = Math.max(records.maxE1rm, ...doneHere.map((y) => e1rm(y.weight ?? 0, y.reps ?? 0)));
       const w = filled.weight ?? 0;
       const one = e1rm(w, filled.reps ?? 0);
-      if (w > bestW && w > 0) toast(`🏆 Nový rekord – ${ex.name}: ${fmtNum(toDisplayWeight(w, unit))} ${unit}`, 'pr', 4000);
-      else if (one > best1 + 0.01) toast(`🏆 Nový odhad 1RM – ${ex.name}: ${fmtNum(toDisplayWeight(one, unit))} ${unit}`, 'pr', 4000);
+      const celebrate = () => {
+        smallConfetti();
+        haptic([30, 60, 30]);
+      };
+      if (w > bestW && w > 0) {
+        toast(`🏆 Nový rekord – ${ex.name}: ${fmtNum(toDisplayWeight(w, unit))} ${unit}`, 'pr', 4000);
+        celebrate();
+      } else if (one > best1 + 0.01) {
+        toast(`🏆 Nový odhad 1RM – ${ex.name}: ${fmtNum(toDisplayWeight(one, unit))} ${unit}`, 'pr', 4000);
+        celebrate();
+      }
     }
     if (settings.autoStartRest && isLastInSuperset) startRest(we.restSec ?? settings.defaultRestSec);
   };
@@ -284,13 +304,16 @@ function ExerciseCard({
   ].filter(Boolean) as string[];
 
   let normalNo = 0;
+  const allDone = we.sets.length > 0 && we.sets.every((s) => s.done);
 
   return (
-    <div className={`ex-card ${we.supersetId ? 'superset' : ''}`}>
+    <div className={`ex-card ${we.supersetId ? 'superset' : ''} ${allDone ? 'complete' : ''}`}>
       <div className="row between">
+        <span className="bp-dot" style={{ background: BODY_PART_COLORS[ex.bodyPart] }} />
         <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis">
           {ex.name}
         </Link>
+        {allDone && <span className="badge ok">Hotovo ✓</span>}
         {we.supersetId && <span className="badge" style={{ color: 'var(--purple)' }}>Supersérie</span>}
         <button className="icon-btn" onClick={() => setMenu(!menu)} aria-label="Možnosti cviku">
           ⋯
@@ -307,7 +330,16 @@ function ExerciseCard({
 
       {menu && (
         <div className="menu" onClick={() => setMenu(false)}>
-          <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>📝 Přidat poznámku</button>
+          <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>📝 Poznámka k dnešku</button>
+          <button
+            onClick={() => {
+              setPinDraft(pinned ?? '');
+              setSheet('pin');
+            }}
+          >
+            📌 Připnutá poznámka
+          </button>
+          {ex.equipment === 'barbell' && <button onClick={() => setSheet('plates')}>🧮 Rozložení kotoučů</button>}
           {hasWeight(ex) && ex.type === 'weight_reps' && <button onClick={() => setSheet('warmup')}>🔥 Rozcvičovací série</button>}
           <button onClick={() => setSheet('rest')}>⏱ Nastavit pauzu</button>
           <button onClick={() => setSheet('substitute')}>🔄 Nahradit cvik</button>
@@ -388,6 +420,20 @@ function ExerciseCard({
         />
       )}
 
+      {pinned && (
+        <button
+          className="sticky-note"
+          style={{ width: 'calc(100% - 4px)', textAlign: 'left' }}
+          onClick={() => {
+            setPinDraft(pinned);
+            setSheet('pin');
+          }}
+        >
+          <span>📌</span>
+          <span className="grow">{pinned}</span>
+        </button>
+      )}
+
       {suggestion && (
         <div className={`coach ${suggestion.kind === 'deload' ? 'deload' : ''}`}>
           <span style={{ fontSize: 18 }}>{suggestion.kind === 'deload' ? '⚠️' : suggestion.kind === 'increase' ? '📈' : '🎯'}</span>
@@ -440,8 +486,24 @@ function ExerciseCard({
               sessions.length > 0 &&
               ex.type === 'weight_reps' &&
               (s.weight ?? 0) > records.maxWeight;
+            const perf = (() => {
+              if (!s.done || !prevSame || isPr) return 0;
+              const score = (x: Partial<WorkoutSet>) =>
+                hasWeight(ex) && ex.type !== 'assisted_bodyweight'
+                  ? e1rm(x.weight ?? 0, x.reps ?? 0) || (x.reps ?? 0)
+                  : ex.type === 'assisted_bodyweight'
+                    ? (x.reps ?? 0) * 100 - (x.weight ?? 0)
+                    : hasReps(ex)
+                      ? (x.reps ?? 0)
+                      : ex.type === 'distance_duration'
+                        ? (x.distance ?? 0)
+                        : (x.durationSec ?? 0);
+              const a = score(s);
+              const b = score(prevSame);
+              return a > b + 1e-6 ? 1 : a < b - 1e-6 ? -1 : 0;
+            })();
             return (
-              <tr key={s.id} className={s.done ? 'done' : ''}>
+              <tr key={s.id} className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''}`}>
                 <td>
                   <button
                     className={`set-type ${s.type}`}
@@ -457,7 +519,9 @@ function ExerciseCard({
                     onClick={() => prevSame && !s.done && setField({ ...prevSame, id: s.id, type: s.type, done: false })}
                   >
                     {prevSame ? describeSet(prevSame, ex, settings) : '—'}
-                    {isPr && <span className="pr-flag"> 🏆</span>}
+                    {isPr && <span className="perf"> 🏆</span>}
+                    {perf === 1 && <span className="perf up">▲</span>}
+                    {perf === -1 && <span className="perf down">▼</span>}
                   </span>
                 </td>
                 {hasWeight(ex) && (
@@ -518,7 +582,7 @@ function ExerciseCard({
                 )}
                 <td>
                   <button className={`check ${s.done ? 'on' : ''}`} onClick={() => completeSet(s.id)} aria-label="Hotovo">
-                    ✓
+                    <Check size={18} strokeWidth={3.5} />
                   </button>
                 </td>
                 <td>
@@ -569,6 +633,76 @@ function ExerciseCard({
               </button>
             ))}
           </div>
+        </Sheet>
+      )}
+
+      {sheet === 'pin' && (
+        <Sheet
+          title="Připnutá poznámka"
+          onClose={() => setSheet(null)}
+          action={
+            <button
+              className="btn ghost"
+              onClick={() => {
+                setExerciseNote(ex.id, pinDraft);
+                setSheet(null);
+              }}
+            >
+              Uložit
+            </button>
+          }
+        >
+          <p className="small muted" style={{ marginTop: 0 }}>
+            Zobrazí se pokaždé, když budeš dělat {ex.name}. Ideální na nastavení stroje, úchop nebo technické body.
+          </p>
+          <textarea autoFocus value={pinDraft} onChange={(e) => setPinDraft(e.target.value)} placeholder="např. Sedačka na 4, úchop na šířku ramen" />
+          <div className="grid-2 mt">
+            <button
+              className="btn danger"
+              onClick={() => {
+                setExerciseNote(ex.id, '');
+                setSheet(null);
+              }}
+            >
+              Odepnout
+            </button>
+            <button
+              className="btn primary"
+              onClick={() => {
+                setExerciseNote(ex.id, pinDraft);
+                setSheet(null);
+              }}
+            >
+              Uložit
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {sheet === 'plates' && (
+        <Sheet title="Rozložení kotoučů" onClose={() => setSheet(null)}>
+          {(() => {
+            const target = we.sets.find((x) => !x.done && x.weight)?.weight ?? workingWeight;
+            const res = plateCalc(target, settings.barWeightKg, settings.plates);
+            const per = res.perSide.map((p) => Math.round((toDisplayWeight(p, unit) ?? 0) * 100) / 100);
+            return (
+              <div className="center">
+                <div style={{ fontSize: 30, fontWeight: 900 }}>
+                  {fmtNum(toDisplayWeight(target, unit))} {unit}
+                </div>
+                <PlateVisual plates={per} />
+                <div className="small muted">Na každou stranu</div>
+                <div className="bold" style={{ fontSize: 18 }}>
+                  {per.length ? per.map((p) => fmtNum(p, 2)).join(' + ') : 'Jen osa'}
+                </div>
+                {res.remainder > 0.01 && (
+                  <div className="small" style={{ color: 'var(--warn)', marginTop: 6 }}>
+                    Nejbližší možná: {fmtNum(toDisplayWeight(res.achieved, unit))} {unit}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </Sheet>
       )}
 

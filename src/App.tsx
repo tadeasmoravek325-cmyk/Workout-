@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { BookOpen, CalendarDays, Dumbbell, House, LayoutGrid, Play } from 'lucide-react';
 import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
@@ -20,6 +21,8 @@ import Tools from './pages/Tools';
 import Achievements from './pages/Achievements';
 import Planner from './pages/Planner';
 import SettingsPage from './pages/Settings';
+import Profile from './pages/Profile';
+import Onboarding from './pages/Onboarding';
 
 function useTheme() {
   const theme = useStore((s) => s.settings.theme);
@@ -42,7 +45,10 @@ function ActiveBar() {
   if (!active) return null;
   return (
     <Link to="/workout" className="active-bar">
-      <span className="ellipsis">▶ {active.name}</span>
+      <span className="ellipsis">
+        <span className="pulse" />
+        {active.name}
+      </span>
       <span style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtClock((now - active.startedAt) / 1000)}</span>
     </Link>
   );
@@ -53,19 +59,32 @@ function BottomNav() {
   return (
     <nav className="bottom-nav">
       <NavLink to="/" end>
-        <span className="i">🏠</span>Přehled
+        <span className="i">
+          <House size={21} strokeWidth={2.4} />
+        </span>
+        Přehled
       </NavLink>
       <NavLink to="/history">
-        <span className="i">📅</span>Historie
+        <span className="i">
+          <CalendarDays size={21} strokeWidth={2.4} />
+        </span>
+        Historie
       </NavLink>
       <NavLink to={active ? '/workout' : '/train'} className="train">
-        <span className="i">{active ? '▶' : '＋'}</span>Trénink
+        <span className="i">{active ? <Play size={24} fill="#fff" strokeWidth={2.4} /> : <Dumbbell size={24} strokeWidth={2.6} />}</span>
+        Trénink
       </NavLink>
       <NavLink to="/exercises">
-        <span className="i">📚</span>Cviky
+        <span className="i">
+          <BookOpen size={21} strokeWidth={2.4} />
+        </span>
+        Cviky
       </NavLink>
       <NavLink to="/more">
-        <span className="i">☰</span>Více
+        <span className="i">
+          <LayoutGrid size={21} strokeWidth={2.4} />
+        </span>
+        Více
       </NavLink>
     </nav>
   );
@@ -94,6 +113,7 @@ function Shell() {
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/planner" element={<Planner />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<Home />} />
       </Routes>
       {!fullscreen && <ActiveBar />}
@@ -106,8 +126,16 @@ function Shell() {
 
 export default function App() {
   const hydrated = useStore((s) => s.hydrated);
+  const onboarded = useStore((s) => s.settings.onboarded);
   useTheme();
   if (!hydrated) return <div className="splash">Načítám…</div>;
+  if (!onboarded)
+    return (
+      <>
+        <Onboarding />
+        <Toasts />
+      </>
+    );
   return (
     <HashRouter>
       <Shell />

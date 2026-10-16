@@ -30,6 +30,16 @@ Funguje offline, dá se nainstalovat na plochu telefonu a všechna data zůstáv
 - 📋 **Hotové programy**: 5×5, Push/Pull/Legs, Horní/Dolní, Celé tělo, Doma bez vybavení
 - 📥 **Import celé historie ze Strong** (CSV export ze Strong)
 
+**Hravé prvky (inspirace Liftoff, GymLevels, Hevy, Fitbod, Alpha Progression)**
+- 🎮 **XP a úrovně** (Nováček → Legenda) – XP za trénink, série, rekordy a výzvy
+- 🗓️ **Týdenní výzvy** – 3 nové výzvy každý týden + týdenní cíl
+- ❄️ **Ochrana série** – za každé 4 splněné týdny dostaneš „zmrazení“, které zachrání vynechaný týden
+- 🥇 **Silové ranky** (Bronz → Diamant) podle tělesné hmotnosti a pohlaví
+- ✨ **Generátor tréninku** podle regenerace svalů, cíle, délky a vybavení
+- 🎉 **Oslava po tréninku** s konfetami, XP a level-upem; sdílecí obrázek tréninku
+- 📈 **Indikátor výkonu** u série (▲/▼ oproti minule), 📌 připnuté poznámky ke cvikům, 🧮 kotouče přímo v tréninku
+- 👤 **Profil** s mapou aktivity, měsíčním přehledem a ranky; 🚀 úvodní průvodce s doporučeným programem
+
 ## Vývoj
 
 ```bash

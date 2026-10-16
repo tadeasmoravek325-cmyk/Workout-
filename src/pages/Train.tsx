@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { PROGRAMS, type Program } from '../data/programs';
 import { Sheet, toast } from '../components/ui';
+import { GeneratorSheet } from '../components/GeneratorSheet';
+import { Sparkles } from 'lucide-react';
 import { exerciseHistory } from '../lib/calc';
 import { plural, relativeDay } from '../lib/format';
 import { uid } from '../lib/calc';
@@ -20,6 +22,7 @@ export default function Train() {
   const navigate = useNavigate();
   const [program, setProgram] = useState<Program | null>(null);
   const [preview, setPreview] = useState<Routine | null>(null);
+  const [generator, setGenerator] = useState(false);
 
   const start = (r?: Routine) => {
     if (active) {
@@ -48,6 +51,11 @@ export default function Train() {
       <button className="btn primary block" onClick={() => start()}>
         {active ? '▶ Pokračovat v tréninku' : '+ Začít prázdný trénink'}
       </button>
+      {!active && (
+        <button className="btn cool block mt" onClick={() => setGenerator(true)}>
+          <Sparkles size={18} /> Vygenerovat trénink na míru
+        </button>
+      )}
 
       <div className="section">
         <div className="section-title">
@@ -103,6 +111,8 @@ export default function Train() {
           ))}
         </div>
       </div>
+
+      {generator && <GeneratorSheet onClose={() => setGenerator(false)} />}
 
       {program && (
         <Sheet title={program.name} onClose={() => setProgram(null)}>

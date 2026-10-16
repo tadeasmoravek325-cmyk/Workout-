@@ -1,23 +1,30 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Check, ChevronRight, ClipboardList, Flame, Plus, Snowflake, Sparkles, Trophy, Zap } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
-import {
-  detectPRs,
-  muscleRecovery,
-  startOfWeek,
-  weekStreak,
-  workoutVolume,
-  workoutsThisWeek,
-} from '../lib/calc';
-import { fmtNum, fmtVolume, plural, relativeDay, toDisplayWeight } from '../lib/format';
-import { Ring } from '../components/ui';
+import { muscleRecovery, startOfWeek, workoutVolume } from '../lib/calc';
+import { fmtVolume, plural, relativeDay } from '../lib/format';
 import { BodyMap, recoveryColor } from '../components/BodyMap';
 import { WorkoutCard } from '../components/WorkoutCard';
+import { GeneratorSheet } from '../components/GeneratorSheet';
 import { MUSCLE_LABELS } from '../data/exercises';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
+import { useGame } from '../lib/useGame';
 import type { Muscle } from '../types';
 
+const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 const DAY_NAMES = ['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'];
+const DAY = 86_400_000;
+
+const MOTIVATION = [
+  'Každá série se počítá. 💪',
+  'Dnešní trénink je investice do zítřka.',
+  'Nemusíš být nejlepší, stačí být lepší než minule.',
+  'Disciplína porazí motivaci.',
+  'Malé kroky, velké výsledky.',
+  'Tělo dokáže víc, než si hlava myslí.',
+  'Nejtěžší je přijít. Zbytek už zvládneš.',
+];
 
 export default function Home() {
   const workouts = useStore((s) => s.workouts);
@@ -29,11 +36,12 @@ export default function Home() {
   const startWorkout = useStore((s) => s.startWorkout);
   const exMap = useExerciseMap();
   const navigate = useNavigate();
+  const game = useGame();
+  const [generator, setGenerator] = useState(false);
 
-  const thisWeek = workoutsThisWeek(workouts);
-  const streak = weekStreak(workouts, settings.weeklyGoal);
   const weekStart = startOfWeek(Date.now());
-  const weekVolume = workouts.filter((w) => w.startedAt >= weekStart).reduce((a, w) => a + workoutVolume(w, exMap), 0);
+  const thisWeek = workouts.filter((w) => w.startedAt >= weekStart);
+  const weekVolume = thisWeek.reduce((a, w) => a + workoutVolume(w, exMap), 0);
 
   const todayIdx = (new Date().getDay() + 6) % 7;
   const todayRoutine = routines.find((r) => r.id === schedule[todayIdx]);
@@ -44,15 +52,12 @@ export default function Home() {
   const tired = (Object.entries(recovery) as [Muscle, number][]).filter(([, v]) => v < 0.6).map(([m]) => m);
 
   const recentPRs = useMemo(() => {
-    const out: { workoutId: string; date: number; exerciseId: string; kind: string; value: number }[] = [];
-    workouts.slice(0, 8).forEach((w, i) => {
-      for (const pr of detectPRs(w, workouts.slice(i + 1), exMap)) {
-        if (pr.kind === 'weight' || pr.kind === 'reps' || pr.kind === 'duration' || pr.kind === 'distance')
-          out.push({ workoutId: w.id, date: w.startedAt, exerciseId: pr.exerciseId, kind: pr.kind, value: pr.value });
-      }
-    });
-    return out.slice(0, 5);
-  }, [workouts, exMap]);
+    const out: { date: number; exerciseId: string }[] = [];
+    for (const w of workouts.slice(0, 10)) {
+      for (const id of game.progress.perWorkout.get(w.id)?.prExercises ?? []) out.push({ date: w.startedAt, exerciseId: id });
+    }
+    return out.slice(0, 4);
+  }, [workouts, game.progress]);
 
   const nextAchievement = useMemo(() => {
     const stats = achievementStats(workouts, exMap, measurements);
@@ -63,6 +68,9 @@ export default function Home() {
 
   const hour = new Date().getHours();
   const greeting = hour < 10 ? 'Dobré ráno' : hour < 18 ? 'Ahoj' : 'Dobrý večer';
+  const name = settings.name ? `, ${settings.name}` : '';
+  const motivation = MOTIVATION[Math.floor(Date.now() / DAY) % MOTIVATION.length];
+  const unit = settings.unit;
 
   const start = (routineId?: string) => {
     const r = routines.find((x) => x.id === routineId);
@@ -70,81 +78,167 @@ export default function Home() {
     navigate('/workout');
   };
 
-  const unit = settings.unit;
-  const fmtPr = (kind: string, value: number) =>
-    kind === 'weight'
-      ? `${fmtNum(toDisplayWeight(value, unit))} ${unit}`
-      : kind === 'reps'
-        ? `${value} opak.`
-        : kind === 'duration'
-          ? `${Math.round(value)} s`
-          : `${fmtNum(value, 2)} km`;
+  const questsDone = game.quests.filter((q) => q.done).length;
 
   return (
     <div className="page">
-      <div className="page-header">
-        <div>
-          <div className="small muted">
-            {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}
+      <div className="page-header" style={{ marginBottom: 14 }}>
+        <div className="grow">
+          <div className="small muted bold">
+            {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase())}
           </div>
-          <h1>{greeting} 👋</h1>
+          <h1 className="ellipsis">
+            {greeting}
+            {name} 👋
+          </h1>
         </div>
-        <Link to="/settings" className="icon-btn" aria-label="Nastavení">
-          ⚙️
+        <Link to="/profile" className="level-badge" style={{ background: 'var(--grad)', color: '#fff', boxShadow: 'var(--glow)' }} aria-label="Profil">
+          {game.level.icon}
+          <span className="n">{game.level.level}</span>
         </Link>
       </div>
 
-      <div className="card row" style={{ gap: 16 }}>
-        <Ring value={thisWeek / settings.weeklyGoal}>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>
-            {thisWeek}/{settings.weeklyGoal}
-          </div>
-          <div className="tiny muted">tento týden</div>
-        </Ring>
-        <div className="grow stack" style={{ gap: 6 }}>
+      {/* Level + streak hero */}
+      <Link to="/profile" className="hero" style={{ display: 'block' }}>
+        <div className="row between">
           <div>
-            <span style={{ fontSize: 22, fontWeight: 800 }}>🔥 {streak}</span>{' '}
-            <span className="muted small">{plural(streak, ['týden', 'týdny', 'týdnů'])} v řadě</span>
+            <div className="small bold" style={{ opacity: 0.85 }}>
+              Level {game.level.level}
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 900 }}>{game.level.title}</div>
           </div>
-          <div className="small muted">Objem tento týden: {fmtVolume(weekVolume, unit)}</div>
-          <div className="small">
-            {thisWeek >= settings.weeklyGoal
-              ? 'Týdenní cíl splněn! 🎉'
-              : `Do cíle zbývá ${settings.weeklyGoal - thisWeek} ${plural(settings.weeklyGoal - thisWeek, ['trénink', 'tréninky', 'tréninků'])}.`}
+          <div style={{ textAlign: 'right' }}>
+            <div className="row" style={{ gap: 4, justifyContent: 'flex-end', fontSize: 26, fontWeight: 900 }}>
+              <Flame size={24} fill="#fff" /> {game.streak.streak}
+            </div>
+            <div className="tiny bold" style={{ opacity: 0.85 }}>
+              {plural(game.streak.streak, ['týden', 'týdny', 'týdnů'])} v řadě
+              {game.streak.freezes > 0 && (
+                <>
+                  {' · '}
+                  <Snowflake size={11} /> {game.streak.freezes}
+                </>
+              )}
+            </div>
           </div>
+        </div>
+        <div className="xp-bar" style={{ marginTop: 14 }}>
+          <div style={{ width: `${game.level.progress * 100}%` }} />
+        </div>
+        <div className="row between tiny bold" style={{ marginTop: 6, opacity: 0.9 }}>
+          <span>
+            {game.level.current.toLocaleString('cs-CZ')} / {game.level.needed.toLocaleString('cs-CZ')} XP
+          </span>
+          <span>{motivation}</span>
+        </div>
+      </Link>
+
+      {/* Week */}
+      <div className="card mt">
+        <div className="row between" style={{ marginBottom: 12 }}>
+          <h3>Tento týden</h3>
+          <span className="small bold">
+            <span className="accent">{thisWeek.length}</span>
+            <span className="muted"> / {settings.weeklyGoal} tréninků · {fmtVolume(weekVolume, unit)}</span>
+          </span>
+        </div>
+        <div className="week-dots">
+          {DOW.map((d, i) => {
+            const from = weekStart + i * DAY;
+            const done = workouts.some((w) => w.startedAt >= from && w.startedAt < from + DAY);
+            const planned = !!schedule[i] && !done && i >= todayIdx;
+            return (
+              <div key={d} className="d">
+                <div className={`dot ${done ? 'done' : ''} ${planned ? 'planned' : ''} ${i === todayIdx ? 'today' : ''}`}>
+                  {done ? <Check size={18} strokeWidth={3.5} /> : planned ? '•' : ''}
+                </div>
+                {d}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      <div className="section">
+      {/* Start */}
+      <div className="section" style={{ marginTop: 16 }}>
         {active ? (
           <Link to="/workout" className="card tap row" style={{ borderColor: 'var(--accent)' }}>
             <div className="grow">
-              <div className="small accent bold">Probíhá trénink</div>
+              <div className="small accent bold">
+                <span className="pulse" style={{ background: 'var(--accent)', width: 8, height: 8, borderRadius: 9, display: 'inline-block', marginRight: 6 }} />
+                Probíhá trénink
+              </div>
               <h3>{active.name}</h3>
             </div>
             <span className="btn primary sm">Pokračovat</span>
           </Link>
-        ) : todayRoutine && !doneToday ? (
-          <div className="card">
-            <div className="small accent bold">Dnes na plánu ({DAY_NAMES[todayIdx]})</div>
-            <h2 style={{ margin: '4px 0 6px' }}>{todayRoutine.name}</h2>
-            <div className="small muted ellipsis">
-              {todayRoutine.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}
-            </div>
-            <button className="btn primary block mt" onClick={() => start(todayRoutine.id)}>
-              Začít trénink
-            </button>
-          </div>
         ) : (
-          <div className="grid-2">
-            <button className="btn primary" onClick={() => start()}>
-              + Prázdný trénink
-            </button>
-            <Link to="/train" className="btn">
-              Rutiny a programy
-            </Link>
-          </div>
+          <>
+            {todayRoutine && !doneToday && (
+              <div className="card" style={{ marginBottom: 12 }}>
+                <div className="small accent bold">Dnes na plánu · {DAY_NAMES[todayIdx]}</div>
+                <h2 style={{ margin: '4px 0 6px' }}>{todayRoutine.name}</h2>
+                <div className="small muted ellipsis">{todayRoutine.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}</div>
+                <button className="btn primary block mt" onClick={() => start(todayRoutine.id)}>
+                  <Zap size={18} fill="#fff" /> Začít trénink
+                </button>
+              </div>
+            )}
+            <div className="grid-3">
+              <button className="card tap center" style={{ padding: 14 }} onClick={() => start()}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad)', display: 'grid', placeItems: 'center', color: '#fff' }}>
+                  <Plus size={22} strokeWidth={3} />
+                </div>
+                <div className="small bold">Prázdný</div>
+              </button>
+              <button className="card tap center" style={{ padding: 14 }} onClick={() => setGenerator(true)}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', display: 'grid', placeItems: 'center', color: '#fff' }}>
+                  <Sparkles size={21} />
+                </div>
+                <div className="small bold">Vygenerovat</div>
+              </button>
+              <Link to="/train" className="card tap center" style={{ padding: 14 }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-ok)', display: 'grid', placeItems: 'center', color: '#04261a' }}>
+                  <ClipboardList size={21} />
+                </div>
+                <div className="small bold">Rutiny</div>
+              </Link>
+            </div>
+          </>
         )}
+      </div>
+
+      {/* Quests */}
+      <div className="section">
+        <div className="section-title">
+          <h2>Týdenní výzvy</h2>
+          <span className="small muted bold">
+            {questsDone}/{game.quests.length} splněno
+          </span>
+        </div>
+        <div className="list">
+          {game.quests.map((q) => (
+            <div key={q.id} className={`quest ${q.done ? 'done' : ''}`}>
+              <div className="qi">{q.done ? '✅' : q.icon}</div>
+              <div className="grow">
+                <div className="row between">
+                  <span className="qt bold small">{q.title}</span>
+                  <span className="badge purple">+{q.xp} XP</span>
+                </div>
+                {q.target > 1 && (
+                  <div className="row tiny muted" style={{ marginTop: 6 }}>
+                    <div className="progress grow" style={{ height: 6 }}>
+                      <div style={{ width: `${(q.value / q.target) * 100}%`, background: q.done ? 'var(--grad-ok)' : undefined }} />
+                    </div>
+                    <span className="bold">
+                      {q.value}/{q.target}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {Object.keys(recovery).length > 0 && (
@@ -154,8 +248,8 @@ export default function Home() {
             <Link to="/stats">Statistiky</Link>
           </div>
           <div className="card">
-            <BodyMap color={(m) => recoveryColor(recovery[m])} height={220} />
-            <div className="row small" style={{ justifyContent: 'center', gap: 14 }}>
+            <BodyMap color={(m) => recoveryColor(recovery[m])} height={210} />
+            <div className="row small bold" style={{ justifyContent: 'center', gap: 14 }}>
               <span>
                 <span style={{ color: '#ff4d5e' }}>●</span> unavené
               </span>
@@ -176,6 +270,9 @@ export default function Home() {
                 <span className="danger bold">Ještě odpočívají:</span> {tired.map((m) => MUSCLE_LABELS[m]).join(', ')}
               </div>
             )}
+            <button className="btn cool block mt" onClick={() => setGenerator(true)}>
+              <Sparkles size={17} /> Trénink podle regenerace
+            </button>
           </div>
         </div>
       )}
@@ -188,12 +285,14 @@ export default function Home() {
           <div className="list">
             {recentPRs.map((p, i) => (
               <Link key={i} to={`/exercises/${p.exerciseId}`} className="list-item">
-                <span style={{ fontSize: 22 }}>🏆</span>
+                <div className="avatar" style={{ background: 'var(--grad-gold)', color: '#3b2300' }}>
+                  <Trophy size={20} />
+                </div>
                 <div className="grow">
                   <div className="bold ellipsis">{exMap.get(p.exerciseId)?.name}</div>
                   <div className="small muted">{relativeDay(p.date)}</div>
                 </div>
-                <span className="badge gold">{fmtPr(p.kind, p.value)}</span>
+                <ChevronRight size={18} className="muted" />
               </Link>
             ))}
           </div>
@@ -206,7 +305,7 @@ export default function Home() {
             <h2>Další odznak</h2>
             <Link to="/achievements">Všechny</Link>
           </div>
-          <div className="card ach">
+          <Link to="/achievements" className="card ach tap">
             <div className="ico">{nextAchievement.a.icon}</div>
             <div className="grow">
               <div className="bold">{nextAchievement.a.title}</div>
@@ -215,7 +314,7 @@ export default function Home() {
                 <div style={{ width: `${nextAchievement.p * 100}%` }} />
               </div>
             </div>
-          </div>
+          </Link>
         </div>
       )}
 
@@ -227,16 +326,16 @@ export default function Home() {
         {workouts.length ? (
           <div className="stack">
             {workouts.slice(0, 3).map((w) => (
-              <WorkoutCard key={w.id} w={w} />
+              <WorkoutCard key={w.id} w={w} prCount={game.progress.perWorkout.get(w.id)?.prExercises.length} />
             ))}
           </div>
         ) : (
           <div className="card empty">
-            <div className="big">💪</div>
+            <div className="big">🏁</div>
             <div className="bold" style={{ color: 'var(--text)' }}>
-              Zatím žádný trénink
+              Tvůj první trénink čeká
             </div>
-            Začni prázdným tréninkem, nebo si vyber hotový program v sekci Trénink.
+            Za každý trénink dostaneš XP a za rekordy bonus navíc.
             <div className="mt">
               <Link to="/settings" className="btn sm soft">
                 Importovat data ze Strong
@@ -245,6 +344,8 @@ export default function Home() {
           </div>
         )}
       </div>
+
+      {generator && <GeneratorSheet onClose={() => setGenerator(false)} />}
     </div>
   );
 }

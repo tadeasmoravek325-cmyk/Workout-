@@ -32,6 +32,8 @@ export interface BackupData {
   measurements: Measurement[];
   settings: Settings;
   schedule: Schedule;
+  /** Pinned per-exercise notes shown every time the exercise is performed. */
+  exerciseNotes?: Record<string, string>;
 }
 
 interface State extends BackupData {
@@ -62,6 +64,7 @@ interface State extends BackupData {
 
   updateSettings: (patch: Partial<Settings>) => void;
   setSchedule: (day: number, routineId: string | undefined) => void;
+  setExerciseNote: (exerciseId: string, note: string) => void;
 
   startRest: (sec: number) => void;
   adjustRest: (deltaSec: number) => void;
@@ -140,6 +143,7 @@ const initialData = (): BackupData => ({
   measurements: [],
   settings: defaultSettings(),
   schedule: {},
+  exerciseNotes: {},
 });
 
 export const useStore = create<State>()(
@@ -290,6 +294,14 @@ export const useStore = create<State>()(
 
       setSchedule: (day, routineId) => setState((s) => ({ schedule: { ...s.schedule, [day]: routineId } })),
 
+      setExerciseNote: (exerciseId, note) =>
+        setState((s) => {
+          const notes = { ...(s.exerciseNotes ?? {}) };
+          if (note.trim()) notes[exerciseId] = note;
+          else delete notes[exerciseId];
+          return { exerciseNotes: notes };
+        }),
+
       startRest: (sec) => {
         if (sec <= 0) return setState({ rest: null });
         const now = Date.now();
@@ -325,6 +337,7 @@ export const useStore = create<State>()(
             routines: byId(s.routines, data.routines),
             customExercises: byId(s.customExercises, data.customExercises),
             measurements: byId(s.measurements, data.measurements).sort((a, b) => a.date - b.date),
+            exerciseNotes: { ...(s.exerciseNotes ?? {}), ...(data.exerciseNotes ?? {}) },
           };
         }),
 
@@ -353,12 +366,16 @@ export const useStore = create<State>()(
         measurements: s.measurements,
         settings: s.settings,
         schedule: s.schedule,
+        exerciseNotes: s.exerciseNotes,
         active: s.active,
         rest: s.rest,
       }),
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<State>;
-        return { ...current, ...p, settings: { ...defaultSettings(), ...(p.settings ?? {}) } };
+        const settings = { ...defaultSettings(), ...(p.settings ?? {}) };
+        // Existing users who already have history skip onboarding.
+        if (!p.settings?.onboarded && (p.workouts?.length ?? 0) > 0) settings.onboarded = true;
+        return { ...current, ...p, settings };
       },
       onRehydrateStorage: () => () => {
         useStore.setState({ hydrated: true });
@@ -407,5 +424,6 @@ export function exportBackup(): BackupData {
     measurements: s.measurements,
     settings: s.settings,
     schedule: s.schedule,
+    exerciseNotes: s.exerciseNotes,
   };
 }

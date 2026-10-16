@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 const ITEMS = [
+  { to: '/profile', icon: '🦾', title: 'Můj profil', desc: 'Level, XP, silové ranky a aktivita' },
   { to: '/stats', icon: '📊', title: 'Statistiky', desc: 'Objem na svaly, týdenní přehled, velká trojka' },
   { to: '/measure', icon: '📏', title: 'Měření těla', desc: 'Hmotnost, tuk, obvody a jejich vývoj' },
   { to: '/planner', icon: '🗓️', title: 'Plán týdne', desc: 'Přiřaď rutiny ke dnům v týdnu' },
