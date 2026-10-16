@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { BookOpen, CalendarDays, Dumbbell, House, LayoutGrid, Play } from 'lucide-react';
-import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, Link, NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
 import { Dialogs, Toasts, useNow } from './components/ui';
@@ -20,7 +20,6 @@ import ExerciseDetail from './pages/ExerciseDetail';
 import More from './pages/More';
 import Stats from './pages/Stats';
 import Measure from './pages/Measure';
-import Tools from './pages/Tools';
 import Achievements from './pages/Achievements';
 import Planner from './pages/Planner';
 import SettingsPage from './pages/Settings';
@@ -112,7 +111,7 @@ function Shell() {
         <Route path="/more" element={<More />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/measure" element={<Measure />} />
-        <Route path="/tools" element={<Tools />} />
+        <Route path="/tools" element={<Navigate to="/" replace />} />
         <Route path="/achievements" element={<Achievements />} />
         <Route path="/planner" element={<Planner />} />
         <Route path="/settings" element={<SettingsPage />} />

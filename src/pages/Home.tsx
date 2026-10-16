@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, ClipboardList, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
+import { Check, ChevronRight, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
-import { muscleRecovery, startOfWeek, workoutVolume } from '../lib/calc';
+import { muscleRecovery, nextRoutine, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, relativeDay } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
 import { BodyMap, RECOVERY_COLORS, recoveryColor } from '../components/BodyMap';
@@ -40,6 +40,7 @@ export default function Home() {
   const todayIdx = (new Date().getDay() + 6) % 7;
   const todayRoutine = routines.find((r) => r.id === schedule[todayIdx]);
   const doneToday = workouts.some((w) => new Date(w.startedAt).toDateString() === new Date().toDateString());
+  const upNext = todayRoutine ?? nextRoutine(routines, workouts);
 
   const recovery = useMemo(() => muscleRecovery(workouts.slice(0, 30), exMap), [workouts, exMap]);
   const ready = (Object.entries(recovery) as [Muscle, number][]).filter(([, v]) => v >= 0.95).map(([m]) => m);
@@ -196,17 +197,19 @@ export default function Home() {
           </Link>
         ) : (
           <>
-            {todayRoutine && !doneToday && (
+            {upNext && !(todayRoutine && doneToday) && (
               <div className="card" style={{ marginBottom: 12 }}>
-                <div className="small accent bold">{t('On the plan today · {day}', { day: t(DAY_NAMES[todayIdx]) })}</div>
-                <h2 style={{ margin: '4px 0 6px' }}>{todayRoutine.name}</h2>
-                <div className="small muted ellipsis">{todayRoutine.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}</div>
-                <button className="btn primary block mt" onClick={() => start(todayRoutine.id)}>
+                <div className="small accent bold">
+                  {todayRoutine ? t('On the plan today · {day}', { day: t(DAY_NAMES[todayIdx]) }) : t('Up next')}
+                </div>
+                <h2 style={{ margin: '4px 0 6px' }}>{upNext.name}</h2>
+                <div className="small muted ellipsis">{upNext.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}</div>
+                <button className="btn primary block mt" onClick={() => start(upNext.id)}>
                   {t('Start workout')}
                 </button>
               </div>
             )}
-            <div className="grid-3">
+            <div className="grid-2">
               <button className="card tap center" style={{ padding: 14 }} onClick={() => start()}>
                 <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--on-accent)' }}>
                   <Plus size={22} strokeWidth={3} />
@@ -219,12 +222,6 @@ export default function Home() {
                 </div>
                 <div className="small bold">{t('Generate')}</div>
               </button>
-              <Link to="/train" className="card tap center" style={{ padding: 14 }}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
-                  <ClipboardList size={21} />
-                </div>
-                <div className="small bold">{t('Routines')}</div>
-              </Link>
             </div>
           </>
         )}

@@ -3,6 +3,7 @@ import {
   computeRecords,
   detectPRs,
   e1rm,
+  nextRoutine,
   exerciseHistory,
   muscleRecovery,
   plateCalc,
@@ -159,5 +160,20 @@ describe('muscle stats', () => {
     const r = muscleRecovery([w], exMap, w.finishedAt! + 3_600_000);
     expect(r.quads).toBeLessThan(0.1);
     expect(muscleRecovery([w], exMap, w.finishedAt! + 5 * DAY).quads).toBe(1);
+  });
+});
+
+describe('nextRoutine', () => {
+  const r = (id: string, folder?: string) => ({ id, name: id, folder, exercises: [], createdAt: 0 });
+  const w = (routineId: string, startedAt: number) => ({ id: routineId + startedAt, name: '', startedAt, exercises: [], routineId });
+  it('rotates within the folder of the last trained routine', () => {
+    const routines = [r('a', 'P'), r('b', 'P'), r('x', 'Q')];
+    expect(nextRoutine(routines, [w('a', 2)])?.id).toBe('b');
+    expect(nextRoutine(routines, [w('b', 2), w('a', 1)])?.id).toBe('a');
+    expect(nextRoutine(routines, [w('x', 2)])?.id).toBe('x');
+  });
+  it('falls back to the first routine', () => {
+    expect(nextRoutine([r('a'), r('b')], [])?.id).toBe('a');
+    expect(nextRoutine([], [])).toBeUndefined();
   });
 });

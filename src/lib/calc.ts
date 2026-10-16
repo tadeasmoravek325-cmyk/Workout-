@@ -1,4 +1,4 @@
-import type { Exercise, Muscle, Settings, Workout, WorkoutSet } from '../types';
+import type { Exercise, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
 import { muscleLoad } from '../data/exercises';
 import { t, tn } from '../i18n';
 
@@ -423,4 +423,17 @@ export function defaultSettings(): Settings {
     showRpe: false,
     smartCoach: true,
   };
+}
+
+/**
+ * The routine to suggest next: the one after the most recently trained routine in the same folder
+ * (A → B → A …), so programs rotate on their own. Falls back to the first routine.
+ */
+export function nextRoutine(routines: Routine[], workouts: Workout[]): Routine | undefined {
+  if (!routines.length) return undefined;
+  const last = workouts.find((w) => w.routineId && routines.some((r) => r.id === w.routineId));
+  if (!last) return routines[0];
+  const done = routines.find((r) => r.id === last.routineId)!;
+  const folder = routines.filter((r) => (r.folder ?? '') === (done.folder ?? ''));
+  return folder[(folder.indexOf(done) + 1) % folder.length];
 }

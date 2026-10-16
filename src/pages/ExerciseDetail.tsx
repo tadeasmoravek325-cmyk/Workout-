@@ -8,6 +8,7 @@ import { computeRecords, e1rm, exerciseHistory, isWorkingSet, weightForReps, typ
 import { fmtClock, fmtDate, fmtNum, toDisplayWeight } from '../lib/format';
 import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS, muscleLoad } from '../data/exercises';
 import { BodyMap, loadColor } from '../components/BodyMap';
+import { OneRmCalculator, PlateCalculator } from '../components/ExerciseTools';
 import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, Empty, Segmented, undoToast } from '../components/ui';
@@ -316,6 +317,13 @@ export default function ExerciseDetail() {
                     </span>
                   </div>
                 ))}
+              </div>
+              <div className="section-title mt-l">
+                <h2>{t('Calculators')}</h2>
+              </div>
+              <div className="stack">
+                <OneRmCalculator bestKg={records.maxE1rm} />
+                {ex.equipment === 'barbell' && <PlateCalculator initialKg={records.maxWeight} />}
               </div>
             </>
           ) : (
