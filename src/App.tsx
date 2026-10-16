@@ -3,7 +3,7 @@ import { BookOpen, CalendarDays, Dumbbell, House, LayoutGrid, Play } from 'lucid
 import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom';
 import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
-import { Toasts, useNow } from './components/ui';
+import { Dialogs, Toasts, useNow } from './components/ui';
 import { fmtClock } from './lib/format';
 import Home from './pages/Home';
 import Train from './pages/Train';
@@ -120,6 +120,7 @@ function Shell() {
       {!fullscreen && <BottomNav />}
       <RestTimerBar aboveNav={!fullscreen} />
       <Toasts />
+      <Dialogs />
     </>
   );
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
-import { useNow } from '../components/ui';
+import { confirmDialog, useNow } from '../components/ui';
 import { fmtClock } from '../lib/format';
 
 export default function ActiveWorkout() {
@@ -64,8 +64,8 @@ export default function ActiveWorkout() {
 
       <button
         className="btn danger block mt-l"
-        onClick={() => {
-          if (window.confirm('Opravdu zrušit trénink? Nic se neuloží.')) {
+        onClick={async () => {
+          if (await confirmDialog('Zrušit trénink?', 'Nic z tohoto tréninku se neuloží.', 'Zrušit trénink')) {
             discard();
             navigate('/', { replace: true });
           }

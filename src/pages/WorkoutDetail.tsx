@@ -15,7 +15,7 @@ import {
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements';
 import { describeSet } from '../components/WorkoutEditor';
-import { toast } from '../components/ui';
+import { confirmDialog, toast } from '../components/ui';
 import type { Routine } from '../types';
 import { useGame } from '../lib/useGame';
 import { Celebration } from '../components/Celebration';
@@ -322,8 +322,8 @@ export default function WorkoutDetail() {
         </button>
         <button
           className="btn sm danger"
-          onClick={() => {
-            if (window.confirm('Smazat tento trénink?')) {
+          onClick={async () => {
+            if (await confirmDialog('Smazat tento trénink?', 'Tohle nejde vrátit.', 'Smazat')) {
               deleteWorkout(w.id);
               navigate('/history', { replace: true });
             }

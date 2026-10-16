@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { PROGRAMS, type Program } from '../data/programs';
-import { Sheet, toast } from '../components/ui';
+import { confirmDialog, Sheet, toast } from '../components/ui';
 import { GeneratorSheet } from '../components/GeneratorSheet';
 import { Sparkles } from 'lucide-react';
 import { exerciseHistory } from '../lib/calc';
@@ -188,8 +188,8 @@ export default function Train() {
             </button>
             <button
               className="btn sm danger"
-              onClick={() => {
-                if (window.confirm(`Smazat rutinu „${preview.name}“?`)) {
+              onClick={async () => {
+                if (await confirmDialog(`Smazat rutinu „${preview.name}“?`, 'Odcvičené tréninky v historii zůstanou.', 'Smazat')) {
                   deleteRoutine(preview.id);
                   setPreview(null);
                 }

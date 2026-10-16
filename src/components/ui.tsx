@@ -201,6 +201,71 @@ export function Segmented<T extends string>({
   );
 }
 
-export function confirmAction(text: string): boolean {
-  return window.confirm(text);
+/* ---------- in-app dialogs (native confirm() is unavailable in some embeds) ---------- */
+
+interface DialogAction<T> {
+  label: string;
+  value: T;
+  kind?: 'primary' | 'danger' | 'plain';
+}
+
+interface DialogState {
+  title: string;
+  message?: ReactNode;
+  actions: DialogAction<unknown>[];
+  resolve: (v: unknown) => void;
+}
+
+const useDialog = create<{ current: DialogState | null }>(() => ({ current: null }));
+
+/** Shows a dialog with custom actions; resolves with the chosen value or null when dismissed. */
+export function ask<T>(title: string, message: ReactNode, actions: DialogAction<T>[]): Promise<T | null> {
+  return new Promise((resolve) => {
+    useDialog.setState({
+      current: { title, message, actions: actions as DialogAction<unknown>[], resolve: resolve as (v: unknown) => void },
+    });
+  });
+}
+
+/** Yes/no confirmation. */
+export async function confirmDialog(title: string, message?: ReactNode, confirmLabel = 'Potvrdit', danger = true): Promise<boolean> {
+  const r = await ask(title, message, [
+    { label: 'Zpět', value: false, kind: 'plain' },
+    { label: confirmLabel, value: true, kind: danger ? 'danger' : 'primary' },
+  ]);
+  return r === true;
+}
+
+export function Dialogs() {
+  const current = useDialog((s) => s.current);
+  if (!current) return null;
+  const close = (v: unknown) => {
+    useDialog.setState({ current: null });
+    current.resolve(v);
+  };
+  return (
+    <div className="overlay" onClick={() => close(null)} style={{ zIndex: 250 }}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()} role="alertdialog" aria-modal="true">
+        <div className="sheet-body" style={{ paddingTop: 26 }}>
+          <h2>{current.title}</h2>
+          {current.message && (
+            <div className="muted" style={{ marginTop: 8 }}>
+              {current.message}
+            </div>
+          )}
+          <div className={current.actions.length === 2 ? 'grid-2 mt-l' : 'stack mt-l'}>
+            {current.actions.map((a) => (
+              <button
+                key={a.label}
+                className={`btn ${a.kind === 'danger' ? 'danger' : a.kind === 'primary' ? 'primary' : ''}`}
+                onClick={() => close(a.value)}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

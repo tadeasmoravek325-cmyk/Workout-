@@ -8,7 +8,7 @@ import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS
 import { BodyMap } from '../components/BodyMap';
 import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
-import { Empty, Segmented } from '../components/ui';
+import { confirmDialog, Empty, Segmented } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
 import { strengthRank } from '../lib/strength';
 import { PlayCircle } from 'lucide-react';
@@ -124,8 +124,12 @@ export default function ExerciseDetail() {
             </button>
             <button
               className="btn ghost danger"
-              onClick={() => {
-                if (sessions.length && !window.confirm(`Cvik má ${sessions.length} záznamů v historii. Opravdu smazat?`)) return;
+              onClick={async () => {
+                if (
+                  sessions.length &&
+                  !(await confirmDialog('Smazat cvik?', `Cvik má ${sessions.length} záznamů v historii. Ty v tréninku zůstanou bez názvu.`, 'Smazat'))
+                )
+                  return;
                 deleteExercise(ex.id);
                 navigate('/exercises', { replace: true });
               }}

@@ -4,7 +4,7 @@ import { exportBackup, useAllExercises, useExerciseMap, useStore, type BackupDat
 import { exportCsv, importStrongCsv, type StrongImportResult } from '../lib/csv';
 import { download } from '../lib/feedback';
 import { fmtClock, fmtNum, plural } from '../lib/format';
-import { Segmented, Sheet, Switch, toast } from '../components/ui';
+import { ask, confirmDialog, Segmented, Sheet, Switch, toast } from '../components/ui';
 import type { Equipment, Experience, Goal, Sex, Unit } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
 
@@ -42,10 +42,13 @@ export default function SettingsPage() {
     try {
       const data = JSON.parse(await file.text()) as Partial<BackupData>;
       if (!Array.isArray(data.workouts)) throw new Error('bad');
-      const replace = window.confirm(
-        `Záloha obsahuje ${data.workouts.length} tréninků.\n\nOK = nahradit všechna současná data\nZrušit = sloučit se současnými daty`,
-      );
-      importBackup(data, replace ? 'replace' : 'merge');
+      const mode = await ask(`Záloha obsahuje ${data.workouts.length} tréninků`, 'Chceš ji sloučit se současnými daty, nebo jimi všechno nahradit?', [
+        { label: 'Sloučit se současnými daty', value: 'merge' as const, kind: 'primary' },
+        { label: 'Nahradit všechna data', value: 'replace' as const, kind: 'danger' },
+        { label: 'Zrušit', value: null, kind: 'plain' },
+      ]);
+      if (!mode) return;
+      importBackup(data, mode);
       toast('Záloha obnovena');
     } catch {
       toast('Tohle není platná záloha');
@@ -296,8 +299,8 @@ export default function SettingsPage() {
         </button>
         <button
           className="list-item"
-          onClick={() => {
-            if (window.confirm('Opravdu smazat VŠECHNA data? Tohle nejde vrátit.') && window.confirm('Fakt? Doporučujeme si nejdřív stáhnout zálohu.')) {
+          onClick={async () => {
+            if (await confirmDialog('Smazat všechna data?', 'Tréninky, rutiny i měření zmizí a nejde to vrátit. Doporučujeme si nejdřív stáhnout zálohu.', 'Smazat vše')) {
               resetAll();
               toast('Data smazána');
             }
