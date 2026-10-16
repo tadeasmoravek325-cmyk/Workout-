@@ -11,7 +11,8 @@ import { BodyMap, RECOVERY_COLORS, recoveryColor } from '../components/BodyMap';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { GeneratorSheet } from '../components/GeneratorSheet';
 import { MUSCLE_LABELS } from '../data/exercises';
-import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
+import { ACHIEVEMENTS, achievementProgressLabel, achievementStats } from '../lib/achievements';
+import { Medal } from '../components/Medal';
 import { useGame } from '../lib/useGame';
 import { backupDue, saveBackupFile } from '../lib/backup';
 import type { Muscle } from '../types';
@@ -332,15 +333,22 @@ export default function Home() {
             <h2>{t('Next badge')}</h2>
             <Link to="/achievements">{t('See all')}</Link>
           </div>
-          <Link to="/achievements" className="card ach tap">
-            <div className="ico">
-              <Icon name={nextAchievement.a.icon} size={22} />
-            </div>
+          <Link to="/achievements" className="card tap medal-next-card">
+            <Medal
+              motif={nextAchievement.a.motif}
+              metal={nextAchievement.a.metal}
+              locked
+              size={72}
+              label={nextAchievement.a.title}
+            />
             <div className="grow">
-              <div className="bold">{t(nextAchievement.a.title)}</div>
-              <div className="small muted">{t(nextAchievement.a.description)}</div>
-              <div className="progress mt" style={{ height: 6 }}>
+              <div className="bold">{nextAchievement.a.title}</div>
+              <div className="small muted">{nextAchievement.a.description}</div>
+              <div className="medal-bar">
                 <div style={{ width: `${nextAchievement.p * 100}%` }} />
+              </div>
+              <div className="small bold accent">
+                {achievementProgressLabel(nextAchievement.a, achievementStats(workouts, exMap, measurements))}
               </div>
             </div>
           </Link>

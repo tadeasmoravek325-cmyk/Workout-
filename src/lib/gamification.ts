@@ -87,7 +87,8 @@ export function countsForXp(s: WorkoutSet): boolean {
   return s.done && isWorkingSet(s) && ((s.reps ?? 0) > 0 || (s.durationSec ?? 0) > 0 || (s.distance ?? 0) > 0);
 }
 
-let progressCache: { key: Workout[]; goal: string; now: number; value: Progress } | null = null;
+// A few entries: the game hook and badge stats ask with different goals for the same history.
+const progressCache: { key: Workout[]; goal: string; now: number; value: Progress }[] = [];
 
 /**
  * XP for every workout plus weekly bonuses, computed from history alone so it never drifts.
@@ -96,7 +97,8 @@ let progressCache: { key: Workout[]; goal: string; now: number; value: Progress 
 export function computeProgress(workouts: Workout[], exMap: Map<string, Exercise>, goal: GoalInput, now = Date.now()): Progress {
   const gk = goalKey(goal);
   const nowWeek = startOfWeek(now);
-  if (progressCache && progressCache.key === workouts && progressCache.goal === gk && progressCache.now === nowWeek) return progressCache.value;
+  const hit = progressCache.find((c) => c.key === workouts && c.goal === gk && c.now === nowWeek);
+  if (hit) return hit.value;
   const best = new Map<string, Best>();
   const perWorkout = new Map<string, WorkoutProgress>();
   const weekXp = new Map<number, number>();
@@ -179,7 +181,8 @@ export function computeProgress(workouts: Workout[], exMap: Map<string, Exercise
   }
 
   const value = { totalXp, totalPrs, perWorkout, weekXp, goalWeeks };
-  progressCache = { key: workouts, goal: gk, now: nowWeek, value };
+  progressCache.unshift({ key: workouts, goal: gk, now: nowWeek, value });
+  progressCache.length = Math.min(progressCache.length, 4);
   return value;
 }
 

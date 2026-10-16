@@ -12,6 +12,7 @@ import { MUSCLE_LABELS } from '../data/exercises';
 import { BodyMap, formColor } from '../components/BodyMap';
 import { DivisionBadge, LeagueCard } from '../components/League';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
+import { Medal as BadgeMedal } from '../components/Medal';
 import type { Muscle } from '../types';
 
 const DAY = 86_400_000;
@@ -309,13 +310,22 @@ export default function Profile() {
           <h2>{t('Badges')}</h2>
           <Link to="/achievements">{t('See all')}</Link>
         </div>
-        <div className="card row" style={{ flexWrap: 'wrap', gap: 10 }}>
+        <div className="card">
           {unlocked.length ? (
-            unlocked.map((a) => (
-              <span key={a.id} title={t(a.title)} className="ach-mini">
-                <Icon name={a.icon} size={20} />
-              </span>
-            ))
+            <>
+              <div className="medal-shelf">
+                {unlocked
+                  .filter((a) => !unlocked.some((b) => b.familyId === a.familyId && b.tier > a.tier))
+                  .map((a) => (
+                    <Link key={a.id} to="/achievements" title={a.title} aria-label={a.title}>
+                      <BadgeMedal motif={a.motif} metal={a.metal} size={58} />
+                    </Link>
+                  ))}
+              </div>
+              <div className="small muted center mt">
+                {t('{unlocked} of {total} medals earned', { unlocked: unlocked.length, total: ACHIEVEMENTS.length })}
+              </div>
+            </>
           ) : (
             <span className="small muted">{t('None yet. Your first one comes with your first workout.')}</span>
           )}
