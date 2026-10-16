@@ -1,0 +1,333 @@
+/* Stats page: period chips, orange hero, compact tiles, ranked top exercises. */
+
+.st-chips {
+  margin: 0 -16px;
+  padding: 0 16px 4px;
+  scroll-padding: 0 16px;
+}
+
+.st-chips .chip {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.st-range {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 10px;
+  row-gap: 2px;
+  margin: 12px 2px 14px;
+  font-size: 16px;
+}
+
+/* ---------- hero ---------- */
+
+.st-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: var(--radius);
+  padding: 16px 18px 18px;
+  animation: st-pop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+
+.st-hero-art {
+  position: absolute;
+  right: -34px;
+  bottom: -38px;
+  width: 172px;
+  height: 172px;
+  fill: var(--on-accent);
+  opacity: 0.1;
+  animation: st-spin 0.6s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.st-hero-art .cut {
+  fill: var(--accent);
+  opacity: 1;
+}
+
+.st-hero-top {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.st-hero-kicker {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.st-hero-num {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 104px;
+  font-weight: 700;
+  line-height: 0.9;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.st-hero-label {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.st-hero-foot {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.st-hero-foot span {
+  background: color-mix(in srgb, var(--on-accent) 12%, transparent);
+  border-radius: 999px;
+  padding: 5px 11px;
+}
+
+/* ---------- comparison ---------- */
+
+.st-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+
+.st-delta.up {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.st-delta.down {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+
+.st-delta.flat {
+  color: var(--muted);
+  background: var(--card-2);
+}
+
+.st-delta.on-hero {
+  font-size: 15px;
+  padding: 5px 12px;
+  background: var(--on-accent);
+}
+
+.st-delta.on-hero.up {
+  color: var(--accent);
+}
+
+.st-delta.on-hero.down {
+  color: #ff6b5c;
+}
+
+.st-delta.on-hero.flat {
+  color: var(--accent);
+}
+
+/* ---------- tiles ---------- */
+
+.st-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.st-tile {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 12px 14px 14px;
+  min-width: 0;
+}
+
+.st-tile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.st-tile-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.st-tile-ico.gold {
+  width: 44px;
+  height: 44px;
+  color: var(--on-accent);
+  background: var(--grad-gold);
+}
+
+.st-tile-v {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.st-tile-l {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.st-tile-wide {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ---------- top exercises ---------- */
+
+.st-top {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 4px 14px;
+}
+
+.st-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 8px 0;
+}
+
+.st-top-row + .st-top-row {
+  border-top: 1px solid var(--line);
+}
+
+.st-rank {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  background: var(--card-2);
+  color: var(--text);
+}
+
+.st-rank.first {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.st-top-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--card-2);
+  margin-top: 7px;
+  overflow: hidden;
+}
+
+.st-top-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: st-grow 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+/* ---------- custom sheet ---------- */
+
+.st-dates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.st-dates input {
+  width: 100%;
+  min-height: 48px;
+}
+
+.st-date-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.st-sheet-preview {
+  margin: 16px 2px;
+  font-size: 15px;
+}
+
+/* ---------- motion ---------- */
+
+@keyframes st-pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0.4;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes st-spin {
+  from {
+    transform: rotate(-60deg) scale(0.8);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@keyframes st-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .st-hero,
+  .st-hero-art,
+  .st-top-bar > div {
+    animation: none;
+  }
+}
