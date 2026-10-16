@@ -1878,3 +1878,32 @@ a.list-item:active,
   color: var(--muted);
   margin-top: 4px;
 }
+
+.week-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 8px;
+  height: 120px;
+  align-items: end;
+}
+.week-bars .col {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+.week-bars .bar {
+  width: 100%;
+  min-height: 4px;
+  border-radius: 6px;
+  background: var(--card-2);
+}
+.body-sex {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}

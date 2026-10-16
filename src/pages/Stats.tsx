@@ -125,15 +125,15 @@ export default function Stats() {
           <h2>{weeks > 1 ? t('Sets per muscle (weekly average)') : t('Sets per muscle')}</h2>
         </div>
         <div className="card">
-          <BodyMap color={(m) => volumeColor(perWeek(m))} height={210} />
+          <BodyMap color={(m) => volumeColor(perWeek(m))} value={perWeek} height={240} onPick={(m) => navigate(`/muscles/${m}`)} />
           <div className="small muted center" style={{ margin: '4px 0 10px' }}>
-            {t('Aim for 10–20 sets per muscle each week (green zone).')}
+            {t('Aim for 10–20 sets per muscle each week. Tap a muscle for details.')}
           </div>
           {ALL_MUSCLES.map((m) => {
             const v = perWeek(m);
             const pct = Math.min(1, v / 25);
             return (
-              <div key={m} className="muscle-bar">
+              <Link key={m} to={`/muscles/${m}`} className="muscle-bar">
                 <span className="ellipsis">{MUSCLE_LABELS[m]}</span>
                 <div className="track">
                   <div className="zone" style={{ left: '40%', width: '40%' }} />
@@ -142,7 +142,7 @@ export default function Stats() {
                 <span className="bold" style={{ textAlign: 'right' }}>
                   {fmtNum(v, 1)}
                 </span>
-              </div>
+              </Link>
             );
           })}
         </div>

@@ -61,17 +61,33 @@ function View({ view, color, value, onPick }: { view: AnatomyView } & Pick<Props
  */
 export function BodyMap({ color, value, height = 260, sex, side, onPick, labels = true }: Props) {
   const profileSex = useStore((s) => s.settings.sex);
+  const updateSettings = useStore((s) => s.updateSettings);
   const model = ANATOMY[(sex ?? profileSex) === 'f' ? 'female' : 'male'];
   const sides = side ? [side] : (['front', 'back'] as const);
+  // Only full-size maps ask; thumbnails just use the default body.
+  const ask = !sex && !profileSex && labels && !side;
   return (
-    <div className={`body-map ${labels ? '' : 'no-labels'}`} style={{ height }} role="img" aria-label={t('Muscle map')}>
-      {sides.map((s) => (
-        <figure key={s}>
-          <View view={model[s]} color={color} value={value} onPick={onPick} />
-          {labels && <figcaption>{s === 'front' ? t('Front') : t('Back')}</figcaption>}
-        </figure>
-      ))}
-    </div>
+    <>
+      <div className={`body-map ${labels ? '' : 'no-labels'}`} style={{ height }} role="img" aria-label={t('Muscle map')}>
+        {sides.map((s) => (
+          <figure key={s}>
+            <View view={model[s]} color={color} value={value} onPick={onPick} />
+            {labels && <figcaption>{s === 'front' ? t('Front') : t('Back')}</figcaption>}
+          </figure>
+        ))}
+      </div>
+      {ask && (
+        <div className="body-sex">
+          <span className="small muted">{t('Show body as')}</span>
+          <button className="chip" onClick={() => updateSettings({ sex: 'm' })}>
+            {t('Male')}
+          </button>
+          <button className="chip" onClick={() => updateSettings({ sex: 'f' })}>
+            {t('Female')}
+          </button>
+        </div>
+      )}
+    </>
   );
 }
 

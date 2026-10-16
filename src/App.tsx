@@ -19,6 +19,7 @@ import Exercises from './pages/Exercises';
 import ExerciseDetail from './pages/ExerciseDetail';
 import More from './pages/More';
 import Stats from './pages/Stats';
+import MuscleDetail from './pages/MuscleDetail';
 import Measure from './pages/Measure';
 import Achievements from './pages/Achievements';
 import Planner from './pages/Planner';
@@ -110,6 +111,7 @@ function Shell() {
         <Route path="/exercises/:id" element={<ExerciseDetail />} />
         <Route path="/more" element={<More />} />
         <Route path="/stats" element={<Stats />} />
+        <Route path="/muscles/:id" element={<MuscleDetail />} />
         <Route path="/measure" element={<Measure />} />
         <Route path="/tools" element={<Navigate to="/" replace />} />
         <Route path="/achievements" element={<Achievements />} />

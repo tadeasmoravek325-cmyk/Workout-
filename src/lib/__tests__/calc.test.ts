@@ -147,11 +147,32 @@ describe('weekStreak', () => {
 });
 
 describe('muscle stats', () => {
-  it('counts primary sets fully and secondary sets half', () => {
+  it('counts every muscle a set trains by its share of the work', () => {
     const w = workout(1, 'bench-press', [set(80, 8), set(80, 8)]);
     const m = setsPerMuscle([w], exMap, 0);
     expect(m.chest).toBe(2);
     expect(m.triceps).toBe(1);
+    expect(m.frontDelts).toBe(1);
+    const sq = setsPerMuscle([workout(1, 'squat', [set(100, 5), set(100, 5), set(100, 5), set(100, 5)])], exMap, 0);
+    expect(sq.quads).toBe(4);
+    expect(sq.glutes).toBe(3);
+    expect(sq.adductors).toBe(2);
+    expect(sq.lowerBack).toBe(1);
+    expect(sq.chest).toBeUndefined();
+  });
+
+  it('ignores warm-up sets', () => {
+    const m = setsPerMuscle([workout(1, 'bench-press', [set(40, 10, { type: 'warmup' }), set(80, 8)])], exMap, 0);
+    expect(m.chest).toBe(1);
+  });
+
+  it('maps legacy shoulder muscles of custom exercises to front and side delts', () => {
+    const custom = { ...bench, id: 'c1', load: undefined, primary: ['shoulders' as never], secondary: ['triceps' as const] };
+    const map = new Map(exMap).set('c1', custom);
+    const m = setsPerMuscle([workout(1, 'c1', [set(30, 10)])], map, 0);
+    expect(m.frontDelts).toBe(1);
+    expect(m.sideDelts).toBe(1);
+    expect(m.triceps).toBe(0.5);
   });
 
   it('marks freshly trained muscles as not recovered', () => {

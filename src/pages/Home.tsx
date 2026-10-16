@@ -269,7 +269,7 @@ export default function Home() {
             <Link to="/stats">{t('Stats')}</Link>
           </div>
           <div className="card">
-            <BodyMap color={(m) => recoveryColor(recovery[m])} height={210} />
+            <BodyMap color={(m) => recoveryColor(recovery[m])} value={(m) => 1 - (recovery[m] ?? 1)} height={240} onPick={(m) => navigate(`/muscles/${m}`)} />
             <div className="row small bold" style={{ justifyContent: 'center', gap: 14 }}>
               <span>
                 <span style={{ color: RECOVERY_COLORS.tired }}>●</span> {t('tired')}

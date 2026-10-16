@@ -351,7 +351,7 @@ export default function ExerciseDetail() {
         <div className="mt-l stack">
           {ex.primary.length > 0 && (
             <div className="card">
-              <BodyMap height={240} value={(m) => load[m] ?? 0} color={(m) => loadColor(load[m])} />
+              <BodyMap height={240} value={(m) => load[m] ?? 0} color={(m) => loadColor(load[m])} onPick={(m) => navigate(`/muscles/${m}`)} />
               <div className="small">
                 <span className="accent bold">{t('Primary')}:</span> {ex.primary.map((m) => MUSCLE_LABELS[m]).join(', ')}
               </div>
