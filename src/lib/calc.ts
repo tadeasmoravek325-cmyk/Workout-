@@ -406,7 +406,7 @@ export function defaultSettings(): Settings {
     barWeightKg: 20,
     plates: [25, 20, 15, 10, 5, 2.5, 1.25],
     theme: 'dark',
-    showRpe: true,
+    showRpe: false,
     smartCoach: true,
   };
 }

@@ -207,13 +207,13 @@ export default function Home() {
                 <div className="small bold">Prázdný</div>
               </button>
               <button className="card tap center" style={{ padding: 14 }} onClick={() => setGenerator(true)}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', border: '1px solid rgba(255,122,26,0.45)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <Sparkles size={21} />
                 </div>
                 <div className="small bold">Vygenerovat</div>
               </button>
               <Link to="/train" className="card tap center" style={{ padding: 14 }}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', border: '1px solid rgba(255,122,26,0.45)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <ClipboardList size={21} />
                 </div>
                 <div className="small bold">Rutiny</div>

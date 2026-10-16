@@ -195,7 +195,7 @@ export default function Stats() {
                 <span className="bold">{b.e1rm ? `${fmtNum(toDisplayWeight(b.e1rm, unit))} ${unit}` : '–'}</span>
               </Link>
             ))}
-            <div className="row between" style={{ borderTop: '1px solid var(--line)', paddingTop: 8, marginTop: 4 }}>
+            <div className="row between" style={{ paddingTop: 10, marginTop: 6 }}>
               <span className="bold">Součet</span>
               <span className="bold accent">
                 {fmtNum(toDisplayWeight(total, unit))} {unit}

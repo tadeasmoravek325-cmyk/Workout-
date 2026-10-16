@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Calculator, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
@@ -191,6 +191,7 @@ function ExerciseCard({
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<null | 'rest' | 'substitute' | 'warmup' | 'pin' | 'plates'>(null);
   const [justDone, setJustDone] = useState<string | null>(null);
+  const [setIdx, setSetIdx] = useState<number | null>(null);
   const pinned = useStore((s) => s.exerciseNotes?.[ex.id]);
   const setExerciseNote = useStore((s) => s.setExerciseNote);
   const [pinDraft, setPinDraft] = useState('');
@@ -484,7 +485,6 @@ function ExerciseCard({
               </th>
             ))}
             <th style={{ width: 36 }}>✓</th>
-            <th style={{ width: 22 }} />
           </tr>
         </thead>
         <tbody>
@@ -526,8 +526,8 @@ function ExerciseCard({
                 <td>
                   <button
                     className={`set-type ${s.type}`}
-                    title={SET_TYPE_NAME[s.type]}
-                    onClick={() => setField({ type: SET_TYPES[(SET_TYPES.indexOf(s.type) + 1) % SET_TYPES.length] })}
+                    aria-label={`Série ${SET_TYPE_LABEL[s.type] || normalNo}: ${SET_TYPE_NAME[s.type]}. Možnosti`}
+                    onClick={() => setSetIdx(i)}
                   >
                     {SET_TYPE_LABEL[s.type] || normalNo}
                   </button>
@@ -608,26 +608,6 @@ function ExerciseCard({
                     <Check size={18} strokeWidth={3.5} />
                   </button>
                 </td>
-                <td>
-                  <button
-                    className="del-set"
-                    aria-label="Smazat sérii"
-                    onClick={() => {
-                      const copy = structuredClone(s);
-                      upd((x) => {
-                        x.sets.splice(i, 1);
-                      });
-                      if (copy.done || copy.weight !== undefined || copy.reps !== undefined)
-                        undoToast('Série smazána', () =>
-                          upd((x) => {
-                            if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
-                          }),
-                        );
-                    }}
-                  >
-                    <X size={15} />
-                  </button>
-                </td>
               </tr>
             );
           })}
@@ -644,6 +624,64 @@ function ExerciseCard({
       >
         + Přidat sérii
       </button>
+
+      {setIdx !== null && we.sets[setIdx] && (
+        <Sheet title={`Série ${setIdx + 1}`} onClose={() => setSetIdx(null)}>
+          <div className="small muted" style={{ marginBottom: 10 }}>
+            Typ série
+          </div>
+          <div className="set-menu-types">
+            {SET_TYPES.map((t) => (
+              <button
+                key={t}
+                className={we.sets[setIdx].type === t ? 'on' : ''}
+                onClick={() => {
+                  upd((x) => {
+                    x.sets[setIdx].type = t;
+                  });
+                  setSetIdx(null);
+                }}
+              >
+                <span className="t">{SET_TYPE_LABEL[t] || '1'}</span>
+                {SET_TYPE_NAME[t]}
+              </button>
+            ))}
+          </div>
+          <div className="stack mt-l">
+            <button
+              className="btn block"
+              onClick={() => {
+                const i = setIdx;
+                upd((x) => {
+                  const copy = { ...x.sets[i], id: uid(), done: false };
+                  x.sets.splice(i + 1, 0, copy);
+                });
+                setSetIdx(null);
+              }}
+            >
+              <Copy size={18} /> Zduplikovat sérii
+            </button>
+            <button
+              className="btn danger block"
+              onClick={() => {
+                const i = setIdx;
+                const copy = structuredClone(we.sets[i]);
+                upd((x) => {
+                  x.sets.splice(i, 1);
+                });
+                setSetIdx(null);
+                undoToast('Série smazána', () =>
+                  upd((x) => {
+                    if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
+                  }),
+                );
+              }}
+            >
+              <Trash2 size={18} /> Smazat sérii
+            </button>
+          </div>
+        </Sheet>
+      )}
 
       {sheet === 'rest' && (
         <Sheet title="Pauza po sérii" onClose={() => setSheet(null)}>
