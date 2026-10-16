@@ -1,4 +1,6 @@
-# Setsmith – ukuj si sílu ⚒️
+# Gym – deník tréninků 💪
+
+> Pracovní název. Finální značka se teprve vybere.
 
 Mobilní webová aplikace (PWA) na zapisování tréninků v posilovně, inspirovaná aplikací Strong.
 Funguje offline, dá se nainstalovat na plochu telefonu a všechna data zůstávají v zařízení (IndexedDB).

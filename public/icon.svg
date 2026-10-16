@@ -7,12 +7,13 @@
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <polygon fill="#fff" points="60,178 436,168 436,222 374,242 342,268 342,304 398,330 398,362 154,362 154,330 210,304 210,268 176,244 146,228 70,192"/>
-  <g stroke="#fff0c8" stroke-width="22" stroke-linecap="round">
-    <line x1="256" y1="140" x2="256" y2="72"/>
-    <line x1="200" y1="146" x2="160" y2="92"/>
-    <line x1="312" y1="146" x2="352" y2="92"/>
-    <line x1="150" y1="158" x2="98" y2="128"/>
-    <line x1="362" y1="158" x2="414" y2="128"/>
+  <g fill="#fff">
+    <rect x="96" y="176" width="48" height="160" rx="14"/>
+    <rect x="368" y="176" width="48" height="160" rx="14"/>
+    <rect x="152" y="208" width="36" height="96" rx="10"/>
+    <rect x="324" y="208" width="36" height="96" rx="10"/>
+    <rect x="60" y="236" width="40" height="40" rx="10"/>
+    <rect x="412" y="236" width="40" height="40" rx="10"/>
+    <rect x="186" y="240" width="140" height="32" rx="8"/>
   </g>
 </svg>

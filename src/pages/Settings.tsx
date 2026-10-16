@@ -266,7 +266,7 @@ export default function SettingsPage() {
         <button
           className="list-item"
           onClick={() => {
-            download(`setsmith-zaloha-${today}.json`, JSON.stringify(exportBackup()), 'application/json');
+            download(`gym-zaloha-${today}.json`, JSON.stringify(exportBackup()), 'application/json');
             toast('Záloha stažena');
           }}
         >
@@ -285,7 +285,7 @@ export default function SettingsPage() {
         </button>
         <button
           className="list-item"
-          onClick={() => download(`setsmith-treninky-${today}.csv`, exportCsv(workouts, exMap), 'text/csv')}
+          onClick={() => download(`gym-treninky-${today}.csv`, exportCsv(workouts, exMap), 'text/csv')}
           disabled={!workouts.length}
         >
           <div className="avatar">📄</div>

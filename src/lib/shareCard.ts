@@ -55,7 +55,7 @@ export async function renderShareCard(
 
   ctx.fillStyle = '#fff';
   ctx.font = font(900, 40);
-  ctx.fillText('⚒️ SETSMITH', 70, 110);
+  ctx.fillText('💪 GYM', 70, 110);
   ctx.font = font(700, 32);
   ctx.globalAlpha = 0.85;
   ctx.fillText(fmtDate(w.startedAt, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), 70, 160);

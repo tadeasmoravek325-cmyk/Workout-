@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Setsmith – ukuj si sílu',
-        short_name: 'Setsmith',
+        name: 'Gym – deník tréninků',
+        short_name: 'Gym',
         description: 'Zapisuj tréninky, sleduj progres a překonávej rekordy.',
         lang: 'cs',
         theme_color: '#0c0e14',

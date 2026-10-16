@@ -90,10 +90,10 @@ export default function Onboarding() {
           <div className="center">
             <img src="./icon-192.png" alt="" width={96} height={96} style={{ borderRadius: 28, boxShadow: 'var(--glow)' }} />
             <h1 style={{ fontSize: 36, marginTop: 20 }}>
-              Vítej v <span className="grad-text">Setsmith</span>!
+              Vítej v <span className="grad-text">Gym</span>!
             </h1>
             <p className="muted" style={{ fontSize: 17, marginTop: 8 }}>
-              Ukuj si sílu. Každou sérií, každým tréninkem. Zapisuj, sbírej XP a sleduj, jak sílíš.
+              Tvůj parťák do posilovny. Zapisuj tréninky, sbírej XP a sleduj, jak sílíš.
             </p>
           </div>
           <div className="stack" style={{ marginTop: 28 }}>
