@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Icon } from './Icon';
 import { bigConfetti, haptic } from '../lib/celebrate';
 import { levelInfo } from '../lib/gamification';
 
@@ -52,18 +53,20 @@ export function Celebration({
   return (
     <div className="celebrate" onClick={onClose}>
       <div className="box" onClick={(e) => e.stopPropagation()}>
-        <div className="big-emoji">{levelUp ? after.icon : prs ? '🏆' : '🎉'}</div>
-        <h1 style={{ color: '#fff', marginTop: 14 }}>{levelUp ? 'Level up!' : 'Trénink dokončen!'}</h1>
-        <div style={{ color: 'rgba(255,255,255,0.8)', marginTop: 6, fontWeight: 700 }}>
+        <div className="big-emoji">
+          <Icon name={levelUp ? after.icon : prs ? 'trophy' : 'flag'} size={44} />
+        </div>
+        <h1 style={{ color: '#f5f5f5', marginTop: 16 }}>{levelUp ? 'Level up!' : 'Trénink dokončen!'}</h1>
+        <div style={{ color: '#bdbdbd', marginTop: 6, fontWeight: 600 }}>
           {levelUp ? `Teď jsi Level ${after.level} · ${after.title}` : prs ? `${prs}× nový osobní rekord!` : 'Skvělá práce, takhle dál.'}
         </div>
-        <div className="grad-text" style={{ fontSize: 56, fontWeight: 900, marginTop: 18 }}>
+        <div className="num-xl accent" style={{ fontSize: 64, marginTop: 18 }}>
           +{shown} XP
         </div>
         <div className="card" style={{ marginTop: 18, textAlign: 'left' }}>
           <div className="row between small bold">
             <span>
-              {after.icon} Level {levelUp && bar < 1 && bar !== after.progress ? before.level : after.level}
+              <Icon name={after.icon} size={15} style={{ verticalAlign: '-2px' }} /> Level {levelUp && bar < 1 && bar !== after.progress ? before.level : after.level}
             </span>
             <span className="muted">
               {after.current} / {after.needed} XP
@@ -74,7 +77,7 @@ export function Celebration({
           </div>
           {achievements.length > 0 && (
             <div className="small mt">
-              <span className="bold">Nové odznaky:</span> {achievements.join(' ')}
+              <span className="bold">Nové odznaky:</span> {achievements.join(', ')}
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BicepsFlexed, Dumbbell, Flame, HeartPulse, Mountain, NotebookPen, Sprout, TrendingUp, Trophy } from 'lucide-react';
 import { useStore } from '../store/store';
 import { PROGRAMS } from '../data/programs';
 import type { Experience, Goal, Sex, Unit } from '../types';
@@ -7,17 +7,17 @@ import { NumInput, Segmented } from '../components/ui';
 import { fromDisplayWeight } from '../lib/format';
 import { bigConfetti } from '../lib/celebrate';
 
-const GOALS: { value: Goal; emoji: string; title: string; desc: string }[] = [
-  { value: 'strength', emoji: '🏋️', title: 'Síla', desc: 'Zvednout co nejvíc na velkých cvicích' },
-  { value: 'muscle', emoji: '💪', title: 'Svaly', desc: 'Nabrat svalovou hmotu a tvar' },
-  { value: 'fitness', emoji: '⚡', title: 'Kondice', desc: 'Být fit, zdravý a plný energie' },
-  { value: 'weightloss', emoji: '🔥', title: 'Hubnutí', desc: 'Spálit tuk a zpevnit postavu' },
+const GOALS: { value: Goal; icon: typeof Dumbbell; title: string; desc: string }[] = [
+  { value: 'strength', icon: Dumbbell, title: 'Síla', desc: 'Zvednout co nejvíc na velkých cvicích' },
+  { value: 'muscle', icon: BicepsFlexed, title: 'Svaly', desc: 'Nabrat svalovou hmotu a tvar' },
+  { value: 'fitness', icon: HeartPulse, title: 'Kondice', desc: 'Být fit, zdravý a plný energie' },
+  { value: 'weightloss', icon: Flame, title: 'Hubnutí', desc: 'Spálit tuk a zpevnit postavu' },
 ];
 
-const LEVELS: { value: Experience; emoji: string; title: string; desc: string }[] = [
-  { value: 'beginner', emoji: '🌱', title: 'Začátečník', desc: 'Cvičím méně než půl roku' },
-  { value: 'intermediate', emoji: '🌿', title: 'Mírně pokročilý', desc: '0,5–2 roky pravidelného tréninku' },
-  { value: 'advanced', emoji: '🌳', title: 'Pokročilý', desc: 'Více než 2 roky, znám své maximum' },
+const LEVELS: { value: Experience; icon: typeof Dumbbell; title: string; desc: string }[] = [
+  { value: 'beginner', icon: Sprout, title: 'Začátečník', desc: 'Cvičím méně než půl roku' },
+  { value: 'intermediate', icon: TrendingUp, title: 'Mírně pokročilý', desc: '0,5–2 roky pravidelného tréninku' },
+  { value: 'advanced', icon: Mountain, title: 'Pokročilý', desc: 'Více než 2 roky, znám své maximum' },
 ];
 
 const DAY_PATTERNS: Record<number, number[]> = {
@@ -88,7 +88,7 @@ export default function Onboarding() {
       {step === 0 && (
         <div className="grow" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="center">
-            <img src="./icon-192.png" alt="" width={96} height={96} style={{ borderRadius: 28, boxShadow: 'var(--glow)' }} />
+            <img src="./icon-192.png" alt="" width={96} height={96} style={{ borderRadius: 22 }} />
             <h1 style={{ fontSize: 36, marginTop: 20 }}>
               Vítej v <span className="grad-text">Gym</span>!
             </h1>
@@ -98,15 +98,15 @@ export default function Onboarding() {
           </div>
           <div className="stack" style={{ marginTop: 28 }}>
             {[
-              ['📝', 'Rychlé zapisování', 'Série, váhy a pauzy na pár klepnutí'],
-              ['🧠', 'Chytrý trenér', 'Řekne ti, kolik dnes zvednout'],
-              ['🏆', 'Úrovně a výzvy', 'Každý trénink tě posune dál'],
-            ].map(([e, t, d]) => (
-              <div key={t} className="row card" style={{ padding: 14 }}>
-                <span style={{ fontSize: 28 }}>{e}</span>
+              [NotebookPen, 'Rychlé zapisování', 'Série, váhy a pauzy na pár klepnutí'],
+              [TrendingUp, 'Chytrý trenér', 'Navrhne, kolik dnes zvednout'],
+              [Trophy, 'Rekordy, úrovně a výzvy', 'Vidíš, jak sílíš, trénink po tréninku'],
+            ].map(([I, t, d]) => (
+              <div key={t as string} className="row card" style={{ padding: 14 }}>
+                <span className="ce">{(() => { const C = I as typeof Trophy; return <C size={22} />; })()}</span>
                 <div>
-                  <div className="bold">{t}</div>
-                  <div className="small muted">{d}</div>
+                  <div className="bold">{t as string}</div>
+                  <div className="small muted">{d as string}</div>
                 </div>
               </div>
             ))}
@@ -116,12 +116,12 @@ export default function Onboarding() {
 
       {step === 1 && (
         <div className="grow">
-          <h1>Jak ti máme říkat? 👋</h1>
+          <h1>Jak ti máme říkat?</h1>
           <p className="muted">Ať víme, koho povzbuzovat.</p>
           <input
             autoFocus
             className="mt-l"
-            style={{ fontSize: 22, padding: 16, fontWeight: 800 }}
+            style={{ fontSize: 22, padding: 16, fontWeight: 700 }}
             placeholder="Tvoje jméno"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -132,12 +132,14 @@ export default function Onboarding() {
 
       {step === 2 && (
         <div className="grow">
-          <h1>Co je tvůj cíl? 🎯</h1>
+          <h1>Co je tvůj cíl?</h1>
           <p className="muted">Podle toho ti nastavíme opakování a doporučení.</p>
           <div className="stack mt-l">
             {GOALS.map((g) => (
               <button key={g.value} className={`choice ${goal === g.value ? 'on' : ''}`} onClick={() => setGoal(g.value)}>
-                <span className="ce">{g.emoji}</span>
+                <span className="ce">
+                  <g.icon size={24} />
+                </span>
                 <div>
                   <div className="bold">{g.title}</div>
                   <div className="small muted">{g.desc}</div>
@@ -150,11 +152,13 @@ export default function Onboarding() {
 
       {step === 3 && (
         <div className="grow">
-          <h1>Jak dlouho cvičíš? 📈</h1>
+          <h1>Jak dlouho cvičíš?</h1>
           <div className="stack mt-l">
             {LEVELS.map((l) => (
               <button key={l.value} className={`choice ${exp === l.value ? 'on' : ''}`} onClick={() => setExp(l.value)}>
-                <span className="ce">{l.emoji}</span>
+                <span className="ce">
+                  <l.icon size={24} />
+                </span>
                 <div>
                   <div className="bold">{l.title}</div>
                   <div className="small muted">{l.desc}</div>
@@ -182,7 +186,7 @@ export default function Onboarding() {
 
       {step === 4 && (
         <div className="grow">
-          <h1>Pár údajů o tobě 📏</h1>
+          <h1>Pár údajů o tobě</h1>
           <p className="muted">Pomůže to spočítat silové ranky. Vše je nepovinné a zůstává jen v telefonu.</p>
           <div className="stack mt-l">
             <div className="field">
@@ -218,7 +222,7 @@ export default function Onboarding() {
 
       {step === 5 && (
         <div className="grow">
-          <h1>{name.trim() ? `${name.trim()}, máme to!` : 'Máme to!'} 🚀</h1>
+          <h1>{name.trim() ? `${name.trim()}, je to nastavené` : 'Je to nastavené'}</h1>
           <p className="muted">Na základě tvých odpovědí doporučujeme:</p>
           <div className="hero mt-l">
             <div className="badge white">Doporučený program</div>
@@ -244,7 +248,7 @@ export default function Onboarding() {
         ) : (
           <>
             <button className="btn primary lg block" onClick={() => finish(true)}>
-              Přidat program a začít 💪
+              Přidat program a začít
             </button>
             <button className="btn block" onClick={() => finish(false)}>
               Začít bez programu

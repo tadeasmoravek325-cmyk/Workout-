@@ -1,9 +1,11 @@
-import { useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Database, DatabaseBackup, FileDown, FileSpreadsheet, FileUp, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { exportBackup, useAllExercises, useExerciseMap, useStore, type BackupData } from '../store/store';
-import { exportCsv, importStrongCsv, type StrongImportResult } from '../lib/csv';
-import { download } from '../lib/feedback';
-import { fmtClock, fmtNum, plural } from '../lib/format';
+import { useAllExercises, useExerciseMap, useStore, type BackupData } from '../store/store';
+import { importStrongCsv, type StrongImportResult } from '../lib/csv';
+import { fmtClock, fmtDate, fmtDateTime, fmtNum, plural, relativeDay } from '../lib/format';
+import { listSnapshots, parseBackup, readSnapshot, SNAPSHOT_REASON_LABELS, useSafety, type SnapshotMeta } from '../lib/safety';
+import { saveBackupFile, saveCsvFile } from '../lib/backup';
 import { ask, confirmDialog, Segmented, Sheet, Switch, toast } from '../components/ui';
 import type { Equipment, Experience, Goal, Sex, Unit } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
@@ -36,23 +38,33 @@ export default function SettingsPage() {
   const csvRef = useRef<HTMLInputElement>(null);
   const [strong, setStrong] = useState<{ text: string; unit: Unit; result?: StrongImportResult; error?: string } | null>(null);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const persistent = useSafety((s) => s.persistent);
+  const lastSavedAt = useSafety((s) => s.lastSavedAt);
+  const [snapshots, setSnapshots] = useState<SnapshotMeta[]>([]);
+  const [showSnapshots, setShowSnapshots] = useState(false);
+  useEffect(() => {
+    void listSnapshots().then(setSnapshots);
+  }, [showSnapshots]);
+
+  const applyBackup = async (data: Partial<BackupData>, label: string) => {
+    const n = data.workouts?.length ?? 0;
+    const mode = await ask(`${label}: ${n} ${plural(n, ['trénink', 'tréninky', 'tréninků'])}`, 'Chceš ji sloučit se současnými daty, nebo jimi všechno nahradit? Před změnou si aplikace sama uloží zálohu současného stavu.', [
+      { label: 'Sloučit se současnými daty', value: 'merge' as const, kind: 'primary' },
+      { label: 'Nahradit všechna data', value: 'replace' as const, kind: 'danger' },
+      { label: 'Zrušit', value: null, kind: 'plain' },
+    ]);
+    if (!mode) return;
+    importBackup(data, mode);
+    toast(mode === 'merge' ? 'Záloha sloučena' : 'Data nahrazena zálohou');
+  };
 
   const onJson = async (file: File) => {
-    try {
-      const data = JSON.parse(await file.text()) as Partial<BackupData>;
-      if (!Array.isArray(data.workouts)) throw new Error('bad');
-      const mode = await ask(`Záloha obsahuje ${data.workouts.length} tréninků`, 'Chceš ji sloučit se současnými daty, nebo jimi všechno nahradit?', [
-        { label: 'Sloučit se současnými daty', value: 'merge' as const, kind: 'primary' },
-        { label: 'Nahradit všechna data', value: 'replace' as const, kind: 'danger' },
-        { label: 'Zrušit', value: null, kind: 'plain' },
-      ]);
-      if (!mode) return;
-      importBackup(data, mode);
-      toast('Záloha obnovena');
-    } catch {
-      toast('Tohle není platná záloha');
+    const parsed = parseBackup(await file.text());
+    if (!parsed.ok) {
+      toast(parsed.error, 'error', 5000);
+      return;
     }
+    await applyBackup(parsed.data as Partial<BackupData>, parsed.exportedAt ? `Záloha z ${fmtDate(Date.parse(parsed.exportedAt))}` : 'Záloha');
   };
 
   const parseStrong = (text: string, unit: Unit) => {
@@ -97,7 +109,7 @@ export default function SettingsPage() {
           </select>
         </Row>
         <Row title="Zkušenosti">
-          <select style={{ width: 150 }} value={settings.experience} onChange={(e) => update({ experience: e.target.value as Experience })}>
+          <select style={{ width: 190 }} value={settings.experience} onChange={(e) => update({ experience: e.target.value as Experience })}>
             <option value="beginner">Začátečník</option>
             <option value="intermediate">Mírně pokročilý</option>
             <option value="advanced">Pokročilý</option>
@@ -209,10 +221,10 @@ export default function SettingsPage() {
         </div>
         <div className="row mt" style={{ gap: 8 }}>
           <button className="btn sm grow" onClick={() => update({ equipment: Object.keys(EQUIPMENT_LABELS) as Equipment[] })}>
-            🏋️ Posilovna
+            Posilovna
           </button>
           <button className="btn sm grow" onClick={() => update({ equipment: ['dumbbell', 'bodyweight', 'band', 'other'] })}>
-            🏠 Doma
+            Doma
           </button>
         </div>
       </div>
@@ -255,63 +267,127 @@ export default function SettingsPage() {
       </div>
 
       <div className="section-title mt-l">
-        <h2>Data</h2>
+        <h2>Bezpečnost dat</h2>
       </div>
-      <div className="list">
-        <button className="list-item" onClick={() => csvRef.current?.click()}>
-          <div className="avatar">📥</div>
+      <div className="card">
+        <div className="row" style={{ alignItems: 'flex-start' }}>
+          <ShieldCheck size={22} className="accent" style={{ marginTop: 2 }} />
+          <div className="grow small">
+            <div className="bold" style={{ fontSize: 15 }}>
+              Data jsou uložená jen v tomto zařízení
+            </div>
+            <div className="muted" style={{ marginTop: 4 }}>
+              Každá změna se ukládá okamžitě. Aplikace si navíc každý den a před každou riskantní akcí dělá automatickou zálohu. Při ztrátě
+              nebo výměně telefonu ale pomůže jen záloha uložená mimo zařízení.
+            </div>
+            <div className="data-facts">
+              <span>
+                Poslední uložení: <b>{lastSavedAt ? fmtDateTime(lastSavedAt) : 'v tomto spuštění zatím nic'}</b>
+              </span>
+              <span>
+                Záloha do souboru: <b>{settings.lastBackupAt ? relativeDay(settings.lastBackupAt) : 'ještě nikdy'}</b>
+              </span>
+              <span>
+                Ochrana před smazáním prohlížečem: <b>{persistent === true ? 'zapnutá' : persistent === false ? 'prohlížeč ji nepovolil' : 'nepodporováno'}</b>
+              </span>
+            </div>
+          </div>
+        </div>
+        <button className="btn primary block mt" onClick={() => void saveBackupFile()}>
+          <FileDown size={18} /> Uložit zálohu do souboru
+        </button>
+        <div className="tiny muted mt">
+          Na telefonu se otevře sdílení. Zálohu si ulož do Souborů, na Disk Google nebo si ji pošli e-mailem.
+        </div>
+      </div>
+
+      <div className="list mt">
+        <button className="list-item" onClick={() => jsonRef.current?.click()}>
+          <Upload size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Importovat ze Strong</div>
-            <div className="small muted">Strong → Nastavení → Export dat (CSV)</div>
+            <div className="bold">Obnovit ze souboru</div>
+            <div className="small muted">Načte zálohu uloženou dříve. Před změnou se současný stav sám zazálohuje.</div>
+          </div>
+        </button>
+        <button className="list-item" onClick={() => setShowSnapshots(true)}>
+          <DatabaseBackup size={20} className="muted" />
+          <div className="grow">
+            <div className="bold">Automatické zálohy</div>
+            <div className="small muted">
+              {snapshots.length ? `${snapshots.length} uložených, poslední ${relativeDay(snapshots[0].at).toLowerCase()}` : 'Zatím žádná'}
+            </div>
           </div>
           <span className="chev" />
         </button>
-        <button
-          className="list-item"
-          onClick={() => {
-            download(`gym-zaloha-${today}.json`, JSON.stringify(exportBackup()), 'application/json');
-            toast('Záloha stažena');
-          }}
-        >
-          <div className="avatar">💾</div>
+        <button className="list-item" onClick={() => csvRef.current?.click()}>
+          <FileUp size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Zálohovat (JSON)</div>
-            <div className="small muted">Kompletní záloha včetně rutin a měření</div>
+            <div className="bold">Importovat ze Strong</div>
+            <div className="small muted">Ve Strong: Nastavení → Export dat (CSV)</div>
           </div>
         </button>
-        <button className="list-item" onClick={() => jsonRef.current?.click()}>
-          <div className="avatar">♻️</div>
-          <div className="grow">
-            <div className="bold">Obnovit ze zálohy</div>
-            <div className="small muted">Načíst dříve uložený JSON soubor</div>
-          </div>
-        </button>
-        <button
-          className="list-item"
-          onClick={() => download(`gym-treninky-${today}.csv`, exportCsv(workouts, exMap), 'text/csv')}
-          disabled={!workouts.length}
-        >
-          <div className="avatar">📄</div>
+        <button className="list-item" onClick={() => void saveCsvFile(exMap)} disabled={!workouts.length}>
+          <FileSpreadsheet size={20} className="muted" />
           <div className="grow">
             <div className="bold">Exportovat tréninky (CSV)</div>
-            <div className="small muted">Pro Excel / Tabulky Google, formát kompatibilní se Strong</div>
+            <div className="small muted">Pro Excel nebo Tabulky Google, stejný formát jako Strong</div>
           </div>
         </button>
         <button
           className="list-item"
           onClick={async () => {
-            if (await confirmDialog('Smazat všechna data?', 'Tréninky, rutiny i měření zmizí a nejde to vrátit. Doporučujeme si nejdřív stáhnout zálohu.', 'Smazat vše')) {
+            if (
+              await confirmDialog(
+                'Smazat všechna data?',
+                'Tréninky, rutiny i měření zmizí z aplikace. Automatická záloha těsně před smazáním zůstane v Automatických zálohách.',
+                'Smazat vše',
+              )
+            ) {
               resetAll();
-              toast('Data smazána');
+              toast('Data smazána. Obnovit je jde z automatické zálohy.', 'info', 5000);
             }
           }}
         >
-          <div className="avatar">🗑</div>
+          <Trash2 size={20} className="danger" />
           <div className="grow">
             <div className="bold danger">Smazat všechna data</div>
           </div>
         </button>
       </div>
+
+      {showSnapshots && (
+        <Sheet title="Automatické zálohy" onClose={() => setShowSnapshots(false)}>
+          <p className="small muted" style={{ marginTop: 0 }}>
+            Uchovává se posledních 7 denních záloh a 10 záloh pořízených před importem, obnovením nebo smazáním dat. Jsou jen v tomto
+            zařízení.
+          </p>
+          <div className="list">
+            {snapshots.map((snap) => (
+              <button
+                key={snap.id}
+                className="list-item"
+                onClick={async () => {
+                  const data = (await readSnapshot(snap.id)) as Partial<BackupData> | null;
+                  if (!data) return toast('Tuto zálohu se nepodařilo přečíst', 'error');
+                  setShowSnapshots(false);
+                  await applyBackup(data, `${SNAPSHOT_REASON_LABELS[snap.reason]} z ${fmtDateTime(snap.at)}`);
+                }}
+              >
+                <Database size={20} className="accent" />
+                <div className="grow">
+                  <div className="bold">{fmtDateTime(snap.at)}</div>
+                  <div className="small muted">
+                    {SNAPSHOT_REASON_LABELS[snap.reason]} · {snap.workouts} {plural(snap.workouts, ['trénink', 'tréninky', 'tréninků'])} ·{' '}
+                    {fmtNum(snap.bytes / 1024, 0)} kB
+                  </div>
+                </div>
+                <span className="small accent bold">Obnovit</span>
+              </button>
+            ))}
+            {!snapshots.length && <div className="empty">Zatím žádná. První se vytvoří, jakmile budeš mít v aplikaci data.</div>}
+          </div>
+        </Sheet>
+      )}
 
       <input
         ref={jsonRef}
@@ -355,7 +431,7 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="card">
-                  <div style={{ fontSize: 22, fontWeight: 800 }}>
+                  <div className="num-lg">
                     {strong.result.workouts.length} {plural(strong.result.workouts.length, ['trénink', 'tréninky', 'tréninků'])}
                   </div>
                   <div className="small muted">

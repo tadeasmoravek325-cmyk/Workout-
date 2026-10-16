@@ -84,7 +84,7 @@ export async function renderShareCard(
     ['Délka', fmtDuration(workoutDurationMs(w))],
     ['Objem', fmtVolume(workoutVolume(w, exMap), unit)],
     ['Série', String(doneSetCount(w))],
-    ['Rekordy', extra.prs ? `🏆 ${extra.prs}` : '–'],
+    ['Rekordy', extra.prs ? `${extra.prs}` : '–'],
   ];
   const boxW = (W - 140 - 3 * 24) / 4;
   stats.forEach(([label, value], i) => {
@@ -142,7 +142,7 @@ export async function renderShareCard(
   ctx.fillText(`Level ${extra.level} · ${extra.levelTitle}`, 70, H - 90);
   if (extra.streak > 0) {
     ctx.textAlign = 'right';
-    ctx.fillText(`🔥 ${extra.streak} týdnů v řadě`, W - 70, H - 90);
+    ctx.fillText(`${extra.streak} týdnů v řadě`, W - 70, H - 90);
     ctx.textAlign = 'left';
   }
 

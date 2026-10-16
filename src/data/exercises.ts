@@ -202,14 +202,3 @@ export const BODY_PART_COLORS: Record<BodyPart, string> = {
   cardio: '#ffb347',
   fullbody: '#ff6a1f',
 };
-
-export const BODY_PART_EMOJI: Record<BodyPart, string> = {
-  chest: '🫀',
-  back: '🪽',
-  legs: '🦵',
-  shoulders: '🏔️',
-  arms: '💪',
-  core: '🧱',
-  cardio: '🏃',
-  fullbody: '⚡',
-};

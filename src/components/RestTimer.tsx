@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Timer } from 'lucide-react';
 import { useStore } from '../store/store';
 import { beep, vibrate } from '../lib/feedback';
 import { fmtClock } from '../lib/format';
@@ -23,7 +24,7 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
       if (settings.vibrate) vibrate();
       if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification('Pauza skončila', { body: 'Čas na další sérii 💪', tag: 'rest' });
+          new Notification('Pauza skončila', { body: 'Čas na další sérii.', tag: 'rest' });
         } catch {
           /* ignore */
         }
@@ -38,7 +39,7 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
     <div className={`rest ${left <= 5 ? 'ending' : ''}`} style={aboveNav ? { bottom: 'calc(var(--nav-h) + var(--safe-b) + 8px)' } : undefined}>
       <div className="bar" style={{ width: `${pct * 100}%` }} />
       <div className="content">
-        <span style={{ fontSize: 20 }}>⏱️</span>
+        <Timer size={20} className="accent" />
         <span className="time">{fmtClock(left)}</span>
         <button className="btn sm" onClick={() => adjust(-15)}>
           −15

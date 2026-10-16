@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import { Icon } from '../components/Icon';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, ClipboardList, Flame, Plus, Snowflake, Sparkles, Trophy, Zap } from 'lucide-react';
+import { Check, ChevronRight, ClipboardList, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { muscleRecovery, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, plural, relativeDay } from '../lib/format';
@@ -10,21 +11,13 @@ import { GeneratorSheet } from '../components/GeneratorSheet';
 import { MUSCLE_LABELS } from '../data/exercises';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
 import { useGame } from '../lib/useGame';
+import { backupDue, saveBackupFile } from '../lib/backup';
 import type { Muscle } from '../types';
 
 const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 const DAY_NAMES = ['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'];
 const DAY = 86_400_000;
 
-const MOTIVATION = [
-  'Každá série se počítá. 💪',
-  'Dnešní trénink je investice do zítřka.',
-  'Nemusíš být nejlepší, stačí být lepší než minule.',
-  'Disciplína porazí motivaci.',
-  'Malé kroky, velké výsledky.',
-  'Tělo dokáže víc, než si hlava myslí.',
-  'Nejtěžší je přijít. Zbytek už zvládneš.',
-];
 
 export default function Home() {
   const workouts = useStore((s) => s.workouts);
@@ -69,7 +62,6 @@ export default function Home() {
   const hour = new Date().getHours();
   const greeting = hour < 10 ? 'Dobré ráno' : hour < 18 ? 'Ahoj' : 'Dobrý večer';
   const name = settings.name ? `, ${settings.name}` : '';
-  const motivation = MOTIVATION[Math.floor(Date.now() / DAY) % MOTIVATION.length];
   const unit = settings.unit;
 
   const start = (routineId?: string) => {
@@ -89,47 +81,48 @@ export default function Home() {
           </div>
           <h1 className="ellipsis">
             {greeting}
-            {name} 👋
+            {name}
           </h1>
         </div>
-        <Link to="/profile" className="level-badge" style={{ background: 'var(--grad)', color: '#fff', boxShadow: 'var(--glow)' }} aria-label="Profil">
-          {game.level.icon}
-          <span className="n">{game.level.level}</span>
+        <Link to="/profile" className="icon-btn" aria-label="Profil">
+          <User size={19} />
         </Link>
       </div>
 
-      {/* Level + streak hero */}
+      {/* Level + streak */}
       <Link to="/profile" className="hero" style={{ display: 'block' }}>
-        <div className="row between">
+        <div className="hero-stats">
           <div>
-            <div className="small bold" style={{ opacity: 0.85 }}>
-              Level {game.level.level}
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 900 }}>{game.level.title}</div>
+            <div className="label">Level</div>
+            <div className="num-xl accent">{game.level.level}</div>
+            <div className="small bold">{game.level.title}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div className="row" style={{ gap: 4, justifyContent: 'flex-end', fontSize: 26, fontWeight: 900 }}>
-              <Flame size={24} fill="#fff" /> {game.streak.streak}
+          <div>
+            <div className="label">V řadě</div>
+            <div className="num-xl">
+              {game.streak.streak}
+              <span className="unit">{plural(game.streak.streak, ['týden', 'týdny', 'týdnů'])}</span>
             </div>
-            <div className="tiny bold" style={{ opacity: 0.85 }}>
-              {plural(game.streak.streak, ['týden', 'týdny', 'týdnů'])} v řadě
-              {game.streak.freezes > 0 && (
+            <div className="small muted">
+              {game.streak.freezes > 0 ? (
                 <>
-                  {' · '}
-                  <Snowflake size={11} /> {game.streak.freezes}
+                  <Snowflake size={12} style={{ verticalAlign: '-1px' }} /> {game.streak.freezes}{' '}
+                  {plural(game.streak.freezes, ['ochrana', 'ochrany', 'ochran'])}
                 </>
+              ) : (
+                'Splň týdenní cíl'
               )}
             </div>
           </div>
         </div>
-        <div className="xp-bar" style={{ marginTop: 14 }}>
+        <div className="xp-bar" style={{ marginTop: 16 }}>
           <div style={{ width: `${game.level.progress * 100}%` }} />
         </div>
-        <div className="row between tiny bold" style={{ marginTop: 6, opacity: 0.9 }}>
-          <span>
+        <div className="row between small muted" style={{ marginTop: 6 }}>
+          <span className="tabular">
             {game.level.current.toLocaleString('cs-CZ')} / {game.level.needed.toLocaleString('cs-CZ')} XP
           </span>
-          <span>{motivation}</span>
+          <span>do levelu {game.level.level + 1}</span>
         </div>
       </Link>
 
@@ -159,6 +152,28 @@ export default function Home() {
         </div>
       </div>
 
+      {backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
+        <div className="card backup-nudge mt">
+          <div className="bold">Ulož si zálohu tréninků</div>
+          <div className="small muted" style={{ marginTop: 4 }}>
+            Máš {workouts.length} {plural(workouts.length, ['trénink', 'tréninky', 'tréninků'])} jen v tomto telefonu
+            {settings.lastBackupAt ? ` a poslední záloha je ${relativeDay(settings.lastBackupAt).toLowerCase()}` : ''}. Při ztrátě telefonu by
+            zmizely.
+          </div>
+          <div className="row mt" style={{ gap: 8 }}>
+            <button className="btn primary sm grow" onClick={() => void saveBackupFile()}>
+              Uložit zálohu
+            </button>
+            <button
+              className="btn sm"
+              onClick={() => useStore.getState().updateSettings({ backupSnoozeUntil: Date.now() + 7 * DAY })}
+            >
+              Za týden
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Start */}
       <div className="section" style={{ marginTop: 16 }}>
         {active ? (
@@ -180,13 +195,13 @@ export default function Home() {
                 <h2 style={{ margin: '4px 0 6px' }}>{todayRoutine.name}</h2>
                 <div className="small muted ellipsis">{todayRoutine.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}</div>
                 <button className="btn primary block mt" onClick={() => start(todayRoutine.id)}>
-                  <Zap size={18} fill="#fff" /> Začít trénink
+                  Začít trénink
                 </button>
               </div>
             )}
             <div className="grid-3">
               <button className="card tap center" style={{ padding: 14 }} onClick={() => start()}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad)', display: 'grid', placeItems: 'center', color: '#fff' }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--on-accent)' }}>
                   <Plus size={22} strokeWidth={3} />
                 </div>
                 <div className="small bold">Prázdný</div>
@@ -219,7 +234,9 @@ export default function Home() {
         <div className="list">
           {game.quests.map((q) => (
             <div key={q.id} className={`quest ${q.done ? 'done' : ''}`}>
-              <div className="qi">{q.done ? '✅' : q.icon}</div>
+              <div className="qi">
+                <Icon name={q.done ? 'target' : q.icon} size={20} />
+              </div>
               <div className="grow">
                 <div className="row between">
                   <span className="qt bold small">{q.title}</span>
@@ -306,7 +323,9 @@ export default function Home() {
             <Link to="/achievements">Všechny</Link>
           </div>
           <Link to="/achievements" className="card ach tap">
-            <div className="ico">{nextAchievement.a.icon}</div>
+            <div className="ico">
+              <Icon name={nextAchievement.a.icon} size={22} />
+            </div>
             <div className="grow">
               <div className="bold">{nextAchievement.a.title}</div>
               <div className="small muted">{nextAchievement.a.description}</div>
@@ -331,7 +350,6 @@ export default function Home() {
           </div>
         ) : (
           <div className="card empty">
-            <div className="big">🏁</div>
             <div className="bold" style={{ color: 'var(--text)' }}>
               Tvůj první trénink čeká
             </div>

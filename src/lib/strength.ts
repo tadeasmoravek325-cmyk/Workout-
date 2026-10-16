@@ -1,20 +1,21 @@
 import type { Sex, Workout } from '../types';
+import type { IconName } from '../components/Icon';
 import { computeRecords, exerciseHistory } from './calc';
 
 export interface Tier {
   id: string;
   name: string;
   color: string;
-  icon: string;
+  icon: IconName;
 }
 
 export const TIERS: Tier[] = [
-  { id: 'none', name: 'Bez ranku', color: '#6b7280', icon: '⚪' },
-  { id: 'bronze', name: 'Bronz', color: '#cd7f32', icon: '🥉' },
-  { id: 'silver', name: 'Stříbro', color: '#c0c7d1', icon: '🥈' },
-  { id: 'gold', name: 'Zlato', color: '#fbbf24', icon: '🥇' },
-  { id: 'platinum', name: 'Platina', color: '#5eead4', icon: '💠' },
-  { id: 'diamond', name: 'Diamant', color: '#a78bfa', icon: '💎' },
+  { id: 'none', name: 'Bez ranku', color: '#6b6b6b', icon: 'circle' },
+  { id: 'bronze', name: 'Bronz', color: '#c27a3d', icon: 'medal' },
+  { id: 'silver', name: 'Stříbro', color: '#c4c4c4', icon: 'medal' },
+  { id: 'gold', name: 'Zlato', color: '#f2b233', icon: 'medal' },
+  { id: 'platinum', name: 'Platina', color: '#e8e4da', icon: 'shield' },
+  { id: 'diamond', name: 'Diamant', color: '#ff7a1a', icon: 'gem' },
 ];
 
 /**

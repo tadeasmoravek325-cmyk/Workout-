@@ -4,7 +4,7 @@ import { exerciseHistory, muscleRecovery, setsPerMuscle, suggestNext, uid } from
 export type Focus = 'auto' | 'push' | 'pull' | 'legs' | 'upper' | 'lower' | 'full';
 
 export const FOCUS_LABELS: Record<Focus, string> = {
-  auto: '✨ Podle regenerace',
+  auto: 'Podle regenerace',
   push: 'Tlaky',
   pull: 'Přítahy',
   legs: 'Nohy',

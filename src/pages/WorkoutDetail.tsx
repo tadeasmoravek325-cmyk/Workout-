@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { ImageDown, Pencil, Repeat2, Share2, Trash2 } from 'lucide-react';
+import { Icon } from '../components/Icon';
+import { ImageDown, Pencil, RefreshCw, Repeat2, Save, Share2, Trash2 } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import {
@@ -15,7 +16,7 @@ import {
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements';
 import { describeSet } from '../components/WorkoutEditor';
-import { confirmDialog, toast } from '../components/ui';
+import { confirmDialog, toast, undoToast } from '../components/ui';
 import type { Routine } from '../types';
 import { useGame } from '../lib/useGame';
 import { Celebration } from '../components/Celebration';
@@ -88,14 +89,14 @@ export default function WorkoutDetail() {
   };
 
   const shareText = () => {
-    const lines = [`💪 ${w.name} – ${fmtDateTime(w.startedAt)}`, `⏱ ${fmtDuration(workoutDurationMs(w))} · 🏋️ ${fmtVolume(volume, unit)}`, ''];
+    const lines = [`${w.name} – ${fmtDateTime(w.startedAt)}`, `${fmtDuration(workoutDurationMs(w))} · objem ${fmtVolume(volume, unit)}`, ''];
     for (const we of w.exercises) {
       const ex = exMap.get(we.exerciseId);
       if (!ex) continue;
       lines.push(ex.name);
       we.sets.forEach((s, i) => lines.push(`  ${s.type === 'warmup' ? 'W' : i + 1}. ${describeSet(s, ex, settings)}`));
     }
-    if (prs.length) lines.push('', `🏆 ${prs.length} nových rekordů`);
+    if (prs.length) lines.push('', `Nové osobní rekordy: ${prs.length}`);
     return lines.join('\n');
   };
 
@@ -149,7 +150,6 @@ export default function WorkoutDetail() {
 
       {isSummary && (
         <div className="hero center" style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 44 }}>🎉</div>
           <h1 style={{ fontSize: 24 }}>Skvělá práce!</h1>
           <div className="badge white" style={{ marginTop: 8 }}>
             +{xp} XP
@@ -190,7 +190,7 @@ export default function WorkoutDetail() {
       {prs.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>🏆 Osobní rekordy ({prs.length})</h2>
+            <h2>Osobní rekordy ({prs.length})</h2>
           </div>
           <div className="list">
             {prs.map((p, i) => {
@@ -225,7 +225,9 @@ export default function WorkoutDetail() {
           <div className="stack">
             {newAchievements.map((a) => (
               <div key={a.id} className="card ach">
-                <div className="ico">{a.icon}</div>
+                <div className="ico">
+                  <Icon name={a.icon} size={22} />
+                </div>
                 <div>
                   <div className="bold">{a.title}</div>
                   <div className="small muted">{a.description}</div>
@@ -246,7 +248,7 @@ export default function WorkoutDetail() {
                 toast(`Rutina „${routine.name}“ aktualizována`);
               }}
             >
-              🔄 Aktualizovat rutinu podle tohoto tréninku
+              <RefreshCw size={16} /> Aktualizovat rutinu podle tohoto tréninku
             </button>
           ) : (
             <button
@@ -256,7 +258,7 @@ export default function WorkoutDetail() {
                 toast('Uloženo jako nová rutina');
               }}
             >
-              💾 Uložit jako rutinu
+              <Save size={16} /> Uložit jako rutinu
             </button>
           )}
         </div>
@@ -323,9 +325,11 @@ export default function WorkoutDetail() {
         <button
           className="btn sm danger"
           onClick={async () => {
-            if (await confirmDialog('Smazat tento trénink?', 'Tohle nejde vrátit.', 'Smazat')) {
+            if (await confirmDialog('Smazat tento trénink?', 'Ještě pár sekund půjde smazání vrátit.', 'Smazat')) {
+              const copy = structuredClone(w);
               deleteWorkout(w.id);
               navigate('/history', { replace: true });
+              undoToast('Trénink smazán', () => useStore.getState().restoreWorkout(copy));
             }
           }}
         >
@@ -337,7 +341,7 @@ export default function WorkoutDetail() {
           xp={xp}
           totalXp={game.totalXp}
           prs={prs.filter((p) => p.kind !== 'volume').length}
-          achievements={newAchievements.map((a) => a.icon)}
+          achievements={newAchievements.map((a) => a.title)}
           onClose={() => setCelebrating(false)}
         />
       )}
@@ -349,7 +353,7 @@ export default function WorkoutDetail() {
             toast('Uloženo jako nová rutina');
           }}
         >
-          💾 Uložit jako rutinu
+          <Save size={16} /> Uložit jako rutinu
         </button>
       )}
     </div>

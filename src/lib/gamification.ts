@@ -1,4 +1,5 @@
 import type { Exercise, Measurement, Muscle, Workout } from '../types';
+import type { IconName } from '../components/Icon';
 import { e1rm, isWorkingSet, startOfWeek } from './calc';
 
 /* ------------------------------------------------------------------ */
@@ -118,7 +119,7 @@ export function xpForLevel(level: number): number {
 export interface LevelInfo {
   level: number;
   title: string;
-  icon: string;
+  icon: IconName;
   /** XP inside the current level. */
   current: number;
   /** XP the current level spans. */
@@ -126,15 +127,15 @@ export interface LevelInfo {
   progress: number;
 }
 
-const TITLES: [number, string, string][] = [
-  [1, 'Nováček', '🌱'],
-  [5, 'Učeň', '🔰'],
-  [10, 'Pravidelák', '💪'],
-  [15, 'Bojovník', '⚔️'],
-  [20, 'Silák', '🦾'],
-  [30, 'Titán', '🗿'],
-  [40, 'Bestie', '🦍'],
-  [50, 'Legenda', '👑'],
+const TITLES: [number, string, IconName][] = [
+  [1, 'Nováček', 'sprout'],
+  [5, 'Učeň', 'graduation-cap'],
+  [10, 'Pravidelák', 'calendar-check'],
+  [15, 'Bojovník', 'swords'],
+  [20, 'Silák', 'biceps'],
+  [30, 'Titán', 'mountain'],
+  [40, 'Bestie', 'flame'],
+  [50, 'Legenda', 'crown'],
 ];
 
 export function levelInfo(totalXp: number): LevelInfo {
@@ -227,7 +228,7 @@ export { prevWeek };
 
 export interface Quest {
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   target: number;
   value: number;
@@ -255,17 +256,17 @@ const muscleSessions = (c: QuestCtx, muscles: Muscle[]) =>
 const doneSets = (ws: Workout[]) => ws.reduce((a, w) => a + w.exercises.reduce((b, e) => b + e.sets.filter((s) => s.done && isWorkingSet(s)).length, 0), 0);
 
 const QUESTS: QuestTemplate[] = [
-  (c) => ({ id: 'sets', icon: '🔁', title: `Odcvič ${40} pracovních sérií`, target: 40, value: doneSets(c.week), xp: 80 }),
-  (c) => ({ id: 'legs', icon: '🦵', title: 'Trénuj nohy 2× za týden', target: 2, value: muscleSessions(c, ['quads', 'hamstrings', 'glutes']), xp: 70 }),
-  (c) => ({ id: 'pr', icon: '🏆', title: 'Překonej osobní rekord', target: 1, value: c.prsThisWeek, xp: 90 }),
+  (c) => ({ id: 'sets', icon: 'repeat', title: `Odcvič ${40} pracovních sérií`, target: 40, value: doneSets(c.week), xp: 80 }),
+  (c) => ({ id: 'legs', icon: 'footprints', title: 'Trénuj nohy 2× za týden', target: 2, value: muscleSessions(c, ['quads', 'hamstrings', 'glutes']), xp: 70 }),
+  (c) => ({ id: 'pr', icon: 'trophy', title: 'Překonej osobní rekord', target: 1, value: c.prsThisWeek, xp: 90 }),
   (c) => {
     const before = new Set(c.all.filter((w) => w.startedAt < c.weekStart).flatMap((w) => w.exercises.map((e) => e.exerciseId)));
     const fresh = new Set(c.week.flatMap((w) => w.exercises.filter((e) => !before.has(e.exerciseId)).map((e) => e.exerciseId)));
-    return { id: 'new', icon: '🧪', title: 'Vyzkoušej nový cvik', target: 1, value: fresh.size, xp: 60 };
+    return { id: 'new', icon: 'flask', title: 'Vyzkoušej nový cvik', target: 1, value: fresh.size, xp: 60 };
   },
   (c) => ({
     id: 'early',
-    icon: '🌅',
+    icon: 'sunrise',
     title: 'Ranní trénink (začátek před 9:00)',
     target: 1,
     value: c.week.filter((w) => new Date(w.startedAt).getHours() < 9).length,
@@ -273,17 +274,17 @@ const QUESTS: QuestTemplate[] = [
   }),
   (c) => ({
     id: 'weigh',
-    icon: '⚖️',
+    icon: 'scale',
     title: 'Zapiš si tělesnou hmotnost',
     target: 1,
     value: c.measurements.filter((m) => m.type === 'bodyweight' && m.date >= c.weekStart).length,
     xp: 40,
   }),
-  (c) => ({ id: 'back', icon: '🪽', title: 'Dej zádům 12 sérií', target: 12, value: setsFor(c, ['lats', 'traps']), xp: 70 }),
-  (c) => ({ id: 'core', icon: '🧱', title: 'Posil střed těla 6 sériemi', target: 6, value: setsFor(c, ['abs']), xp: 50 }),
+  (c) => ({ id: 'back', icon: 'shield', title: 'Dej zádům 12 sérií', target: 12, value: setsFor(c, ['lats', 'traps']), xp: 70 }),
+  (c) => ({ id: 'core', icon: 'bricks', title: 'Posil střed těla 6 sériemi', target: 6, value: setsFor(c, ['abs']), xp: 50 }),
   (c) => ({
     id: 'long',
-    icon: '⏳',
+    icon: 'hourglass',
     title: 'Trénink delší než 45 minut',
     target: 1,
     value: c.week.filter((w) => (w.finishedAt ?? w.startedAt) - w.startedAt >= 45 * 60_000).length,
@@ -329,7 +330,7 @@ export function weeklyQuests(
   const seed = Math.floor(weekStart / (7 * DAY)) + 7919;
   const main: Omit<Quest, 'done'> = {
     id: 'goal',
-    icon: '🎯',
+    icon: 'target',
     title: `Splň týdenní cíl (${goal} tréninky)`,
     target: goal,
     value: week.length,

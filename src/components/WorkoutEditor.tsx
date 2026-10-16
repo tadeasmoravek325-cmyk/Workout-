@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { ArrowDown, ArrowUp, Calculator, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink, X } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
@@ -21,7 +22,7 @@ import { haptic, smallConfetti } from '../lib/celebrate';
 import { plateCalc } from '../lib/calc';
 import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
-import { NumInput, Sheet, toast } from './ui';
+import { NumInput, Sheet, toast, undoToast } from './ui';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
 
 type Mutate = (fn: (w: Workout) => void) => void;
@@ -121,8 +122,8 @@ export function WorkoutEditor({
     <div>
       {workout.exercises.length === 0 && (
         <div className="empty">
-          <div className="big">🏋️</div>
-          Přidej první cvik a jdeme na to.
+          <Dumbbell size={36} className="muted" />
+          <div style={{ marginTop: 8 }}>Přidej první cvik.</div>
         </div>
       )}
       {workout.exercises.map((we, i) => {
@@ -270,10 +271,10 @@ function ExerciseCard({
         haptic([30, 60, 30]);
       };
       if (w > bestW && w > 0) {
-        toast(`🏆 Nový rekord – ${ex.name}: ${fmtNum(toDisplayWeight(w, unit))} ${unit}`, 'pr', 4000);
+        toast(`Nový rekord · ${ex.name}: ${fmtNum(toDisplayWeight(w, unit))} ${unit}`, 'pr', 4000);
         celebrate();
       } else if (one > best1 + 0.01) {
-        toast(`🏆 Nový odhad 1RM – ${ex.name}: ${fmtNum(toDisplayWeight(one, unit))} ${unit}`, 'pr', 4000);
+        toast(`Nové maximum (odhad 1RM) · ${ex.name}: ${fmtNum(toDisplayWeight(one, unit))} ${unit}`, 'pr', 4000);
         celebrate();
       }
     }
@@ -313,7 +314,7 @@ function ExerciseCard({
         <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis">
           {ex.name}
         </Link>
-        {allDone && <span className="badge ok">Hotovo ✓</span>}
+        {allDone && <span className="badge ok">Hotovo</span>}
         {we.supersetId && <span className="badge" style={{ color: 'var(--purple)' }}>Supersérie</span>}
         <button className="icon-btn" onClick={() => setMenu(!menu)} aria-label="Možnosti cviku">
           ⋯
@@ -322,7 +323,7 @@ function ExerciseCard({
       <div className="row small muted" style={{ gap: 12, marginTop: 2 }}>
         {live && (
           <button className="small muted" onClick={() => setSheet('rest')}>
-            ⏱ {we.restSec === 0 ? 'Pauza vyp.' : fmtClock(we.restSec ?? settings.defaultRestSec)}
+            <Timer size={13} style={{ verticalAlign: '-2px' }} /> {we.restSec === 0 ? 'Pauza vyp.' : fmtClock(we.restSec ?? settings.defaultRestSec)}
           </button>
         )}
         {records.maxE1rm > 0 && <span>1RM ≈ {fmtNum(toDisplayWeight(records.maxE1rm, unit))} {unit}</span>}
@@ -330,19 +331,29 @@ function ExerciseCard({
 
       {menu && (
         <div className="menu" onClick={() => setMenu(false)}>
-          <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>📝 Poznámka k dnešku</button>
+          <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>
+            <NotebookPen size={17} /> Poznámka k dnešku
+          </button>
           <button
             onClick={() => {
               setPinDraft(pinned ?? '');
               setSheet('pin');
             }}
           >
-            📌 Připnutá poznámka
+            <Pin size={17} /> Připnutá poznámka
           </button>
-          {ex.equipment === 'barbell' && <button onClick={() => setSheet('plates')}>🧮 Rozložení kotoučů</button>}
-          {hasWeight(ex) && ex.type === 'weight_reps' && <button onClick={() => setSheet('warmup')}>🔥 Rozcvičovací série</button>}
-          <button onClick={() => setSheet('rest')}>⏱ Nastavit pauzu</button>
-          <button onClick={() => setSheet('substitute')}>🔄 Nahradit cvik</button>
+          {ex.equipment === 'barbell' && <button onClick={() => setSheet('plates')}>
+              <Calculator size={17} /> Rozložení kotoučů
+            </button>}
+          {hasWeight(ex) && ex.type === 'weight_reps' && <button onClick={() => setSheet('warmup')}>
+              <Flame size={17} /> Rozcvičovací série
+            </button>}
+          <button onClick={() => setSheet('rest')}>
+            <Timer size={17} /> Nastavit pauzu
+          </button>
+          <button onClick={() => setSheet('substitute')}>
+            <Replace size={17} /> Nahradit cvik
+          </button>
           {index < workout.exercises.length - 1 && !we.supersetId && (
             <button
               onClick={() =>
@@ -355,7 +366,7 @@ function ExerciseCard({
                 })
               }
             >
-              🔗 Supersérie s dalším cvikem
+              <Link2 size={17} /> Supersérie s dalším cvikem
             </button>
           )}
           {we.supersetId && (
@@ -367,7 +378,7 @@ function ExerciseCard({
                 })
               }
             >
-              ⛓️‍💥 Zrušit supersérii
+              <Unlink size={17} /> Zrušit supersérii
             </button>
           )}
           {index > 0 && (
@@ -378,7 +389,7 @@ function ExerciseCard({
                 })
               }
             >
-              ⬆️ Posunout nahoru
+              <ArrowUp size={17} /> Posunout nahoru
             </button>
           )}
           {index < workout.exercises.length - 1 && (
@@ -389,18 +400,24 @@ function ExerciseCard({
                 })
               }
             >
-              ⬇️ Posunout dolů
+              <ArrowDown size={17} /> Posunout dolů
             </button>
           )}
           <button
             className="danger"
-            onClick={() =>
+            onClick={() => {
+              const copy = structuredClone(we);
               mutate((w) => {
                 w.exercises = w.exercises.filter((x) => x.id !== we.id);
-              })
-            }
+              });
+              undoToast(`${ex.name} odebrán`, () =>
+                mutate((w) => {
+                  if (!w.exercises.some((x) => x.id === copy.id)) w.exercises.splice(Math.min(index, w.exercises.length), 0, copy);
+                }),
+              );
+            }}
           >
-            🗑 Odebrat cvik
+            <Trash2 size={17} /> Odebrat cvik
           </button>
         </div>
       )}
@@ -429,14 +446,16 @@ function ExerciseCard({
             setSheet('pin');
           }}
         >
-          <span>📌</span>
+          <Pin size={15} style={{ marginTop: 2 }} />
           <span className="grow">{pinned}</span>
         </button>
       )}
 
       {suggestion && (
         <div className={`coach ${suggestion.kind === 'deload' ? 'deload' : ''}`}>
-          <span style={{ fontSize: 18 }}>{suggestion.kind === 'deload' ? '⚠️' : suggestion.kind === 'increase' ? '📈' : '🎯'}</span>
+          <span className="coach-ico">
+            {suggestion.kind === 'deload' ? <TriangleAlert size={18} /> : suggestion.kind === 'increase' ? <TrendingUp size={18} /> : <Crosshair size={18} />}
+          </span>
           <div className="grow">
             <div className="bold">
               Dnes:{' '}
@@ -519,7 +538,11 @@ function ExerciseCard({
                     onClick={() => prevSame && !s.done && setField({ ...prevSame, id: s.id, type: s.type, done: false })}
                   >
                     {prevSame ? describeSet(prevSame, ex, settings) : '—'}
-                    {isPr && <span className="perf"> 🏆</span>}
+                    {isPr && (
+                      <span className="perf up">
+                        <Trophy size={11} />
+                      </span>
+                    )}
                     {perf === 1 && <span className="perf up">▲</span>}
                     {perf === -1 && <span className="perf down">▼</span>}
                   </span>
@@ -589,13 +612,20 @@ function ExerciseCard({
                   <button
                     className="del-set"
                     aria-label="Smazat sérii"
-                    onClick={() =>
+                    onClick={() => {
+                      const copy = structuredClone(s);
                       upd((x) => {
                         x.sets.splice(i, 1);
-                      })
-                    }
+                      });
+                      if (copy.done || copy.weight !== undefined || copy.reps !== undefined)
+                        undoToast('Série smazána', () =>
+                          upd((x) => {
+                            if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
+                          }),
+                        );
+                    }}
                   >
-                    ✕
+                    <X size={15} />
                   </button>
                 </td>
               </tr>
@@ -687,7 +717,7 @@ function ExerciseCard({
             const per = res.perSide.map((p) => Math.round((toDisplayWeight(p, unit) ?? 0) * 100) / 100);
             return (
               <div className="center">
-                <div style={{ fontSize: 30, fontWeight: 900 }}>
+                <div className="num-xl" style={{ fontSize: 36 }}>
                   {fmtNum(toDisplayWeight(target, unit))} {unit}
                 </div>
                 <PlateVisual plates={per} />

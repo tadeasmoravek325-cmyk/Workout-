@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { Icon } from '../components/Icon';
 import { useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
@@ -29,7 +30,9 @@ export default function Achievements() {
       <div className="stack">
         {items.map(({ a, p }) => (
           <div key={a.id} className={`card ach ${p >= 1 ? '' : 'locked'}`}>
-            <div className="ico">{a.icon}</div>
+            <div className="ico">
+              <Icon name={a.icon} size={22} />
+            </div>
             <div className="grow">
               <div className="row between">
                 <span className="bold">{a.title}</span>

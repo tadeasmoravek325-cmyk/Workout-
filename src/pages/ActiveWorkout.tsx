@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
-import { confirmDialog, useNow } from '../components/ui';
+import { confirmDialog, undoToast, useNow } from '../components/ui';
 import { fmtClock } from '../lib/format';
 
 export default function ActiveWorkout() {
@@ -18,6 +18,16 @@ export default function ActiveWorkout() {
 
   const total = active.exercises.reduce((n, e) => n + e.sets.length, 0);
   const done = active.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+
+  const discardWithUndo = () => {
+    const copy = structuredClone(active);
+    discard();
+    navigate('/', { replace: true });
+    undoToast('Trénink zrušen', () => {
+      useStore.getState().restoreActive(copy);
+      navigate('/workout');
+    });
+  };
 
   const doFinish = () => {
     const id = finish();
@@ -66,8 +76,7 @@ export default function ActiveWorkout() {
         className="btn danger block mt-l"
         onClick={async () => {
           if (await confirmDialog('Zrušit trénink?', 'Nic z tohoto tréninku se neuloží.', 'Zrušit trénink')) {
-            discard();
-            navigate('/', { replace: true });
+            discardWithUndo();
           }
         }}
       >
@@ -89,8 +98,7 @@ export default function ActiveWorkout() {
                     <button
                       className="btn danger"
                       onClick={() => {
-                        discard();
-                        navigate('/', { replace: true });
+                        discardWithUndo();
                       }}
                     >
                       Zahodit

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link2, Trash2, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { Routine, RoutineExercise, SetType } from '../types';
 import { useExerciseMap, useStore } from '../store/store';
@@ -128,7 +129,7 @@ export default function RoutineEditor() {
                 onClick={() => edit((r) => void (r.exercises = r.exercises.filter((x) => x.id !== re.id)))}
                 aria-label="Odebrat"
               >
-                🗑
+                <Trash2 size={17} />
               </button>
             </div>
             <div className="row small" style={{ gap: 8, marginTop: 8 }}>
@@ -166,7 +167,7 @@ export default function RoutineEditor() {
                     })
                   }
                 >
-                  🔗 Supersérie s dalším
+                  <Link2 size={14} /> Supersérie s dalším
                 </button>
               )}
             </div>
@@ -226,7 +227,7 @@ export default function RoutineEditor() {
                       )}
                       <td>
                         <button className="del-set" onClick={() => editEx(re.id, (x) => void x.sets.splice(i, 1))}>
-                          ✕
+                          <X size={15} />
                         </button>
                       </td>
                     </tr>

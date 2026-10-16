@@ -103,7 +103,7 @@ export default function History() {
           <WorkoutCard key={w.id} w={w} prCount={prCounts.get(w.id)} />
         ))}
         {!shown.length && (
-          <Empty icon="📭" title="V tomto měsíci žádný trénink">
+          <Empty title="V tomto měsíci žádný trénink">
             {workouts.length ? 'Přepni na jiný měsíc šipkami nahoře.' : 'Tvoje dokončené tréninky se objeví tady.'}
           </Empty>
         )}

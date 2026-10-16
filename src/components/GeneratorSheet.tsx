@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Shuffle, Sparkles } from 'lucide-react';
 import { useAllExercises, useExerciseMap, useStore } from '../store/store';
 import { FOCUS_LABELS, generateWorkout, type Focus } from '../lib/generator';
-import { BODY_PART_COLORS, BODY_PART_EMOJI } from '../data/exercises';
+import { BODY_PART_LABELS } from '../data/exercises';
 import { fmtNum, toDisplayWeight } from '../lib/format';
 import { ExerciseAvatar } from './ExercisePicker';
 import { Sheet, toast } from './ui';
@@ -92,7 +92,7 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
               <div className="grow">
                 <div className="bold ellipsis">{ex.name}</div>
                 <div className="small muted">
-                  <span style={{ color: BODY_PART_COLORS[ex.bodyPart] }}>{BODY_PART_EMOJI[ex.bodyPart]}</span> {re.sets.length} ×{' '}
+                  {BODY_PART_LABELS[ex.bodyPart]} · {re.sets.length} ×{' '}
                   {s.durationSec ? `${s.durationSec} s` : `${s.reps} opak.`}
                   {s.weight ? ` · ${fmtNum(toDisplayWeight(s.weight, unit))} ${unit}` : ''}
                 </div>

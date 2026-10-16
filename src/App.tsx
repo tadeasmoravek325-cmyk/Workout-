@@ -4,6 +4,8 @@ import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-rou
 import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
 import { Dialogs, Toasts, useNow } from './components/ui';
+import { DataRecovery, SaveErrorBanner } from './components/DataGuard';
+import { useSafety } from './lib/safety';
 import { fmtClock } from './lib/format';
 import Home from './pages/Home';
 import Train from './pages/Train';
@@ -71,7 +73,7 @@ function BottomNav() {
         Historie
       </NavLink>
       <NavLink to={active ? '/workout' : '/train'} className="train">
-        <span className="i">{active ? <Play size={24} fill="#fff" strokeWidth={2.4} /> : <Dumbbell size={24} strokeWidth={2.6} />}</span>
+        <span className="i">{active ? <Play size={22} fill="currentColor" strokeWidth={2.4} /> : <Dumbbell size={24} strokeWidth={2.6} />}</span>
         Trénink
       </NavLink>
       <NavLink to="/exercises">
@@ -121,6 +123,7 @@ function Shell() {
       <RestTimerBar aboveNav={!fullscreen} />
       <Toasts />
       <Dialogs />
+      <SaveErrorBanner />
     </>
   );
 }
@@ -128,8 +131,10 @@ function Shell() {
 export default function App() {
   const hydrated = useStore((s) => s.hydrated);
   const onboarded = useStore((s) => s.settings.onboarded);
+  const loadError = useSafety((s) => s.loadError);
   useTheme();
   if (!hydrated) return <div className="splash">Načítám…</div>;
+  if (loadError) return <DataRecovery />;
   if (!onboarded)
     return (
       <>

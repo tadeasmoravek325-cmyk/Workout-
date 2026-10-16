@@ -1,4 +1,9 @@
-@import '@fontsource-variable/nunito';
+@import '@fontsource/barlow/400.css';
+@import '@fontsource/barlow/500.css';
+@import '@fontsource/barlow/600.css';
+@import '@fontsource/barlow/700.css';
+@import '@fontsource/barlow-condensed/600.css';
+@import '@fontsource/barlow-condensed/700.css';
 
 :root {
   /* Brand: black + orange from the logo */
@@ -11,10 +16,14 @@
   --muted: #9a9a9a;
   --accent: #ff7a1a;
   --accent-2: #ff4a1a;
-  --grad: linear-gradient(135deg, #ffa030 0%, #ff4a1a 100%);
-  --grad-cool: linear-gradient(135deg, #2c2c2c 0%, #161616 100%);
-  --grad-ok: linear-gradient(135deg, #ffb347 0%, #ff7a1a 100%);
-  --grad-gold: linear-gradient(135deg, #ffc65c 0%, #ff8a1f 100%);
+  /* Flat fills; the names stay for compatibility with inline styles. */
+  --grad: #ff7a1a;
+  --grad-cool: #1f1f1f;
+  --grad-ok: #ff7a1a;
+  --grad-gold: #f2b233;
+  --on-accent: #0a0a0a;
+  --font-body: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
   --accent-soft: rgba(255, 122, 26, 0.15);
   --ok: #ff9a3d;
   --ok-soft: rgba(255, 122, 26, 0.16);
@@ -22,10 +31,10 @@
   --danger: #ff4433;
   --blue: #ffb347;
   --purple: #ffb347;
-  --radius: 20px;
-  --radius-s: 14px;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
-  --glow: 0 8px 24px rgba(255, 98, 26, 0.35);
+  --radius: 14px;
+  --radius-s: 10px;
+  --shadow: none;
+  --glow: none;
   --nav-h: 68px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -44,9 +53,9 @@
   --accent-soft: rgba(255, 122, 26, 0.12);
   --ok: #e8700f;
   --ok-soft: rgba(255, 122, 26, 0.14);
-  --grad-cool: linear-gradient(135deg, #2c2c2c 0%, #111111 100%);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.07);
-  --glow: 0 8px 22px rgba(255, 98, 26, 0.3);
+  --grad-cool: #ffffff;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --glow: none;
   color-scheme: light;
 }
 
@@ -60,8 +69,8 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Nunito Variable', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: 16px;
   line-height: 1.4;
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
@@ -79,19 +88,25 @@ a {
 h1,
 h2,
 h3 {
-  margin: 0;
-  line-height: 1.15;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 h1 {
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.005em;
+  text-transform: uppercase;
+  text-wrap: balance;
 }
 
 h2 {
-  font-size: 19px;
-  font-weight: 850;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
 }
 
 h3 {
@@ -145,15 +160,8 @@ svg.lucide {
   max-width: 640px;
   margin: 0 auto;
   padding: calc(16px + var(--safe-t)) 16px calc(var(--nav-h) + var(--safe-b) + 96px);
-  animation: page-in 0.25s ease;
 }
 
-@keyframes page-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-}
 
 .page-header {
   display: flex;
@@ -184,14 +192,17 @@ svg.lucide {
 }
 
 .section-title h2 {
-  font-size: 18px;
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
 }
 
 .section-title a,
 .section-title button {
   color: var(--accent);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .row {
@@ -244,7 +255,7 @@ svg.lucide {
 }
 
 .bold {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .accent {
@@ -291,7 +302,6 @@ svg.lucide {
   border-radius: var(--radius);
   padding: 16px;
   border: 1px solid var(--line);
-  box-shadow: var(--shadow);
 }
 
 .card.tap {
@@ -305,53 +315,17 @@ svg.lucide {
 
 .hero {
   position: relative;
-  overflow: hidden;
-  border-radius: 26px;
+  border-radius: var(--radius);
   padding: 18px;
-  color: #fff;
-  background: var(--grad);
-  box-shadow: var(--glow);
+  color: var(--text);
+  background: var(--card);
+  border: 1px solid var(--line);
 }
 
-.hero.cool {
-  background: var(--grad-cool);
-  border: 1px solid rgba(255, 122, 26, 0.45);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-}
 
-.hero.cool svg.lucide {
-  color: var(--accent);
-}
-
-.hero::before,
-.hero::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
-  pointer-events: none;
-}
-
-.hero::before {
-  width: 220px;
-  height: 220px;
-  right: -70px;
-  top: -90px;
-}
-
-.hero::after {
-  width: 140px;
-  height: 140px;
-  right: 60px;
-  bottom: -90px;
-}
-
-.hero > * {
-  position: relative;
-}
 
 .hero .muted {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--muted);
 }
 
 .stat {
@@ -363,25 +337,30 @@ svg.lucide {
 }
 
 .stat .v {
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
 }
 
 .stat .l {
   font-size: 12px;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .stat .ico {
-  width: 30px;
-  height: 30px;
-  border-radius: 10px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
   margin-bottom: 8px;
-  color: #fff;
+  color: var(--accent);
+  background: var(--accent-soft) !important;
 }
 
 .list {
@@ -417,16 +396,17 @@ a.list-item:active {
 }
 
 .avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: var(--card-2);
   display: grid;
   place-items: center;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--accent);
   flex-shrink: 0;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .chev::after {
@@ -443,12 +423,16 @@ a.list-item:active {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 13px 18px;
-  border-radius: 16px;
-  font-weight: 850;
+  padding: 12px 18px;
+  border-radius: var(--radius-s);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   background: var(--card-2);
   color: var(--text);
-  transition: transform 0.1s ease, filter 0.15s, box-shadow 0.15s;
+  transition: transform 0.1s ease, background 0.15s;
   white-space: nowrap;
 }
 
@@ -462,21 +446,19 @@ a.list-item:active {
 }
 
 .btn.primary {
-  background: var(--grad);
-  color: #fff;
-  box-shadow: var(--glow);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .btn.cool {
-  background: var(--grad-cool);
-  color: #ff8a2a;
-  border: 1px solid rgba(255, 122, 26, 0.45);
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
 }
 
 .btn.ok {
-  background: var(--grad);
-  color: #fff;
-  box-shadow: var(--glow);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .btn.danger {
@@ -496,8 +478,8 @@ a.list-item:active {
 }
 
 .btn.white {
-  background: #fff;
-  color: #ff5a1a;
+  background: var(--text);
+  color: var(--bg);
 }
 
 .btn.glass {
@@ -512,24 +494,23 @@ a.list-item:active {
 
 .btn.sm {
   padding: 8px 12px;
-  font-size: 13px;
-  border-radius: 12px;
+  font-size: 15px;
+  border-radius: 8px;
 }
 
 .btn.lg {
-  padding: 16px 20px;
-  font-size: 17px;
-  border-radius: 18px;
+  padding: 15px 20px;
+  font-size: 19px;
 }
 
 .icon-btn {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
+  border-radius: 10px;
   display: inline-grid;
   place-items: center;
   background: var(--card-2);
-  font-size: 18px;
+  color: var(--text);
   flex-shrink: 0;
   transition: transform 0.1s;
 }
@@ -551,13 +532,13 @@ a.list-item:active {
 }
 
 .chip {
-  padding: 8px 13px;
-  border-radius: 999px;
+  padding: 7px 12px;
+  border-radius: 8px;
   background: var(--card-2);
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   white-space: nowrap;
-  border: 2px solid transparent;
+  border: 1.5px solid transparent;
   transition: transform 0.1s, background 0.15s;
 }
 
@@ -575,10 +556,10 @@ a.list-item:active {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 850;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
   background: var(--card-2);
   color: var(--muted);
 }
@@ -604,31 +585,30 @@ a.list-item:active {
 }
 
 .badge.white {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  background: var(--card-2);
+  color: var(--text);
 }
 
 .segmented {
   display: flex;
   background: var(--card-2);
-  border-radius: 14px;
-  padding: 4px;
+  border-radius: 10px;
+  padding: 3px;
 }
 
 .segmented button {
   flex: 1;
   padding: 8px 8px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 800;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--muted);
   transition: background 0.15s, color 0.15s;
 }
 
 .segmented button.on {
-  background: var(--card);
+  background: var(--bg);
   color: var(--text);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
 
 /* ---------- bottom nav ---------- */
@@ -655,7 +635,8 @@ a.list-item:active {
   justify-content: center;
   gap: 3px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--muted);
   transition: color 0.15s;
 }
@@ -663,10 +644,10 @@ a.list-item:active {
 .bottom-nav a .i {
   display: grid;
   place-items: center;
-  width: 48px;
-  height: 30px;
-  border-radius: 999px;
-  transition: background 0.2s, transform 0.2s;
+  width: 44px;
+  height: 28px;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
 
 .bottom-nav a.active {
@@ -674,18 +655,16 @@ a.list-item:active {
 }
 
 .bottom-nav a.active .i {
-  background: var(--accent-soft);
+  background: transparent;
 }
 
 .bottom-nav a.train .i {
-  width: 54px;
-  height: 54px;
-  border-radius: 20px;
-  background: var(--grad);
-  color: #fff;
-  margin-top: -26px;
-  box-shadow: var(--glow);
-  border: 4px solid var(--bg);
+  width: 52px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--on-accent);
+  margin-top: -18px;
 }
 
 .bottom-nav a.train:active .i {
@@ -699,24 +678,22 @@ a.list-item:active {
   bottom: calc(var(--nav-h) + var(--safe-b) + 10px);
   max-width: 616px;
   margin: 0 auto;
-  background: var(--grad);
-  color: #fff;
-  border-radius: 18px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 12px;
   padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   z-index: 39;
-  box-shadow: var(--glow);
-  font-weight: 850;
-  animation: up 0.25s ease;
+  font-weight: 700;
 }
 
 .active-bar .pulse {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--on-accent);
   display: inline-block;
   margin-right: 8px;
   animation: pulse 1.4s ease infinite;
@@ -748,8 +725,10 @@ a.list-item:active {
 }
 
 .wk-title {
-  font-size: 24px;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  text-transform: uppercase;
   background: transparent;
   padding: 4px 0;
   border: 0;
@@ -766,18 +745,17 @@ a.list-item:active {
   border: 1px solid var(--line);
   border-radius: var(--radius);
   padding: 14px 10px 12px;
-  margin-top: 14px;
+  margin-top: 12px;
   position: relative;
-  box-shadow: var(--shadow);
 }
 
 .ex-card.superset {
-  border-left: 5px solid var(--purple);
+  border-left: 3px solid var(--accent);
 }
 
 .ex-card .ex-name {
-  font-weight: 900;
-  font-size: 16.5px;
+  font-weight: 700;
+  font-size: 17px;
 }
 
 .ex-card.complete {
@@ -795,9 +773,8 @@ a.list-item:active {
 .coach {
   margin: 10px 2px 4px;
   padding: 10px 12px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, rgba(255, 122, 26, 0.14), rgba(255, 74, 26, 0.06));
-  border: 1px solid rgba(255, 122, 26, 0.4);
+  border-radius: 10px;
+  background: var(--accent-soft);
   font-size: 13px;
   display: flex;
   gap: 10px;
@@ -805,8 +782,7 @@ a.list-item:active {
 }
 
 .coach.deload {
-  background: rgba(251, 191, 36, 0.1);
-  border-color: rgba(251, 191, 36, 0.4);
+  background: rgba(255, 192, 77, 0.12);
 }
 
 .sticky-note {
@@ -830,11 +806,11 @@ a.list-item:active {
 }
 
 .set-table th {
-  font-size: 10.5px;
-  font-weight: 900;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   padding: 0 3px;
   text-align: center;
 }
@@ -871,8 +847,11 @@ a.list-item:active {
 .set-table input {
   text-align: center;
   padding: 8px 2px;
-  font-weight: 850;
-  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 8px;
   min-width: 0;
 }
 
@@ -889,10 +868,11 @@ a.list-item:active {
 .set-type {
   width: 30px;
   height: 30px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card-2);
-  font-weight: 900;
-  font-size: 13px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .set-type.warmup {
@@ -932,7 +912,7 @@ a.list-item:active {
 .check {
   width: 36px;
   height: 32px;
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--card-2);
   color: var(--muted);
   display: inline-grid;
@@ -945,14 +925,14 @@ a.list-item:active {
 }
 
 .check.on {
-  background: var(--grad);
-  color: #fff;
-  animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
+  background: var(--accent);
+  color: var(--on-accent);
+  animation: pop 0.25s ease-out;
 }
 
 @keyframes pop {
   0% {
-    transform: scale(0.6);
+    transform: scale(0.85);
   }
   100% {
     transform: scale(1);
@@ -988,20 +968,19 @@ a.list-item:active {
   margin: 0 auto;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 14px;
   padding: 10px 12px;
   z-index: 60;
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  animation: up 0.25s ease;
 }
 
 .rest .bar {
   position: absolute;
   left: 0;
-  top: 0;
   bottom: 0;
-  background: linear-gradient(90deg, rgba(255, 160, 48, 0.22), rgba(255, 74, 26, 0.2));
+  height: 3px;
+  background: var(--accent);
   transition: width 0.25s linear;
 }
 
@@ -1013,8 +992,9 @@ a.list-item:active {
 }
 
 .rest .time {
-  font-size: 28px;
-  font-weight: 900;
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   flex: 1;
 }
@@ -1043,10 +1023,10 @@ a.list-item:active {
   width: 100%;
   max-width: 640px;
   max-height: 92dvh;
-  border-radius: 28px 28px 0 0;
+  border-radius: 18px 18px 0 0;
   display: flex;
   flex-direction: column;
-  animation: up 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  animation: up 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
   padding-bottom: var(--safe-b);
   position: relative;
 }
@@ -1121,18 +1101,22 @@ a.list-item:active {
 .toast {
   background: var(--card);
   border: 1px solid var(--line);
-  padding: 11px 18px;
-  border-radius: 16px;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.4);
-  font-weight: 800;
-  animation: drop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  padding: 10px 14px;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  font-weight: 600;
+  animation: drop 0.25s ease-out;
   max-width: 92vw;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .toast.pr {
-  border: 0;
-  background: var(--grad-gold);
-  color: #2a1400;
+  border-color: var(--accent);
+  background: var(--card);
+  color: var(--text);
+  border-left: 4px solid var(--accent);
 }
 
 @keyframes drop {
@@ -1145,16 +1129,16 @@ a.list-item:active {
 /* ---------- gamification ---------- */
 
 .xp-bar {
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  height: 6px;
+  border-radius: 3px;
+  background: var(--card-2);
   overflow: hidden;
 }
 
 .xp-bar > div {
   height: 100%;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: 3px;
+  background: var(--accent);
   transition: width 0.8s cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
@@ -1163,17 +1147,17 @@ a.list-item:active {
 }
 
 .xp-bar.on-card > div {
-  background: var(--grad);
+  background: var(--accent);
 }
 
 .level-badge {
-  width: 52px;
-  height: 52px;
-  border-radius: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.22);
-  font-size: 26px;
+  background: var(--accent);
+  color: var(--on-accent);
   position: relative;
   flex-shrink: 0;
 }
@@ -1182,13 +1166,14 @@ a.list-item:active {
   position: absolute;
   right: -6px;
   bottom: -6px;
-  background: #fff;
-  color: #ff5a1a;
-  font-size: 11px;
-  font-weight: 900;
-  border-radius: 999px;
-  padding: 2px 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  background: var(--bg);
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 0 5px;
 }
 
 .week-dots {
@@ -1209,9 +1194,9 @@ a.list-item:active {
 }
 
 .week-dots .dot {
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   background: var(--card-2);
   display: grid;
   place-items: center;
@@ -1220,9 +1205,8 @@ a.list-item:active {
 }
 
 .week-dots .dot.done {
-  background: var(--grad);
-  color: #fff;
-  box-shadow: var(--glow);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .week-dots .dot.planned {
@@ -1248,18 +1232,19 @@ a.list-item:active {
 }
 
 .quest .qi {
-  font-size: 22px;
-  width: 42px;
-  height: 42px;
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: var(--card-2);
+  color: var(--accent);
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
 .quest.done .qi {
-  background: var(--grad-ok);
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .quest.done .qt {
@@ -1299,8 +1284,7 @@ a.list-item:active {
   z-index: 150;
   display: grid;
   place-items: center;
-  background: rgba(5, 6, 12, 0.72);
-  backdrop-filter: blur(6px);
+  background: rgba(5, 5, 5, 0.86);
   animation: fade 0.2s ease;
   padding: 24px;
 }
@@ -1320,9 +1304,15 @@ a.list-item:active {
 }
 
 .big-emoji {
-  font-size: 72px;
-  line-height: 1;
-  animation: wiggle 1.2s ease 0.3s;
+  width: 84px;
+  height: 84px;
+  margin: 0 auto;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  animation: wiggle 1s ease 0.25s;
 }
 
 @keyframes wiggle {
@@ -1361,8 +1351,8 @@ a.list-item:active {
 
 .onboard .steps div {
   flex: 1;
-  height: 6px;
-  border-radius: 99px;
+  height: 4px;
+  border-radius: 2px;
   background: var(--card-2);
   transition: background 0.3s;
 }
@@ -1375,10 +1365,10 @@ a.list-item:active {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  border-radius: 18px;
+  padding: 14px 16px;
+  border-radius: 12px;
   background: var(--card);
-  border: 2px solid var(--line);
+  border: 1.5px solid var(--line);
   text-align: left;
   width: 100%;
   transition: border-color 0.15s, transform 0.1s;
@@ -1394,22 +1384,29 @@ a.list-item:active {
 }
 
 .choice .ce {
-  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--card-2);
+  color: var(--accent);
+  flex-shrink: 0;
 }
 
 /* ---------- misc ---------- */
 
 .progress {
-  height: 8px;
+  height: 6px;
   background: var(--card-2);
-  border-radius: 999px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
 .progress > div {
   height: 100%;
-  background: var(--grad);
-  border-radius: 999px;
+  background: var(--accent);
+  border-radius: 3px;
   transition: width 0.6s ease;
 }
 
@@ -1461,7 +1458,7 @@ a.list-item:active {
 }
 
 .switch.on {
-  background: var(--grad);
+  background: var(--accent);
 }
 
 .switch.on::after {
@@ -1484,17 +1481,18 @@ a.list-item:active {
 
 .calendar .day {
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 8px;
   display: grid;
   place-items: center;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   position: relative;
 }
 
 .calendar .day.has {
-  background: var(--grad);
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 
 .calendar .day.today {
@@ -1579,22 +1577,19 @@ a.list-item:active {
 }
 
 .ach .ico {
-  font-size: 26px;
-  width: 50px;
-  height: 50px;
-  border-radius: 16px;
-  background: var(--grad-gold);
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--on-accent);
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(255, 122, 26, 0.3);
 }
 
 .ach.locked .ico {
   background: var(--card-2);
-  box-shadow: none;
-  filter: grayscale(1);
-  opacity: 0.5;
+  color: var(--muted);
 }
 
 .menu {
@@ -1603,12 +1598,12 @@ a.list-item:active {
   top: 48px;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 12px;
   z-index: 30;
-  min-width: 230px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  min-width: 240px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden;
-  animation: menu-in 0.15s ease;
+  animation: menu-in 0.12s ease;
   transform-origin: top right;
 }
 
@@ -1622,12 +1617,12 @@ a.list-item:active {
 .menu button {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
   text-align: left;
   padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 15px;
+  font-weight: 500;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1660,4 +1655,146 @@ a.list-item:active {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ---------- type helpers ---------- */
+
+.num-lg {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+
+.coach-ico {
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+.ach-mini {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.menu button svg.lucide {
+  color: var(--muted);
+}
+
+.menu button.danger svg.lucide {
+  color: var(--danger);
+}
+
+/* ---------- data safety ---------- */
+
+.toast.has-action {
+  pointer-events: auto;
+}
+
+.toast.error {
+  border-left: 4px solid var(--danger);
+}
+
+.toast-action {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 4px 2px;
+}
+
+.save-error {
+  position: fixed;
+  top: calc(8px + var(--safe-t));
+  left: 12px;
+  right: 12px;
+  max-width: 616px;
+  margin: 0 auto;
+  z-index: 220;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--danger);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.data-facts {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.data-facts b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.recovery-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 68, 51, 0.14);
+  color: var(--danger);
+}
+
+.backup-nudge {
+  border-color: var(--accent);
+}
+
+.hero-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.num-xl {
+  font-family: var(--font-display);
+  font-size: 48px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 2px;
+}
+
+.num-xl .unit {
+  font-size: 18px;
+  margin-left: 6px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }

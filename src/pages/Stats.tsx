@@ -75,7 +75,7 @@ export default function Stats() {
           </button>
         </div>
         <h1>Statistiky</h1>
-        <Empty icon="📊" title="Zatím tu nic není">
+        <Empty title="Zatím tu nic není">
           Odcvič první trénink a statistiky se začnou plnit.
         </Empty>
       </div>

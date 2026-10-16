@@ -50,14 +50,14 @@ export default function Planner() {
               <div key={d} className={`list-item ${i === todayIdx ? 'active' : ''}`} style={{ flexWrap: 'wrap' }}>
                 <div style={{ width: 84 }}>
                   <div className="bold">{d}</div>
-                  {done ? <div className="tiny ok">✓ odcvičeno</div> : i === todayIdx ? <div className="tiny accent">dnes</div> : null}
+                  {done ? <div className="tiny ok">odcvičeno</div> : i === todayIdx ? <div className="tiny accent">dnes</div> : null}
                 </div>
                 <select
                   className="grow"
                   value={schedule[i] ?? ''}
                   onChange={(e) => setSchedule(i, e.target.value || undefined)}
                 >
-                  <option value="">Volno 😴</option>
+                  <option value="">Volno</option>
                   {routines.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.folder ? `${r.folder} – ` : ''}

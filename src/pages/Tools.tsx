@@ -86,7 +86,7 @@ export default function Tools() {
             </div>
             <div className="center mt-l">
               <div className="small muted">Odhadované maximum (1RM)</div>
-              <div style={{ fontSize: 36, fontWeight: 800 }} className="accent">
+              <div className="num-xl accent">
                 {oneRm ? `${fmtNum(toDisplayWeight(oneRm, unit))} ${unit}` : '–'}
               </div>
             </div>

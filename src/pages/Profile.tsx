@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
+import { Icon } from '../components/Icon';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, Dumbbell, Flame, Settings as Cog, Snowflake, Trophy, Weight } from 'lucide-react';
+import { ArrowLeft, Clock, Dumbbell, Flame, Medal, Settings as Cog, Snowflake, Trophy, Weight } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { useGame } from '../lib/useGame';
 import { strengthRanks, TIERS } from '../lib/strength';
@@ -80,12 +81,12 @@ export default function Profile() {
       <div className="hero">
         <div className="row" style={{ gap: 14 }}>
           <div className="level-badge" style={{ width: 64, height: 64, fontSize: 32 }}>
-            {game.level.icon}
+            <Icon name={game.level.icon} size={30} />
             <span className="n">Lv {game.level.level}</span>
           </div>
           <div className="grow">
             <h1 style={{ fontSize: 26 }}>{settings.name || 'Můj profil'}</h1>
-            <div className="bold" style={{ opacity: 0.9 }}>
+            <div className="bold muted">
               {game.level.title}
             </div>
           </div>
@@ -106,7 +107,9 @@ export default function Profile() {
           <span className="badge white">
             <Snowflake size={13} /> {game.streak.freezes} {plural(game.streak.freezes, ['ochrana', 'ochrany', 'ochran'])}
           </span>
-          <span className="badge white">🏅 {unlocked.length} odznaků</span>
+          <span className="badge white">
+            <Medal size={13} /> {unlocked.length} odznaků
+          </span>
         </div>
       </div>
 
@@ -160,7 +163,7 @@ export default function Profile() {
           <div className="grid-2">
             <div>
               <div className="small muted bold">Tréninky</div>
-              <div style={{ fontSize: 24, fontWeight: 900 }}>
+              <div className="num-lg">
                 {month.count}{' '}
                 {diff(month.count, month.prevCount) !== null && (
                   <span className={`small ${month.count >= month.prevCount ? 'ok' : 'danger'}`}>
@@ -171,7 +174,7 @@ export default function Profile() {
             </div>
             <div>
               <div className="small muted bold">Objem</div>
-              <div style={{ fontSize: 24, fontWeight: 900 }}>
+              <div className="num-lg">
                 {fmtVolume(month.volume, unit)}{' '}
                 {diff(month.volume, month.prevVolume) !== null && (
                   <span className={`small ${month.volume >= month.prevVolume ? 'ok' : 'danger'}`}>
@@ -182,11 +185,11 @@ export default function Profile() {
             </div>
             <div>
               <div className="small muted bold">Rekordy</div>
-              <div style={{ fontSize: 24, fontWeight: 900 }}>🏆 {month.prs}</div>
+              <div className="num-lg">{month.prs}</div>
             </div>
             <div>
               <div className="small muted bold">Nejvíc trénováno</div>
-              <div style={{ fontSize: 18, fontWeight: 900 }}>{month.top ? MUSCLE_LABELS[month.top[0]] : '–'}</div>
+              <div className="num-lg" style={{ fontSize: 22 }}>{month.top ? MUSCLE_LABELS[month.top[0]] : '–'}</div>
             </div>
           </div>
         </div>
@@ -203,7 +206,7 @@ export default function Profile() {
             <Link to="/measure" className="accent bold">
               Měření
             </Link>{' '}
-            a uvidíš, jestli jsi Bronz, nebo už Diamant. 💎
+            a uvidíš, jestli jsi Bronz, nebo už Diamant.
           </div>
         ) : !ranks.length ? (
           <div className="card small muted">Odcvič bench press, dřep, mrtvý tah, tlak nad hlavu, přítahy nebo shyby a získáš rank.</div>
@@ -214,7 +217,7 @@ export default function Profile() {
                 <div className="row between">
                   <span className="bold">{r.label}</span>
                   <span className="tier-chip" style={{ background: `${r.tier.color}26`, color: r.tier.color }}>
-                    {r.tier.icon} {r.tier.name}
+                    <Icon name={r.tier.icon} size={13} /> {r.tier.name}
                   </span>
                 </div>
                 <div className="row small muted" style={{ marginTop: 6 }}>
@@ -226,7 +229,7 @@ export default function Profile() {
                   </div>
                   {r.next && r.nextTarget !== undefined && (
                     <span>
-                      {r.next.icon} {r.byReps ? `${r.nextTarget}` : fmtNum(toDisplayWeight(r.nextTarget, unit), 0)}
+                      <Icon name={r.next.icon} size={12} style={{ color: r.next.color }} /> {r.byReps ? `${r.nextTarget}` : fmtNum(toDisplayWeight(r.nextTarget, unit), 0)}
                     </span>
                   )}
                 </div>
@@ -237,7 +240,7 @@ export default function Profile() {
         <div className="row tiny muted mt" style={{ gap: 8, flexWrap: 'wrap' }}>
           {TIERS.slice(1).map((t) => (
             <span key={t.id}>
-              {t.icon} {t.name}
+              <Icon name={t.icon} size={12} style={{ color: t.color, verticalAlign: '-2px' }} /> {t.name}
             </span>
           ))}
         </div>
@@ -251,8 +254,8 @@ export default function Profile() {
         <div className="card row" style={{ flexWrap: 'wrap', gap: 10 }}>
           {unlocked.length ? (
             unlocked.map((a) => (
-              <span key={a.id} title={a.title} style={{ fontSize: 30 }}>
-                {a.icon}
+              <span key={a.id} title={a.title} className="ach-mini">
+                <Icon name={a.icon} size={20} />
               </span>
             ))
           ) : (

@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { Droplet, Ruler, Scale, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useStore } from '../store/store';
 import type { MeasurementType, Unit } from '../types';
 import { fmtDate, fmtNum, fromDisplayWeight, toDisplayWeight } from '../lib/format';
-import { NumInput, Sheet, toast } from '../components/ui';
+import { NumInput, Sheet, toast, undoToast } from '../components/ui';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   bodyweight: 'Tělesná hmotnost',
@@ -22,7 +23,7 @@ export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
   calf: 'Lýtko',
 };
 
-const ICONS: Partial<Record<MeasurementType, string>> = { bodyweight: '⚖️', bodyfat: '💧' };
+const ICONS: Partial<Record<MeasurementType, typeof Ruler>> = { bodyweight: Scale, bodyfat: Droplet };
 
 function unitOf(t: MeasurementType, unit: Unit) {
   return t === 'bodyweight' ? unit : t === 'bodyfat' ? '%' : 'cm';
@@ -80,7 +81,10 @@ export default function Measure() {
           const diff = last && first && items.length > 1 ? toDisplay(t, last.value, unit) - toDisplay(t, first.value, unit) : 0;
           return (
             <button key={t} className="list-item" onClick={() => setOpen(t)}>
-              <div className="avatar">{ICONS[t] ?? '📏'}</div>
+              <div className="avatar">{(() => {
+                const I = ICONS[t] ?? Ruler;
+                return <I size={19} />;
+              })()}</div>
               <div className="grow">
                 <div className="bold">{MEASUREMENT_LABELS[t]}</div>
                 <div className="small muted">{last ? fmtDate(last.date) : 'Zatím bez záznamu'}</div>
@@ -146,8 +150,15 @@ export default function Measure() {
                 <span className="bold">
                   {fmtNum(toDisplay(m.type, m.value, unit))} {unitOf(m.type, unit)}
                 </span>
-                <button className="del-set" onClick={() => del(m.id)} aria-label="Smazat">
-                  ✕
+                <button
+                  className="del-set"
+                  onClick={() => {
+                    del(m.id);
+                    undoToast('Záznam smazán', () => useStore.getState().restoreMeasurement(m));
+                  }}
+                  aria-label="Smazat"
+                >
+                  <X size={15} />
                 </button>
               </div>
             ))}

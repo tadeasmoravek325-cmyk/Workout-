@@ -1,4 +1,5 @@
 import type { Exercise, Measurement, Workout } from '../types';
+import type { IconName } from '../components/Icon';
 import { computeRecords, exerciseHistory, workoutVolume } from './calc';
 
 export interface AchievementStats {
@@ -20,7 +21,7 @@ export interface AchievementStats {
 
 export interface Achievement {
   id: string;
-  icon: string;
+  icon: IconName;
   title: string;
   description: string;
   /** 0..1 */
@@ -32,26 +33,26 @@ function ratio(v: number, target: number) {
 }
 
 export const ACHIEVEMENTS: Achievement[] = [
-  { id: 'first', icon: '🎉', title: 'První krok', description: 'Dokonči první trénink.', progress: (s) => ratio(s.workouts, 1) },
-  { id: 'w10', icon: '💪', title: 'Rozjezd', description: 'Dokonči 10 tréninků.', progress: (s) => ratio(s.workouts, 10) },
-  { id: 'w50', icon: '🏋️', title: 'Pravidelný návštěvník', description: 'Dokonči 50 tréninků.', progress: (s) => ratio(s.workouts, 50) },
-  { id: 'w100', icon: '🏆', title: 'Stovka', description: 'Dokonči 100 tréninků.', progress: (s) => ratio(s.workouts, 100) },
-  { id: 'w250', icon: '👑', title: 'Legenda posilovny', description: 'Dokonči 250 tréninků.', progress: (s) => ratio(s.workouts, 250) },
-  { id: 'v10t', icon: '🧱', title: '10 tun', description: 'Zvedni celkem 10 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 10_000) },
-  { id: 'v100t', icon: '🚛', title: 'Náklaďák', description: 'Zvedni celkem 100 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 100_000) },
-  { id: 'v1000t', icon: '🚢', title: 'Zaoceánská loď', description: 'Zvedni celkem 1 000 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 1_000_000) },
-  { id: 's1000', icon: '🔁', title: 'Tisíc sérií', description: 'Odcvič 1 000 sérií.', progress: (s) => ratio(s.totalSets, 1000) },
-  { id: 'h24', icon: '⏱️', title: 'Celý den v posilovně', description: 'Natrénuj celkem 24 hodin.', progress: (s) => ratio(s.totalMinutes, 24 * 60) },
-  { id: 'streak', icon: '🔥', title: 'V tahu', description: 'Trénuj 4 týdny po sobě alespoň jednou týdně.', progress: (s) => ratio(s.bestWeekStreak, 4) },
-  { id: 'early', icon: '🌅', title: 'Ranní ptáče', description: 'Začni trénink před 7. hodinou ráno.', progress: (s) => (s.earlyBird ? 1 : 0) },
-  { id: 'night', icon: '🦉', title: 'Noční sova', description: 'Začni trénink po 21. hodině.', progress: (s) => (s.nightOwl ? 1 : 0) },
-  { id: 'long', icon: '🐢', title: 'Maraton', description: 'Odcvič trénink delší než 2 hodiny.', progress: (s) => (s.longWorkout ? 1 : 0) },
-  { id: 'bench-bw', icon: '🛏️', title: 'Vlastní váha na benchi', description: 'Zvedni na bench pressu alespoň svou tělesnou hmotnost.', progress: (s) => (s.benchBodyweight ? 1 : 0) },
-  { id: 'squat100', icon: '🦵', title: 'Stovka na dřepu', description: 'Dřepni 100 kg.', progress: (s) => (s.squat100 ? 1 : 0) },
-  { id: 'dl140', icon: '⚓', title: 'Tři plotny', description: 'Mrtvý tah 140 kg.', progress: (s) => (s.deadlift140 ? 1 : 0) },
-  { id: 'pull10', icon: '🧗', title: 'Deset shybů', description: 'Udělej 10 shybů v jedné sérii.', progress: (s) => (s.pullups10 ? 1 : 0) },
-  { id: 'variety', icon: '🎨', title: 'Pestrost', description: 'Vyzkoušej 25 různých cviků.', progress: (s) => ratio(s.distinctExercises, 25) },
-  { id: 'measure', icon: '📏', title: 'Sleduju se', description: 'Zapiš 10 měření těla.', progress: (s) => ratio(s.measurements, 10) },
+  { id: 'first', icon: 'flag', title: 'První krok', description: 'Dokonči první trénink.', progress: (s) => ratio(s.workouts, 1) },
+  { id: 'w10', icon: 'biceps', title: 'Rozjezd', description: 'Dokonči 10 tréninků.', progress: (s) => ratio(s.workouts, 10) },
+  { id: 'w50', icon: 'dumbbell', title: 'Pravidelný návštěvník', description: 'Dokonči 50 tréninků.', progress: (s) => ratio(s.workouts, 50) },
+  { id: 'w100', icon: 'trophy', title: 'Stovka', description: 'Dokonči 100 tréninků.', progress: (s) => ratio(s.workouts, 100) },
+  { id: 'w250', icon: 'crown', title: 'Legenda posilovny', description: 'Dokonči 250 tréninků.', progress: (s) => ratio(s.workouts, 250) },
+  { id: 'v10t', icon: 'bricks', title: '10 tun', description: 'Zvedni celkem 10 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 10_000) },
+  { id: 'v100t', icon: 'truck', title: 'Náklaďák', description: 'Zvedni celkem 100 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 100_000) },
+  { id: 'v1000t', icon: 'ship', title: 'Zaoceánská loď', description: 'Zvedni celkem 1 000 000 kg.', progress: (s) => ratio(s.totalVolumeKg, 1_000_000) },
+  { id: 's1000', icon: 'repeat', title: 'Tisíc sérií', description: 'Odcvič 1 000 sérií.', progress: (s) => ratio(s.totalSets, 1000) },
+  { id: 'h24', icon: 'timer', title: 'Celý den v posilovně', description: 'Natrénuj celkem 24 hodin.', progress: (s) => ratio(s.totalMinutes, 24 * 60) },
+  { id: 'streak', icon: 'flame', title: 'V tahu', description: 'Trénuj 4 týdny po sobě alespoň jednou týdně.', progress: (s) => ratio(s.bestWeekStreak, 4) },
+  { id: 'early', icon: 'sunrise', title: 'Ranní ptáče', description: 'Začni trénink před 7. hodinou ráno.', progress: (s) => (s.earlyBird ? 1 : 0) },
+  { id: 'night', icon: 'moon', title: 'Noční sova', description: 'Začni trénink po 21. hodině.', progress: (s) => (s.nightOwl ? 1 : 0) },
+  { id: 'long', icon: 'hourglass', title: 'Maraton', description: 'Odcvič trénink delší než 2 hodiny.', progress: (s) => (s.longWorkout ? 1 : 0) },
+  { id: 'bench-bw', icon: 'weight', title: 'Vlastní váha na benchi', description: 'Zvedni na bench pressu alespoň svou tělesnou hmotnost.', progress: (s) => (s.benchBodyweight ? 1 : 0) },
+  { id: 'squat100', icon: 'footprints', title: 'Stovka na dřepu', description: 'Dřepni 100 kg.', progress: (s) => (s.squat100 ? 1 : 0) },
+  { id: 'dl140', icon: 'anchor', title: 'Tři plotny', description: 'Mrtvý tah 140 kg.', progress: (s) => (s.deadlift140 ? 1 : 0) },
+  { id: 'pull10', icon: 'mountain', title: 'Deset shybů', description: 'Udělej 10 shybů v jedné sérii.', progress: (s) => (s.pullups10 ? 1 : 0) },
+  { id: 'variety', icon: 'layers', title: 'Pestrost', description: 'Vyzkoušej 25 různých cviků.', progress: (s) => ratio(s.distinctExercises, 25) },
+  { id: 'measure', icon: 'ruler', title: 'Sleduju se', description: 'Zapiš 10 měření těla.', progress: (s) => ratio(s.measurements, 10) },
 ];
 
 function maxConsecutiveWeeks(workouts: Workout[]): number {

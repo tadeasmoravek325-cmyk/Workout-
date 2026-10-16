@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { X } from 'lucide-react';
 import { create } from 'zustand';
 
 export function Sheet({
@@ -28,8 +29,8 @@ export function Sheet({
     <div className="overlay" onClick={onClose}>
       <div className={`sheet ${full ? 'full' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="sheet-head">
-          <button className="btn ghost" onClick={onClose} aria-label="Zavřít">
-            ✕
+          <button className="icon-btn" onClick={onClose} aria-label="Zavřít">
+            <X size={18} />
           </button>
           <h2 className="grow center ellipsis">{title}</h2>
           <div style={{ minWidth: 44, display: 'flex', justifyContent: 'flex-end' }}>{action}</div>
@@ -130,10 +131,10 @@ export function Ring({
   );
 }
 
-export function Empty({ icon, title, children }: { icon: string; title: string; children?: ReactNode }) {
+export function Empty({ icon, title, children }: { icon?: ReactNode; title: string; children?: ReactNode }) {
   return (
     <div className="empty">
-      <div className="big">{icon}</div>
+      {icon && <div className="big">{icon}</div>}
       <div className="bold" style={{ color: 'var(--text)', marginBottom: 6 }}>
         {title}
       </div>
@@ -147,25 +148,46 @@ export function Empty({ icon, title, children }: { icon: string; title: string; 
 interface Toast {
   id: number;
   text: ReactNode;
-  kind?: 'pr' | 'info';
+  kind?: 'pr' | 'info' | 'error';
+  action?: { label: string; run: () => void };
 }
 
 const useToasts = create<{ items: Toast[] }>(() => ({ items: [] }));
 let toastId = 0;
 
-export function toast(text: ReactNode, kind: Toast['kind'] = 'info', ms = 2600) {
+function dismiss(id: number) {
+  useToasts.setState((s) => ({ items: s.items.filter((t) => t.id !== id) }));
+}
+
+export function toast(text: ReactNode, kind: Toast['kind'] = 'info', ms = 2600, action?: Toast['action']) {
   const id = ++toastId;
-  useToasts.setState((s) => ({ items: [...s.items, { id, text, kind }] }));
-  setTimeout(() => useToasts.setState((s) => ({ items: s.items.filter((t) => t.id !== id) })), ms);
+  useToasts.setState((s) => ({ items: [...s.items.slice(-2), { id, text, kind, action }] }));
+  setTimeout(() => dismiss(id), ms);
+}
+
+/** Toast with an "Undo" button, shown long enough to react. */
+export function undoToast(text: ReactNode, undo: () => void) {
+  toast(text, 'info', 6000, { label: 'Vrátit', run: undo });
 }
 
 export function Toasts() {
   const items = useToasts((s) => s.items);
   return (
-    <div className="toast-wrap">
+    <div className="toast-wrap" role="status" aria-live="polite">
       {items.map((t) => (
-        <div key={t.id} className={`toast ${t.kind ?? ''}`}>
-          {t.text}
+        <div key={t.id} className={`toast ${t.kind ?? ''} ${t.action ? 'has-action' : ''}`}>
+          <span className="grow">{t.text}</span>
+          {t.action && (
+            <button
+              className="toast-action"
+              onClick={() => {
+                t.action!.run();
+                dismiss(t.id);
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
         </div>
       ))}
     </div>

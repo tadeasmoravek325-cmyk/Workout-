@@ -157,6 +157,10 @@ export interface Settings {
   theme: 'dark' | 'light' | 'system';
   showRpe: boolean;
   smartCoach: boolean;
+  /** When the user last saved a backup file (ms). */
+  lastBackupAt?: number;
+  /** Backup reminder is hidden until this time (ms). */
+  backupSnoozeUntil?: number;
 }
 
 export interface RestTimer {

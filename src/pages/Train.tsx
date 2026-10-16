@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Copy, Folder, Pencil, Trash2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { PROGRAMS, type Program } from '../data/programs';
-import { confirmDialog, Sheet, toast } from '../components/ui';
+import { confirmDialog, Sheet, toast, undoToast } from '../components/ui';
 import { GeneratorSheet } from '../components/GeneratorSheet';
 import { Sparkles } from 'lucide-react';
 import { exerciseHistory } from '../lib/calc';
@@ -64,14 +65,13 @@ export default function Train() {
         </div>
         {!routines.length && (
           <div className="card empty">
-            <div className="big">📋</div>
             Zatím nemáš žádnou rutinu. Vytvoř si vlastní, nebo importuj hotový program níže.
           </div>
         )}
         {[...folders.entries()].map(([folder, list]) => (
           <div key={folder} style={{ marginBottom: 14 }}>
             <div className="small muted bold" style={{ margin: '6px 2px' }}>
-              📁 {folder}
+              <Folder size={13} style={{ verticalAlign: '-2px' }} /> {folder}
             </div>
             <div className="grid-2">
               {list.map((r) => {
@@ -174,7 +174,7 @@ export default function Train() {
           </button>
           <div className="grid-3 mt">
             <button className="btn sm" onClick={() => navigate(`/routines/${preview.id}`)}>
-              ✏️ Upravit
+              <Pencil size={15} /> Upravit
             </button>
             <button
               className="btn sm"
@@ -184,18 +184,27 @@ export default function Train() {
                 setPreview(null);
               }}
             >
-              ⧉ Kopie
+              <Copy size={15} /> Kopie
             </button>
             <button
               className="btn sm danger"
               onClick={async () => {
                 if (await confirmDialog(`Smazat rutinu „${preview.name}“?`, 'Odcvičené tréninky v historii zůstanou.', 'Smazat')) {
+                  const copy = structuredClone(preview);
+                  const days = Object.entries(useStore.getState().schedule)
+                    .filter(([, id]) => id === preview.id)
+                    .map(([d]) => Number(d));
                   deleteRoutine(preview.id);
                   setPreview(null);
+                  undoToast('Rutina smazána', () => {
+                    const st = useStore.getState();
+                    st.saveRoutine(copy);
+                    for (const d of days) st.setSchedule(d, copy.id);
+                  });
                 }
               }}
             >
-              🗑 Smazat
+              <Trash2 size={15} /> Smazat
             </button>
           </div>
         </Sheet>

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
-import { del, get, set } from 'idb-keyval';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY } from '../lib/safety';
 import type {
   Exercise,
   Measurement,
@@ -15,12 +15,6 @@ import type {
 import { defaultSettings, uid } from '../lib/calc';
 import { BUILTIN_EXERCISES } from '../data/exercises';
 import { PROGRAMS } from '../data/programs';
-
-const idbStorage: StateStorage = {
-  getItem: async (name) => (await get<string>(name)) ?? null,
-  setItem: async (name, value) => set(name, value),
-  removeItem: async (name) => del(name),
-};
 
 /** Monday = 0 … Sunday = 6 → routine id. */
 export type Schedule = Record<number, string | undefined>;
@@ -49,6 +43,8 @@ interface State extends BackupData {
 
   mutateWorkout: (id: string, fn: (w: Workout) => void) => void;
   deleteWorkout: (id: string) => void;
+  restoreWorkout: (w: Workout) => void;
+  restoreActive: (w: Workout) => void;
 
   saveRoutine: (r: Routine) => void;
   deleteRoutine: (id: string) => void;
@@ -61,6 +57,7 @@ interface State extends BackupData {
 
   addMeasurement: (m: Omit<Measurement, 'id'>) => void;
   deleteMeasurement: (id: string) => void;
+  restoreMeasurement: (m: Measurement) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
   setSchedule: (day: number, routineId: string | undefined) => void;
@@ -206,6 +203,15 @@ export const useStore = create<State>()(
 
       deleteWorkout: (id) => setState((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
 
+      restoreWorkout: (w) =>
+        setState((s) => ({
+          workouts: [w, ...s.workouts.filter((x) => x.id !== w.id)].sort((a, b) => b.startedAt - a.startedAt),
+        })),
+
+      restoreActive: (w) => {
+        if (!getState().active) setState({ active: w });
+      },
+
       saveRoutine: (r) =>
         setState((s) => {
           const exists = s.routines.some((x) => x.id === r.id);
@@ -290,6 +296,9 @@ export const useStore = create<State>()(
 
       deleteMeasurement: (id) => setState((s) => ({ measurements: s.measurements.filter((m) => m.id !== id) })),
 
+      restoreMeasurement: (m) =>
+        setState((s) => ({ measurements: [...s.measurements.filter((x) => x.id !== m.id), m].sort((a, b) => a.date - b.date) })),
+
       updateSettings: (patch) => setState((s) => ({ settings: { ...s.settings, ...patch } })),
 
       setSchedule: (day, routineId) => setState((s) => ({ schedule: { ...s.schedule, [day]: routineId } })),
@@ -318,7 +327,8 @@ export const useStore = create<State>()(
 
       stopRest: () => setState({ rest: null }),
 
-      importBackup: (data, mode) =>
+      importBackup: (data, mode) => {
+        void createSnapshot('before-import', exportBackup());
         setState((s) => {
           if (mode === 'replace') {
             return {
@@ -339,9 +349,11 @@ export const useStore = create<State>()(
             measurements: byId(s.measurements, data.measurements).sort((a, b) => a.date - b.date),
             exerciseNotes: { ...(s.exerciseNotes ?? {}), ...(data.exerciseNotes ?? {}) },
           };
-        }),
+        });
+      },
 
       importWorkouts: (workouts, exercises) => {
+        void createSnapshot('before-import', exportBackup());
         const s = getState();
         const existing = new Set(s.workouts.map((w) => w.startedAt));
         const fresh = workouts.filter((w) => !existing.has(w.startedAt));
@@ -353,13 +365,18 @@ export const useStore = create<State>()(
         return fresh.length;
       },
 
-      resetAll: () => setState({ ...initialData(), active: null, rest: null }),
+      resetAll: () => {
+        void createSnapshot('before-reset', exportBackup());
+        setState({ ...initialData(), active: null, rest: null });
+      },
     }),
     {
       // Storage key kept from the original working name so existing data is not lost.
-      name: 'silak-data',
+      name: STORE_KEY,
       version: 1,
-      storage: createJSONStorage(() => idbStorage),
+      storage: createJSONStorage(() => safeStorage),
+      // Future schema changes go here. Returning the state untouched keeps data instead of dropping it.
+      migrate: (persisted) => persisted as State,
       partialize: (s) => ({
         workouts: s.workouts,
         routines: s.routines,
@@ -378,8 +395,13 @@ export const useStore = create<State>()(
         if (!p.settings?.onboarded && (p.workouts?.length ?? 0) > 0) settings.onboarded = true;
         return { ...current, ...p, settings };
       },
-      onRehydrateStorage: () => () => {
+      onRehydrateStorage: () => (_state, error) => {
+        finishLoad(error);
         useStore.setState({ hydrated: true });
+        if (!error) {
+          void requestPersistence();
+          void maybeDailySnapshot(exportBackup());
+        }
       },
     },
   ),
@@ -428,3 +450,8 @@ export function exportBackup(): BackupData {
     exerciseNotes: s.exerciseNotes,
   };
 }
+
+// Another tab saved newer data: re-read it so this tab never writes stale state over it.
+onOtherTabSaved(() => {
+  void useStore.persist.rehydrate();
+});

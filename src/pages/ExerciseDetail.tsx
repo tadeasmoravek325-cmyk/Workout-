@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Pin } from 'lucide-react';
+import { Icon } from '../components/Icon';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useAllExercises, useExerciseMap, useStore } from '../store/store';
@@ -8,7 +10,7 @@ import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS
 import { BodyMap } from '../components/BodyMap';
 import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
-import { confirmDialog, Empty, Segmented } from '../components/ui';
+import { confirmDialog, Empty, Segmented, undoToast } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
 import { strengthRank } from '../lib/strength';
 import { PlayCircle } from 'lucide-react';
@@ -130,8 +132,10 @@ export default function ExerciseDetail() {
                   !(await confirmDialog('Smazat cvik?', `Cvik má ${sessions.length} záznamů v historii. Ty v tréninku zůstanou bez názvu.`, 'Smazat'))
                 )
                   return;
+                const copy = structuredClone(ex);
                 deleteExercise(ex.id);
                 navigate('/exercises', { replace: true });
+                undoToast('Cvik smazán', () => useStore.getState().saveExercise(copy));
               }}
             >
               Smazat
@@ -160,7 +164,7 @@ export default function ExerciseDetail() {
             <div className="row between">
               <div>
                 <div className="small muted">{METRIC_LABEL[metric]}</div>
-                <div style={{ fontSize: 24, fontWeight: 800 }}>{data.length ? fmtVal(last) : '–'}</div>
+                <div className="num-lg">{data.length ? fmtVal(last) : '–'}</div>
               </div>
               {data.length > 1 && (
                 <span className={`badge ${change >= 0 ? 'ok' : ''}`} style={change < 0 ? { color: 'var(--danger)' } : undefined}>
@@ -191,7 +195,7 @@ export default function ExerciseDetail() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <Empty icon="📈" title="Málo dat">
+              <Empty title="Málo dat">
                 Graf se zobrazí po alespoň dvou trénincích s tímto cvikem.
               </Empty>
             )}
@@ -234,7 +238,7 @@ export default function ExerciseDetail() {
               ))}
             </Link>
           ))}
-          {!sessions.length && <Empty icon="📭" title="Zatím žádná historie" />}
+          {!sessions.length && <Empty title="Zatím žádná historie" />}
         </div>
       )}
 
@@ -242,17 +246,19 @@ export default function ExerciseDetail() {
         <div className="mt-l">
           {rank && (rank.value > 0) && (
             <div className="card row" style={{ marginBottom: 12, gap: 14 }}>
-              <div style={{ fontSize: 40 }}>{rank.tier.icon}</div>
+              <div style={{ color: rank.tier.color }}>
+                <Icon name={rank.tier.icon} size={40} />
+              </div>
               <div className="grow">
                 <div className="small muted bold">Silový rank</div>
-                <div style={{ fontSize: 20, fontWeight: 900, color: rank.tier.color }}>{rank.tier.name}</div>
+                <div className="num-lg" style={{ fontSize: 24, color: rank.tier.color }}>{rank.tier.name}</div>
                 {rank.next && rank.nextTarget !== undefined && (
                   <>
                     <div className="progress" style={{ height: 6, marginTop: 6 }}>
                       <div style={{ width: `${rank.progress * 100}%`, background: rank.next.color }} />
                     </div>
                     <div className="tiny muted" style={{ marginTop: 4 }}>
-                      {rank.next.icon} {rank.next.name} při{' '}
+                      {rank.next.name} při{' '}
                       {rank.byReps ? `${rank.nextTarget} opak.` : `1RM ${fmtNum(toDisplayWeight(rank.nextTarget, unit), 0)} ${unit}`}
                     </div>
                   </>
@@ -343,7 +349,11 @@ export default function ExerciseDetail() {
             <div>
               <span className="muted">Typ záznamu:</span> {EXERCISE_TYPE_LABELS[ex.type]}
             </div>
-            {pinned && <div className="sticky-note">📌 {pinned}</div>}
+            {pinned && (
+              <div className="sticky-note">
+                <Pin size={15} style={{ marginTop: 2 }} /> {pinned}
+              </div>
+            )}
           </div>
           <a
             className="btn cool block"
