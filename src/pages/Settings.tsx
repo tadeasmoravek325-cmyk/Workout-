@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Database, DatabaseBackup, FileDown, FileSpreadsheet, FileUp, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAllExercises, useExerciseMap, useStore, type BackupData } from '../store/store';
-import { importStrongCsv, type StrongImportResult } from '../lib/csv';
+import { useExerciseMap, useStore, type BackupData } from '../store/store';
+import { StrongImportSheet } from '../components/StrongImportSheet';
 import { fmtClock, fmtDate, fmtDateTime, fmtNum, plural, relativeDay } from '../lib/format';
 import { listSnapshots, parseBackup, readSnapshot, SNAPSHOT_REASON_LABELS, useSafety, type SnapshotMeta } from '../lib/safety';
 import { saveBackupFile, saveCsvFile } from '../lib/backup';
 import { ask, confirmDialog, Segmented, Sheet, Switch, toast } from '../components/ui';
-import type { Equipment, Experience, Goal, Sex, Unit } from '../types';
+import type { Equipment, Experience, Goal, Sex } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
 
 function Row({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
@@ -28,15 +28,13 @@ export default function SettingsPage() {
   const settings = useStore((s) => s.settings);
   const update = useStore((s) => s.updateSettings);
   const importBackup = useStore((s) => s.importBackup);
-  const importWorkouts = useStore((s) => s.importWorkouts);
   const resetAll = useStore((s) => s.resetAll);
   const workouts = useStore((s) => s.workouts);
   const exMap = useExerciseMap();
-  const allExercises = useAllExercises();
   const navigate = useNavigate();
   const jsonRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
-  const [strong, setStrong] = useState<{ text: string; unit: Unit; result?: StrongImportResult; error?: string } | null>(null);
+  const [strongText, setStrongText] = useState<string | null>(null);
 
   const persistent = useSafety((s) => s.persistent);
   const lastSavedAt = useSafety((s) => s.lastSavedAt);
@@ -67,13 +65,6 @@ export default function SettingsPage() {
     await applyBackup(parsed.data as Partial<BackupData>, parsed.exportedAt ? `Záloha z ${fmtDate(Date.parse(parsed.exportedAt))}` : 'Záloha');
   };
 
-  const parseStrong = (text: string, unit: Unit) => {
-    try {
-      setStrong({ text, unit, result: importStrongCsv(text, unit, allExercises) });
-    } catch (e) {
-      setStrong({ text, unit, error: (e as Error).message });
-    }
-  };
 
   const notifications = 'Notification' in window ? Notification.permission : 'unsupported';
 
@@ -408,60 +399,11 @@ export default function SettingsPage() {
         onChange={async (e) => {
           const f = e.target.files?.[0];
           e.target.value = '';
-          if (f) parseStrong(await f.text(), settings.unit);
+          if (f) setStrongText(await f.text());
         }}
       />
 
-      {strong && (
-        <Sheet title="Import ze Strong" onClose={() => setStrong(null)}>
-          {strong.error ? (
-            <div className="card danger">{strong.error}</div>
-          ) : (
-            strong.result && (
-              <div className="stack">
-                <div className="field">
-                  <label>V jakých jednotkách jsi měl Strong nastavený?</label>
-                  <Segmented
-                    value={strong.unit}
-                    onChange={(u) => parseStrong(strong.text, u)}
-                    options={[
-                      { value: 'kg', label: 'kg' },
-                      { value: 'lb', label: 'lb' },
-                    ]}
-                  />
-                </div>
-                <div className="card">
-                  <div className="num-lg">
-                    {strong.result.workouts.length} {plural(strong.result.workouts.length, ['trénink', 'tréninky', 'tréninků'])}
-                  </div>
-                  <div className="small muted">
-                    {strong.result.workouts.reduce((a, w) => a + w.exercises.reduce((b, e) => b + e.sets.length, 0), 0)} sérií
-                  </div>
-                </div>
-                {strong.result.unmatched.length > 0 && (
-                  <div className="card small">
-                    <div className="bold">Nové vlastní cviky ({strong.result.unmatched.length}):</div>
-                    <div className="muted" style={{ marginTop: 4 }}>
-                      {strong.result.unmatched.join(', ')}
-                    </div>
-                  </div>
-                )}
-                <button
-                  className="btn primary block"
-                  onClick={() => {
-                    const n = importWorkouts(strong.result!.workouts, strong.result!.newExercises);
-                    toast(`Importováno ${n} ${plural(n, ['trénink', 'tréninky', 'tréninků'])}`);
-                    setStrong(null);
-                  }}
-                >
-                  Importovat
-                </button>
-                <div className="tiny muted center">Tréninky, které už máš (stejný čas začátku), se přeskočí.</div>
-              </div>
-            )
-          )}
-        </Sheet>
-      )}
+      {strongText !== null && <StrongImportSheet text={strongText} onClose={() => setStrongText(null)} />}
     </div>
   );
 }

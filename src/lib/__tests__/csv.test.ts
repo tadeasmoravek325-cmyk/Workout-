@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { exportCsv, importStrongCsv, parseCsv } from '../csv';
+import { analyzeStrongCsv, buildStrongImport, exportCsv, importStrongCsv, parseCsv, strongExerciseId } from '../csv';
+import { computeRecords, exerciseHistory } from '../calc';
 import { BUILTIN_EXERCISES } from '../../data/exercises';
 
 const STRONG = `Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,Notes,Workout Notes,RPE
@@ -26,7 +27,7 @@ describe('importStrongCsv', () => {
   it('groups rows into workouts', () => {
     expect(res.workouts).toHaveLength(2);
     const push = res.workouts.find((w) => w.name === 'Push Day')!;
-    expect(push.exercises.map((e) => e.exerciseId)).toEqual(['bench-press', 'strong-zercher-squat-barbell', 'plank']);
+    expect(push.exercises.map((e) => e.exerciseId)).toEqual(['bench-press', strongExerciseId('Zercher Squat (Barbell)'), 'plank']);
     expect(push.finishedAt! - push.startedAt).toBe(65 * 60_000);
     expect(push.notes).toBe('Good, strong');
   });
@@ -70,5 +71,62 @@ describe('importStrongCsv', () => {
       ['normal', 100, 5],
       ['normal', 100, 5],
     ]);
+  });
+});
+
+const NEW_FORMAT = `Workout #,Date,Workout Name,Duration (sec),Exercise Name,Set Order,Weight (kg),Reps,RPE,Distance (meters),Seconds,Notes,Workout Notes
+1,2025-05-02 17:00:00,Legs,3600,Squat (Barbell),1,140,3,,0,0,,
+1,2025-05-02 17:00:00,Legs,3600,Hack Squat,1,180,8,,0,0,,
+1,2025-05-02 17:00:00,Legs,3600,Reverse Hack Squat,1,200,10,,0,0,,
+1,2025-05-02 17:00:00,Legs,3600,Reverse Hack Squat,2,200,9,,0,0,,
+2,2025-05-04 08:00:00,Run,1800,Running (Outdoor),1,0,0,,5200,1800,,
+`;
+
+describe('Strong import – newer export format and similar names', () => {
+  it('reads weights and units from headers like "Weight (kg)"', () => {
+    const res = importStrongCsv(NEW_FORMAT, 'lb', BUILTIN_EXERCISES);
+    const legs = res.workouts.find((w) => w.name === 'Legs')!;
+    expect(legs.exercises[0].sets[0].weight).toBe(140); // kg from header wins over the lb fallback
+    expect(legs.finishedAt! - legs.startedAt).toBe(3600 * 1000);
+    const run = res.workouts.find((w) => w.name === 'Run')!;
+    expect(run.exercises[0].sets[0].distance).toBeCloseTo(5.2); // meters → km
+  });
+
+  it('never merges Squat, Hack Squat and Reverse Hack Squat', () => {
+    const res = importStrongCsv(NEW_FORMAT, 'kg', BUILTIN_EXERCISES);
+    const ids = res.workouts.find((w) => w.name === 'Legs')!.exercises.map((e) => e.exerciseId);
+    expect(new Set(ids).size).toBe(3);
+    expect(ids[0]).toBe('squat');
+    expect(ids[1]).toBe('hack-squat');
+    expect(ids[2]).not.toBe('squat');
+    expect(ids[2]).not.toBe('hack-squat');
+  });
+
+  it('keeps records apart for similar exercises', () => {
+    const res = importStrongCsv(NEW_FORMAT, 'kg', BUILTIN_EXERCISES);
+    const squatId = 'squat';
+    const reverseId = res.workouts.find((w) => w.name === 'Legs')!.exercises[2].exerciseId;
+    expect(computeRecords(exerciseHistory(res.workouts, squatId)).maxWeight).toBe(140);
+    expect(computeRecords(exerciseHistory(res.workouts, reverseId)).maxWeight).toBe(200);
+  });
+
+  it('gives different names different ids even when they slugify the same', () => {
+    expect(strongExerciseId('Row (Cable)')).not.toBe(strongExerciseId('Row - Cable'));
+    expect(strongExerciseId('Reverse Hack Squat')).toBe(strongExerciseId('  reverse   hack squat '));
+  });
+
+  it('suggests only exact matches and lets the user override the mapping', () => {
+    const analysis = analyzeStrongCsv(NEW_FORMAT, BUILTIN_EXERCISES);
+    const rev = analysis.exercises.find((e) => e.name === 'Reverse Hack Squat')!;
+    expect(rev.suggested).toBeNull();
+    expect(rev.sets).toBe(2);
+    expect(analysis.unitFromFile).toBe('kg');
+    expect(analysis.workoutCount).toBe(2);
+    const mapping = Object.fromEntries(analysis.exercises.map((e) => [e.key, e.suggested]));
+    mapping[rev.key] = 'leg-press';
+    const res = buildStrongImport(analysis, mapping, 'kg', BUILTIN_EXERCISES);
+    const legs = res.workouts.find((w) => w.name === 'Legs')!;
+    expect(legs.exercises[2].exerciseId).toBe('leg-press');
+    expect(res.newExercises.some((e) => e.name === 'Reverse Hack Squat')).toBe(false);
   });
 });

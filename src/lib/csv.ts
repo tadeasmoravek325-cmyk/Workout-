@@ -194,6 +194,120 @@ function num(v: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** Normalized exercise name used for matching: lower case, single spaces. */
+export function strongKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Short stable hash (FNV-1a) so two different names can never share an id. */
+function hash(s: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
+}
+
+export function strongExerciseId(name: string): string {
+  const key = strongKey(name);
+  const slug = key
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40);
+  return `strong-${slug || 'exercise'}-${hash(key)}`;
+}
+
+interface HeaderInfo {
+  index: Record<string, number>;
+  weightUnit?: Unit;
+  distanceUnit?: 'km' | 'mi' | 'm';
+}
+
+/** Maps header cells like "Weight (kg)" or "Duration (sec)" to base names and units. */
+function readHeader(cells: string[]): HeaderInfo {
+  const index: Record<string, number> = {};
+  let weightUnit: Unit | undefined;
+  let distanceUnit: HeaderInfo['distanceUnit'];
+  cells.forEach((raw, i) => {
+    const m = raw.trim().toLowerCase().match(/^([^(]+?)\s*(?:\(([^)]*)\))?$/);
+    if (!m) return;
+    const base = m[1].trim();
+    const unit = (m[2] ?? '').trim();
+    if (!(base in index)) index[base] = i;
+    if (base === 'weight') {
+      if (/^kg/.test(unit)) weightUnit = 'kg';
+      else if (/^lb/.test(unit)) weightUnit = 'lb';
+    }
+    if (base === 'distance') {
+      if (unit === 'km') distanceUnit = 'km';
+      else if (/^mi/.test(unit)) distanceUnit = 'mi';
+      else if (/^m(eters?)?$/.test(unit)) distanceUnit = 'm';
+    }
+  });
+  return { index, weightUnit, distanceUnit };
+}
+
+export interface StrongExerciseSummary {
+  /** Name exactly as written in the export (first occurrence). */
+  name: string;
+  key: string;
+  sets: number;
+  /** Suggested target: an existing exercise id, or null for "create a new exercise". */
+  suggested: string | null;
+}
+
+export interface StrongAnalysis {
+  rows: string[][];
+  header: HeaderInfo;
+  exercises: StrongExerciseSummary[];
+  workoutCount: number;
+  /** Unit found in the header ("Weight (kg)"), if any. */
+  unitFromFile?: Unit;
+}
+
+/**
+ * First step of an import: reads the file and proposes how each Strong exercise maps to the library.
+ * Only exact name matches are suggested; everything else becomes its own new exercise.
+ */
+export function analyzeStrongCsv(text: string, knownExercises: Exercise[]): StrongAnalysis {
+  const rows = parseCsv(text);
+  if (rows.length < 2) throw new Error('The file is empty.');
+  const header = readHeader(rows[0]);
+  const iDate = header.index['date'];
+  const iEx = header.index['exercise name'];
+  if (iDate === undefined || iEx === undefined) {
+    throw new Error("This doesn't look like a Strong export (the Date and Exercise Name columns are missing).");
+  }
+  const iName = header.index['workout name'];
+  const iOrder = header.index['set order'];
+  const byName = new Map(knownExercises.map((e) => [strongKey(e.name), e.id]));
+  const summaries = new Map<string, StrongExerciseSummary>();
+  const workouts = new Set<string>();
+  for (const r of rows.slice(1)) {
+    const name = (r[iEx] ?? '').trim();
+    if (!name || !parseDate(r[iDate] ?? '')) continue;
+    if (iOrder !== undefined && /rest/i.test(r[iOrder] ?? '')) continue;
+    workouts.add(`${r[iDate]}|${iName !== undefined ? r[iName] : ''}`);
+    const key = strongKey(name);
+    let s = summaries.get(key);
+    if (!s) {
+      s = { name, key, sets: 0, suggested: STRONG_NAMES[key] ?? byName.get(key) ?? null };
+      summaries.set(key, s);
+    }
+    s.sets++;
+  }
+  return {
+    rows,
+    header,
+    exercises: [...summaries.values()].sort((a, b) => b.sets - a.sets),
+    workoutCount: workouts.size,
+    unitFromFile: header.weightUnit,
+  };
+}
+
 export interface StrongImportResult {
   workouts: Workout[];
   newExercises: Exercise[];
@@ -201,18 +315,20 @@ export interface StrongImportResult {
 }
 
 /**
- * Converts a Strong app CSV export into workouts.
- * Weights are interpreted in `unit`, distances in km (kg) or miles (lb).
+ * Second step: builds workouts using the confirmed mapping (Strong name key → exercise id, or null for new).
+ * Weights are read in the unit from the file header when present, otherwise in `unit`.
  */
-export function importStrongCsv(text: string, unit: Unit, knownExercises: Exercise[]): StrongImportResult {
-  const rows = parseCsv(text);
-  if (rows.length < 2) throw new Error('Soubor je prázdný.');
-  const header = rows[0].map((h) => h.trim().toLowerCase());
-  const col = (name: string) => header.indexOf(name);
+export function buildStrongImport(
+  analysis: StrongAnalysis,
+  mapping: Record<string, string | null>,
+  unit: Unit,
+  knownExercises: Exercise[],
+): StrongImportResult {
+  const { rows, header } = analysis;
+  const col = (n: string) => header.index[n] ?? -1;
   const iDate = col('date');
   const iName = col('workout name');
   const iEx = col('exercise name');
-  if (iDate < 0 || iEx < 0) throw new Error('Tohle nevypadá jako export ze Strong (chybí sloupce Date / Exercise Name).');
   const iDur = col('duration');
   const iOrder = col('set order');
   const iWeight = col('weight');
@@ -223,21 +339,23 @@ export function importStrongCsv(text: string, unit: Unit, knownExercises: Exerci
   const iWNotes = col('workout notes');
   const iRpe = col('rpe');
 
-  const byName = new Map(knownExercises.map((e) => [e.name.toLowerCase(), e]));
-  const created = new Map<string, Exercise>();
-  const unmatched = new Set<string>();
+  const weightUnit = header.weightUnit ?? unit;
+  const toKg = (v: number | undefined) => (v === undefined ? undefined : weightUnit === 'kg' ? v : v * KG_PER_LB);
+  const distUnit = header.distanceUnit ?? (unit === 'kg' ? 'km' : 'mi');
+  const toKm = (v: number | undefined) =>
+    v === undefined ? undefined : distUnit === 'km' ? v : distUnit === 'mi' ? v * 1.609344 : v / 1000;
 
-  const resolveExercise = (raw: string): string => {
-    const key = raw.trim().toLowerCase();
-    const mapped = STRONG_NAMES[key];
-    if (mapped) return mapped;
-    const known = byName.get(key);
-    if (known) return known.id;
+  const known = new Set(knownExercises.map((e) => e.id));
+  const created = new Map<string, Exercise>();
+  const resolve = (raw: string): string => {
+    const key = strongKey(raw);
+    const target = mapping[key];
+    if (target && known.has(target)) return target;
     let ex = created.get(key);
     if (!ex) {
-      unmatched.add(raw.trim());
+      const id = strongExerciseId(raw);
       ex = {
-        id: 'strong-' + key.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        id,
         name: raw.trim(),
         equipment: guessEquipment(raw),
         type: 'weight_reps' as ExerciseType,
@@ -251,15 +369,16 @@ export function importStrongCsv(text: string, unit: Unit, knownExercises: Exerci
     return ex.id;
   };
 
-  const toKg = (v: number | undefined) => (v === undefined ? undefined : unit === 'kg' ? v : v * KG_PER_LB);
-  const toKm = (v: number | undefined) => (v === undefined ? undefined : unit === 'kg' ? v : v * 1.609344);
-
   const workouts = new Map<string, Workout>();
   for (const r of rows.slice(1)) {
     const dateStr = r[iDate] ?? '';
     const startedAt = parseDate(dateStr);
-    if (!startedAt) continue;
-    const wName = (iName >= 0 ? r[iName] : '')?.trim() || 'Trénink';
+    const exName = (r[iEx] ?? '').trim();
+    if (!startedAt || !exName) continue;
+    const order = iOrder >= 0 ? (r[iOrder] ?? '') : '';
+    // Strong exports a "Rest Timer" pseudo row – skip it.
+    if (/rest/i.test(order)) continue;
+    const wName = (iName >= 0 ? r[iName] : '')?.trim() || 'Workout';
     const key = `${dateStr}|${wName}`;
     let w = workouts.get(key);
     if (!w) {
@@ -274,10 +393,7 @@ export function importStrongCsv(text: string, unit: Unit, knownExercises: Exerci
       };
       workouts.set(key, w);
     }
-    const exerciseId = resolveExercise(r[iEx] ?? '');
-    const order = iOrder >= 0 ? (r[iOrder] ?? '') : '';
-    // Strong exports a "Rest Timer" pseudo row with set order "Rest Timer" – skip it.
-    if (/rest/i.test(order)) continue;
+    const exerciseId = resolve(exName);
     let we: WorkoutExercise | undefined = w.exercises[w.exercises.length - 1];
     if (!we || we.exerciseId !== exerciseId) {
       we = { id: uid(), exerciseId, sets: [] };
@@ -315,8 +431,15 @@ export function importStrongCsv(text: string, unit: Unit, knownExercises: Exerci
   return {
     workouts: [...workouts.values()].filter((w) => w.exercises.length).sort((a, b) => b.startedAt - a.startedAt),
     newExercises: [...created.values()],
-    unmatched: [...unmatched],
+    unmatched: [...created.values()].map((e) => e.name),
   };
+}
+
+/** One-step import with the suggested mapping (used by tests and simple callers). */
+export function importStrongCsv(text: string, unit: Unit, knownExercises: Exercise[]): StrongImportResult {
+  const analysis = analyzeStrongCsv(text, knownExercises);
+  const mapping = Object.fromEntries(analysis.exercises.map((e) => [e.key, e.suggested]));
+  return buildStrongImport(analysis, mapping, unit, knownExercises);
 }
 
 function pad(n: number) {

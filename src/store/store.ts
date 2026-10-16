@@ -68,7 +68,11 @@ interface State extends BackupData {
   stopRest: () => void;
 
   importBackup: (data: Partial<BackupData>, mode: 'merge' | 'replace') => void;
-  importWorkouts: (workouts: Workout[], exercises: Exercise[]) => number;
+  /**
+   * Adds imported workouts. Workouts starting at the same moment as an existing one are skipped,
+   * or, with `replace`, the existing ones are removed first (fixes an earlier bad import).
+   */
+  importWorkouts: (workouts: Workout[], exercises: Exercise[], replace?: boolean) => number;
   resetAll: () => void;
 }
 
@@ -352,14 +356,16 @@ export const useStore = create<State>()(
         });
       },
 
-      importWorkouts: (workouts, exercises) => {
+      importWorkouts: (workouts, exercises, replace = false) => {
         void createSnapshot('before-import', exportBackup());
         const s = getState();
-        const existing = new Set(s.workouts.map((w) => w.startedAt));
+        const incoming = new Set(workouts.map((w) => w.startedAt));
+        const kept = replace ? s.workouts.filter((w) => !incoming.has(w.startedAt)) : s.workouts;
+        const existing = new Set(kept.map((w) => w.startedAt));
         const fresh = workouts.filter((w) => !existing.has(w.startedAt));
         const knownEx = new Set(s.customExercises.map((e) => e.id));
         setState({
-          workouts: [...s.workouts, ...fresh].sort((a, b) => b.startedAt - a.startedAt),
+          workouts: [...kept, ...fresh].sort((a, b) => b.startedAt - a.startedAt),
           customExercises: [...s.customExercises, ...exercises.filter((e) => !knownEx.has(e.id))],
         });
         return fresh.length;
