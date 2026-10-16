@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Dumbbell, Flame, Medal, Settings as Cog, Snowflake, Trophy, Weight } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { useGame } from '../lib/useGame';
-import { strengthRanks, TIERS } from '../lib/strength';
+import { ageFromBirthYear, STANDARDS_SOURCE, strengthRanks, TIERS } from '../lib/strength';
 import { startOfDay, startOfWeek, workoutDurationMs, workoutVolume, setsPerMuscle } from '../lib/calc';
 import { fmtDate, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
@@ -25,7 +25,10 @@ export default function Profile() {
   const game = useGame();
   const unit = settings.unit;
   const bodyweight = [...measurements].reverse().find((m) => m.type === 'bodyweight')?.value;
-  const ranks = useMemo(() => strengthRanks(workouts, bodyweight, settings.sex), [workouts, bodyweight, settings.sex]);
+  const ranks = useMemo(
+    () => strengthRanks(workouts, bodyweight, settings.sex, ageFromBirthYear(settings.birthYear)),
+    [workouts, bodyweight, settings.sex, settings.birthYear],
+  );
 
   const totalVolume = useMemo(() => workouts.reduce((a, w) => a + workoutVolume(w, exMap), 0), [workouts, exMap]);
   const totalHours = workouts.reduce((a, w) => a + workoutDurationMs(w), 0) / 3_600_000;
@@ -267,6 +270,7 @@ export default function Profile() {
                   <span className="bold">{t(r.label)}</span>
                   <span className="tier-chip" style={{ background: `${r.tier.color}26`, color: r.tier.color }}>
                     <Icon name={r.tier.icon} size={13} /> {t(r.tier.name)}
+                    {r.level && <span style={{ opacity: 0.75 }}> · {t(r.level)}</span>}
                   </span>
                 </div>
                 <div className="row small muted" style={{ marginTop: 6 }}>
@@ -292,6 +296,11 @@ export default function Profile() {
               <Icon name={tier.icon} size={12} style={{ color: tier.color, verticalAlign: '-2px' }} /> {t(tier.name)}
             </span>
           ))}
+        </div>
+        <div className="tiny muted mt">
+          {t(STANDARDS_SOURCE)}
+          {!settings.sex && ` ${t('Set your sex in Settings for the right standards.')}`}
+          {!settings.birthYear && ` ${t('Add your birth year in Settings to adjust for age.')}`}
         </div>
       </div>
 

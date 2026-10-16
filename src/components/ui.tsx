@@ -132,10 +132,29 @@ export function Ring({
   );
 }
 
+/** Drawn barbell with a plate that rolls in. Used when a list has nothing to show yet. */
+export function BarbellArt() {
+  return (
+    <svg className="empty-art" viewBox="0 0 160 70" aria-hidden="true">
+      <rect x="8" y="32" width="144" height="6" rx="3" fill="var(--muted)" opacity="0.5" />
+      <rect x="22" y="26" width="6" height="18" rx="2" fill="var(--muted)" opacity="0.7" />
+      <rect x="132" y="26" width="6" height="18" rx="2" fill="var(--muted)" opacity="0.7" />
+      <g className="plate-l">
+        <rect x="30" y="8" width="14" height="54" rx="5" fill="var(--accent)" />
+        <rect x="46" y="16" width="9" height="38" rx="4" fill="var(--card-2)" />
+      </g>
+      <g className="plate-r">
+        <rect x="116" y="8" width="14" height="54" rx="5" fill="var(--accent)" />
+        <rect x="105" y="16" width="9" height="38" rx="4" fill="var(--card-2)" />
+      </g>
+    </svg>
+  );
+}
+
 export function Empty({ icon, title, children }: { icon?: ReactNode; title: string; children?: ReactNode }) {
   return (
     <div className="empty">
-      {icon && <div className="big">{icon}</div>}
+      {icon ? <div className="big">{icon}</div> : <BarbellArt />}
       <div className="bold" style={{ color: 'var(--text)', marginBottom: 6 }}>
         {title}
       </div>

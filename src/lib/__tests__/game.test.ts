@@ -13,7 +13,7 @@ import {
   XP,
 } from '../gamification';
 import { logGoalChange } from '../../store/store';
-import { strengthRank } from '../strength';
+import { ageFactor, standardsFor, strengthRank } from '../strength';
 import { generateWorkout } from '../generator';
 import { startOfWeek } from '../calc';
 import { BUILTIN_EXERCISES } from '../../data/exercises';
@@ -200,6 +200,19 @@ describe('strengthRank', () => {
   });
   it('ranks pull-ups by reps', () => {
     expect(strengthRank('pull-up', 12, 80, 'm')!.tier.id).toBe('gold');
+  });
+  it('names the level and scales with bodyweight below proportional', () => {
+    expect(strengthRank('bench-press', 80, 80, 'm')!.level).toBe('Intermediate');
+    const light = standardsFor('squat', 60, 'm')![2];
+    const heavy = standardsFor('squat', 120, 'm')![2];
+    expect(heavy).toBeGreaterThan(light);
+    expect(heavy / 120).toBeLessThan(light / 60);
+  });
+  it('lowers the bar for masters and teens', () => {
+    expect(ageFactor(30)).toBe(1);
+    expect(ageFactor(60)).toBeCloseTo(0.8);
+    expect(ageFactor(17)).toBeLessThan(1);
+    expect(standardsFor('deadlift', 80, 'm', 60)![2]).toBeLessThan(standardsFor('deadlift', 80, 'm', 30)![2]);
   });
 });
 

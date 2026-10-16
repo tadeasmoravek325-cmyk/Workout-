@@ -149,6 +149,8 @@ export type Sex = 'm' | 'f';
 export interface Settings {
   name: string;
   sex?: Sex;
+  /** Used for age-adjusted strength standards. */
+  birthYear?: number;
   goal: Goal;
   experience: Experience;
   onboarded: boolean;

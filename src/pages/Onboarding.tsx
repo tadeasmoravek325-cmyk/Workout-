@@ -51,13 +51,15 @@ export default function Onboarding() {
   const [sex, setSex] = useState<Sex | 'x'>('x');
   const [unit, setUnit] = useState<Unit>('kg');
   const [weight, setWeight] = useState<number | undefined>();
+  const [birthYear, setBirthYear] = useState<number | undefined>();
 
   const programId = recommendProgram(exp, days, goal);
   const program = PROGRAMS.find((p) => p.id === programId)!;
   const STEPS = 5;
 
   const finish = (withProgram: boolean) => {
-    update({ name: name.trim(), goal, experience: exp, weeklyGoal: days, sex: sex === 'x' ? undefined : sex, unit, onboarded: true });
+    update({ name: name.trim(), goal, experience: exp, weeklyGoal: days, sex: sex === 'x' ? undefined : sex, unit, onboarded: true,
+      birthYear: birthYear && birthYear > 1920 && birthYear <= new Date().getFullYear() - 10 ? Math.round(birthYear) : undefined });
     if (weight) addMeasurement({ type: 'bodyweight', value: fromDisplayWeight(weight, unit) ?? weight, date: Date.now() });
     if (withProgram) {
       const n = importProgram(programId);
@@ -212,6 +214,10 @@ export default function Onboarding() {
                   { value: 'lb', label: t('Pounds') },
                 ]}
               />
+            </div>
+            <div className="field">
+              <label>{t('Birth year')}</label>
+              <NumInput value={birthYear} onChange={setBirthYear} placeholder={t('e.g. 1995')} />
             </div>
             <div className="field">
               <label>{t('Bodyweight ({unit})', { unit })}</label>

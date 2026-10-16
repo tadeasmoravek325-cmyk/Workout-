@@ -1,5 +1,6 @@
 import { DIVISIONS, type LeagueInfo } from '../lib/gamification';
 import { t, tn } from '../i18n';
+import { CountUp } from './CountUp';
 
 const DAY = 86_400_000;
 
@@ -49,7 +50,7 @@ export function LeagueCard({ league }: { league: LeagueInfo }) {
             <span className="small muted">{tn(daysLeft, '{n} day left', '{n} days left')}</span>
           </div>
           <div className="num-l tabular">
-            {league.weekXp.toLocaleString()} <span className="small muted">{t('XP this week')}</span>
+            <CountUp value={league.weekXp} /> <span className="small muted">{t('XP this week')}</span>
           </div>
         </div>
       </div>

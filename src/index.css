@@ -1081,8 +1081,9 @@ a.list-item:active {
 }
 
 .toast-wrap {
+  /* Bottom, above the nav and the active-workout bar, so headers and their buttons stay usable. */
   position: fixed;
-  top: calc(12px + var(--safe-t));
+  bottom: calc(var(--nav-h) + var(--safe-b) + 16px);
   left: 0;
   right: 0;
   z-index: 200;
@@ -1094,12 +1095,12 @@ a.list-item:active {
 }
 
 .toast {
-  background: var(--card-2);
+  background: #222222;
+  color: #f5f5f5;
   padding: 12px 16px;
   border-radius: 16px;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
   font-weight: 600;
-  animation: drop 0.25s ease-out;
+  animation: drop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2);
   max-width: min(92vw, 456px);
   display: flex;
   align-items: center;
@@ -1111,9 +1112,17 @@ a.list-item:active {
   color: var(--on-accent);
 }
 
+body:has(.active-bar) .toast-wrap {
+  bottom: calc(var(--nav-h) + var(--safe-b) + 84px);
+}
+/* Full-screen workout: no nav, the rest timer sits at the bottom. */
+body:not(:has(.bottom-nav)) .toast-wrap {
+  bottom: calc(var(--safe-b) + 96px);
+}
+
 @keyframes drop {
   from {
-    transform: translateY(-24px) scale(0.9);
+    transform: translateY(24px) scale(0.9);
     opacity: 0;
   }
 }
@@ -2041,4 +2050,57 @@ a.list-item:active,
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+/* Empty state art */
+.empty-art {
+  width: 150px;
+  height: auto;
+  display: block;
+  margin: 0 auto 14px;
+}
+.empty-art .plate-l {
+  animation: plate-in-l 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+.empty-art .plate-r {
+  animation: plate-in-r 0.6s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+@keyframes plate-in-l {
+  from {
+    transform: translateX(-26px);
+    opacity: 0;
+  }
+}
+@keyframes plate-in-r {
+  from {
+    transform: translateX(26px);
+    opacity: 0;
+  }
+}
+
+/* Page sections rise in one after another. Only in-flow blocks: overlays (sheets, celebrations)
+   are also children of .page and must never get a transform. */
+.page > :is(.section, .card, .hero, .grid-2, .grid-3, .list, .mt, h1, .page-header) {
+  animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.page > :nth-child(2) { animation-delay: 0.03s; }
+.page > :nth-child(3) { animation-delay: 0.06s; }
+.page > :nth-child(4) { animation-delay: 0.09s; }
+.page > :nth-child(5) { animation-delay: 0.12s; }
+.page > :nth-child(6) { animation-delay: 0.15s; }
+.page > :nth-child(n + 7) { animation-delay: 0.18s; }
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page > :is(.section, .card, .hero, .grid-2, .grid-3, .list, .mt, h1, .page-header),
+  .empty-art .plate-l,
+  .empty-art .plate-r,
+  .toast {
+    animation: none;
+  }
 }

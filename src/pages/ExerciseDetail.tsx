@@ -13,7 +13,7 @@ import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, Empty, Segmented, undoToast } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
-import { strengthRank } from '../lib/strength';
+import { ageFromBirthYear, strengthRank } from '../lib/strength';
 import { PlayCircle } from 'lucide-react';
 import { t, tn } from '../i18n';
 import type { Exercise } from '../types';
@@ -87,7 +87,7 @@ export default function ExerciseDetail() {
   if (!ex) return <Navigate to="/exercises" replace />;
   const unit = settings.unit;
   const bodyweight = [...measurements].reverse().find((m) => m.type === 'bodyweight')?.value;
-  const rank = bodyweight ? strengthRank(ex.id, ex.id === 'pull-up' ? records.maxReps : records.maxE1rm, bodyweight, settings.sex) : null;
+  const rank = bodyweight ? strengthRank(ex.id, ex.id === 'pull-up' ? records.maxReps : records.maxE1rm, bodyweight, settings.sex, ageFromBirthYear(settings.birthYear)) : null;
   const isWeight = metric === 'e1rm' || metric === 'weight' || metric === 'volume';
 
   const cutoff =
@@ -261,7 +261,10 @@ export default function ExerciseDetail() {
               </div>
               <div className="grow">
                 <div className="small muted bold">{t('Strength rank')}</div>
-                <div className="num-lg" style={{ fontSize: 24, color: rank.tier.color }}>{rank.tier.name}</div>
+                <div className="num-lg" style={{ fontSize: 24, color: rank.tier.color }}>
+                  {t(rank.tier.name)}
+                  {rank.level && <span className="small muted"> · {t(rank.level)}</span>}
+                </div>
                 {rank.next && rank.nextTarget !== undefined && (
                   <>
                     <div className="progress" style={{ height: 6, marginTop: 6 }}>
@@ -269,8 +272,8 @@ export default function ExerciseDetail() {
                     </div>
                     <div className="tiny muted" style={{ marginTop: 4 }}>
                       {rank.byReps
-                        ? t('{tier} at {reps} reps', { tier: rank.next.name, reps: rank.nextTarget })
-                        : t('{tier} at 1RM {weight}', { tier: rank.next.name, weight: `${fmtNum(toDisplayWeight(rank.nextTarget, unit), 0)} ${unit}` })}
+                        ? t('{tier} at {reps} reps', { tier: t(rank.next.name), reps: rank.nextTarget })
+                        : t('{tier} at 1RM {weight}', { tier: t(rank.next.name), weight: `${fmtNum(toDisplayWeight(rank.nextTarget, unit), 0)} ${unit}` })}
                     </div>
                   </>
                 )}
