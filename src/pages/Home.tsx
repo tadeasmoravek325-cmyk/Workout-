@@ -6,6 +6,7 @@ import { useExerciseMap, useStore } from '../store/store';
 import { muscleRecovery, nextRoutine, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, relativeDay } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
+import { LeagueCard } from '../components/League';
 import { BodyMap, RECOVERY_COLORS, recoveryColor } from '../components/BodyMap';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { GeneratorSheet } from '../components/GeneratorSheet';
@@ -127,6 +128,11 @@ export default function Home() {
           <span>{t('to level {level}', { level: game.level.level + 1 })}</span>
         </div>
       </Link>
+
+      {/* League */}
+      <div className="mt">
+        <LeagueCard league={game.league} />
+      </div>
 
       {/* Week */}
       <div className="card mt">

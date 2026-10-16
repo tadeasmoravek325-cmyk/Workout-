@@ -160,6 +160,10 @@ export interface Settings {
   sound: boolean;
   vibrate: boolean;
   weeklyGoal: number;
+  /** [weekStart, goal] pairs, ascending. Keeps past weeks judged by the goal they had. */
+  goalLog?: [number, number][];
+  /** Last league week whose result the user has seen. */
+  leagueSeenWeek?: number;
   barWeightKg: number;
   /** Available plates in kg (per side). */
   plates: number[];

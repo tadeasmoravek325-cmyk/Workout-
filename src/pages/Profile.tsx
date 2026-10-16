@@ -6,9 +6,11 @@ import { useExerciseMap, useStore } from '../store/store';
 import { useGame } from '../lib/useGame';
 import { strengthRanks, TIERS } from '../lib/strength';
 import { startOfDay, startOfWeek, workoutDurationMs, workoutVolume, setsPerMuscle } from '../lib/calc';
-import { fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
+import { fmtDate, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
 import { MUSCLE_LABELS } from '../data/exercises';
+import { BodyMap, formColor } from '../components/BodyMap';
+import { DivisionBadge, LeagueCard } from '../components/League';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
 import type { Muscle } from '../types';
 
@@ -114,6 +116,20 @@ export default function Profile() {
         </div>
       </div>
 
+      <div className="mt">
+        <LeagueCard league={game.league} />
+        {game.league.history.length > 0 && (
+          <div className="league-history">
+            {game.league.history.slice(-8).map((h) => (
+              <div key={h.week} className="col" title={t('{xp} XP', { xp: h.xp })}>
+                <DivisionBadge division={h.to} size={26} muted={h.to < h.from} />
+                <span className="tiny muted">{fmtDate(h.week, { day: 'numeric', month: 'numeric' })}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid-2 mt">
         {[
           { icon: <Dumbbell size={17} />, bg: 'var(--grad)', v: workouts.length, l: t('Workouts') },
@@ -192,6 +208,38 @@ export default function Profile() {
               <div className="small muted bold">{t('Most trained')}</div>
               <div className="num-lg" style={{ fontSize: 22 }}>{month.top ? MUSCLE_LABELS[month.top[0]] : '–'}</div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="section">
+        <div className="section-title">
+          <h2>{t('Muscle form')}</h2>
+          <span className="small muted">{t('Fades after ~2 weeks off')}</span>
+        </div>
+        <div className="card">
+          <BodyMap
+            height={240}
+            value={(m) => game.muscles[m].form}
+            color={(m) => formColor(game.muscles[m].level, game.muscles[m].form)}
+            onPick={(m) => navigate(`/muscles/${m}`)}
+          />
+          <div className="muscle-levels mt">
+            {(Object.keys(game.muscles) as Muscle[])
+              .sort((a, b) => game.muscles[b].lifetime - game.muscles[a].lifetime)
+              .map((m) => {
+                const f = game.muscles[m];
+                return (
+                  <Link key={m} to={`/muscles/${m}`} className="muscle-level">
+                    <span className="lv">{f.level}</span>
+                    <span className="grow ellipsis small bold">{MUSCLE_LABELS[m]}</span>
+                    <span className="form-dot" style={{ background: formColor(f.level, f.form) }} />
+                  </Link>
+                );
+              })}
+          </div>
+          <div className="tiny muted mt">
+            {t('Levels grow with every set and never drop. Form shows what you trained lately and fades when a muscle rests too long.')}
           </div>
         </div>
       </div>

@@ -105,6 +105,12 @@ export function loadColor(load: number | undefined): string {
   return mix('#5a2a10', '#ff7a1a', Math.min(1, load));
 }
 
+/** Muscle form: untrained muscles stay grey, trained ones glow brighter the fresher their form. */
+export function formColor(level: number, form: number): string {
+  if (!level) return IDLE;
+  return mix('#4a2a18', '#ff7a1a', Math.max(0.08, Math.min(1, form)));
+}
+
 export const RECOVERY_COLORS = { tired: '#b3200f', recovering: '#ff7a1a', ready: '#ffd29a' };
 
 /** Weekly fractional sets → colour. 10–20 is the productive zone for most people. */

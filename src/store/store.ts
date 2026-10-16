@@ -12,7 +12,7 @@ import type {
   WorkoutExercise,
   WorkoutSet,
 } from '../types';
-import { defaultSettings, uid } from '../lib/calc';
+import { defaultSettings, startOfWeek, uid } from '../lib/calc';
 import { BUILTIN_EXERCISES, normalizeMuscles } from '../data/exercises';
 import { LOCALE_TAG, t } from '../i18n';
 import { PROGRAMS } from '../data/programs';
@@ -304,7 +304,14 @@ export const useStore = create<State>()(
       restoreMeasurement: (m) =>
         setState((s) => ({ measurements: [...s.measurements.filter((x) => x.id !== m.id), m].sort((a, b) => a.date - b.date) })),
 
-      updateSettings: (patch) => setState((s) => ({ settings: { ...s.settings, ...patch } })),
+      updateSettings: (patch) =>
+        setState((s) => {
+          const next = { ...s.settings, ...patch };
+          if (patch.weeklyGoal !== undefined && patch.weeklyGoal !== s.settings.weeklyGoal) {
+            next.goalLog = logGoalChange(s.settings.goalLog, s.settings.weeklyGoal, patch.weeklyGoal);
+          }
+          return { settings: next };
+        }),
 
       setSchedule: (day, routineId) => setState((s) => ({ schedule: { ...s.schedule, [day]: routineId } })),
 
@@ -415,6 +422,17 @@ export const useStore = create<State>()(
 );
 
 /** Built-in plus custom exercises. */
+/**
+ * Records a weekly-goal change from this week on. The first change also pins the old goal
+ * for all earlier weeks, so history keeps the goal it was earned under.
+ */
+export function logGoalChange(log: [number, number][] | undefined, oldGoal: number, newGoal: number, now = Date.now()): [number, number][] {
+  const week = startOfWeek(now);
+  const out: [number, number][] = log?.length ? log.filter(([w]) => w < week) : [[0, oldGoal]];
+  out.push([week, newGoal]);
+  return out;
+}
+
 export function useAllExercises(): Exercise[] {
   const custom = useStore((s) => s.customExercises);
   return useMemoExercises(custom);

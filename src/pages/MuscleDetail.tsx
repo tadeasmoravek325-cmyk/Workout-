@@ -8,6 +8,7 @@ import { BodyMap, IDLE, volumeColor } from '../components/BodyMap';
 import { ExerciseAvatar } from '../components/ExercisePicker';
 import { Empty } from '../components/ui';
 import { t, tn } from '../i18n';
+import { useGame } from '../lib/useGame';
 import type { Muscle } from '../types';
 
 const WEEK = 7 * 86_400_000;
@@ -43,6 +44,7 @@ export default function MuscleDetail() {
     return { weekly, last, used };
   }, [workouts, exMap, muscle]);
 
+  const game = useGame();
   const recovery = useMemo(() => muscleRecovery(workouts.slice(0, 30), exMap)[muscle], [workouts, exMap, muscle]);
 
   const best = useMemo(
@@ -69,6 +71,33 @@ export default function MuscleDetail() {
         </button>
       </div>
       <h1>{MUSCLE_LABELS[muscle]}</h1>
+      {(() => {
+        const f = game.muscles[muscle];
+        return (
+          <div className="card mt row" style={{ gap: 14 }}>
+            <div className="muscle-level" style={{ background: 'none', padding: 0 }}>
+              <span className="lv" style={{ width: 44, height: 44, fontSize: 22, borderRadius: 14 }}>
+                {f.level}
+              </span>
+            </div>
+            <div className="grow">
+              <div className="row between small bold">
+                <span>{t('Level {n}', { n: f.level })}</span>
+                <span className="muted">
+                  {f.nextAt ? t('{done} / {next} sets', { done: fmtNum(f.lifetime, 0), next: f.nextAt }) : t('Max level')}
+                </span>
+              </div>
+              <div className="xp-bar" style={{ marginTop: 6 }}>
+                <div style={{ width: `${f.nextAt ? Math.min(1, f.lifetime / f.nextAt) * 100 : 100}%` }} />
+              </div>
+              <div className="small muted" style={{ marginTop: 6 }}>
+                {t('Form {n} %', { n: Math.round(f.form * 100) })} ·{' '}
+                {f.form >= 0.8 ? t('in great shape') : f.form >= 0.4 ? t('could use some work') : f.level ? t('fading, train it soon') : t('not trained yet')}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="card mt">
         <BodyMap height={220} color={(m) => (m === muscle ? 'var(--accent)' : IDLE)} value={(m) => (m === muscle ? 1 : 0)} />

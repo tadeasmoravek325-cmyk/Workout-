@@ -8,11 +8,13 @@ import {
   doneSetCount,
   e1rm,
   isWorkingSet,
+  startOfWeek,
   uid,
   workoutDurationMs,
   workoutVolume,
   type PrHit,
 } from '../lib/calc';
+import { goalForWeek } from '../lib/gamification';
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements';
 import { describeSet } from '../components/WorkoutEditor';
@@ -51,7 +53,28 @@ export default function WorkoutDetail() {
   const unit = settings.unit;
   const game = useGame();
   const [celebrating, setCelebrating] = useState(isSummary);
-  const xp = game.progress.perWorkout.get(id)?.xp ?? 0;
+  const wp = game.progress.perWorkout.get(id);
+  const weekBonus = useMemo(() => {
+    // The weekly goal bonus belongs to the workout that reached the goal.
+    if (!w || !wp?.xp) return 0;
+    const week = startOfWeek(w.startedAt);
+    if (!game.progress.goalWeeks.has(week)) return 0;
+    const inWeek = workouts
+      .filter((x) => startOfWeek(x.startedAt) === week && (game.progress.perWorkout.get(x.id)?.xp ?? 0) > 0)
+      .sort((a, b) => a.startedAt - b.startedAt);
+    const goal = goalForWeek({ current: settings.weeklyGoal, log: settings.goalLog }, week);
+    if (inWeek[goal - 1]?.id !== w.id) return 0;
+    return (game.progress.weekXp.get(week) ?? 0) - inWeek.reduce((a, x) => a + (game.progress.perWorkout.get(x.id)?.xp ?? 0), 0);
+  }, [w, wp, workouts, game.progress, settings.weeklyGoal, settings.goalLog]);
+  const xp = (wp?.xp ?? 0) + weekBonus;
+  const xpLines = wp
+    ? [
+        { label: t('Workout'), xp: wp.breakdown.workout },
+        { label: t('Working sets'), xp: wp.breakdown.sets },
+        { label: tn(wp.prExercises.length, '{n} PR', '{n} PRs'), xp: wp.breakdown.prs },
+        { label: t('Weekly goal reached'), xp: weekBonus },
+      ].filter((l) => l.xp > 0)
+    : [];
 
   const older = useMemo(() => (w ? workouts.filter((x) => x.startedAt < w.startedAt) : []), [workouts, w]);
   const prs = useMemo(() => (w ? detectPRs(w, older, exMap) : []), [w, older, exMap]);
@@ -339,6 +362,8 @@ export default function WorkoutDetail() {
       {celebrating && (
         <Celebration
           xp={xp}
+          lines={xpLines}
+          league={game.league}
           totalXp={game.totalXp}
           prs={prs.filter((p) => p.kind !== 'volume').length}
           achievements={newAchievements.map((a) => a.title)}

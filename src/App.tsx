@@ -20,6 +20,7 @@ import ExerciseDetail from './pages/ExerciseDetail';
 import More from './pages/More';
 import Stats from './pages/Stats';
 import MuscleDetail from './pages/MuscleDetail';
+import { GameWatcher } from './components/GameWatcher';
 import Measure from './pages/Measure';
 import Achievements from './pages/Achievements';
 import Planner from './pages/Planner';
@@ -123,6 +124,7 @@ function Shell() {
       {!fullscreen && <ActiveBar />}
       {!fullscreen && <BottomNav />}
       <RestTimerBar aboveNav={!fullscreen} />
+      <GameWatcher />
       <Toasts />
       <Dialogs />
       <SaveErrorBanner />

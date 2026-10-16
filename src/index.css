@@ -1907,3 +1907,138 @@ a.list-item:active,
   gap: 8px;
   margin-top: 8px;
 }
+
+/* Weekly league */
+.num-l {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.league-track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--card-2);
+  margin: 14px 0 8px;
+}
+.league-track .fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.league-track .mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 3px;
+  margin-left: -1.5px;
+  border-radius: 2px;
+}
+.league-track .mark.keep {
+  background: var(--danger);
+}
+.league-track .mark.up {
+  background: var(--text);
+  margin-left: -3px;
+}
+.league-status.danger {
+  color: var(--danger);
+}
+.league-status.up {
+  color: var(--accent);
+}
+.league-status.safe {
+  color: var(--muted);
+}
+
+/* Floating +XP after a completed set */
+.xp-pop {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--accent);
+  animation: xp-pop 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes xp-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.7);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -10px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -42px) scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xp-pop {
+    animation-duration: 0.01s;
+  }
+  .league-track .fill {
+    transition: none;
+  }
+}
+
+.xp-lines {
+  margin: 12px auto 0;
+  max-width: 260px;
+  color: #d6d6d6;
+  display: grid;
+  gap: 4px;
+}
+
+.league-history {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 0 4px;
+}
+.league-history .col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* Muscle levels */
+.muscle-levels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.muscle-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: var(--card-2);
+  min-width: 0;
+}
+.muscle-level .lv {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.muscle-level .form-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}

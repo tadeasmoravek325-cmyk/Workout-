@@ -22,7 +22,8 @@ import { haptic, smallConfetti } from '../lib/celebrate';
 import { plateCalc } from '../lib/calc';
 import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
-import { NumInput, Sheet, toast, undoToast } from './ui';
+import { NumInput, popXp, Sheet, toast, undoToast } from './ui';
+import { countsForXp, XP } from '../lib/gamification';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
 import { t, tn } from '../i18n';
 
@@ -229,7 +230,7 @@ function ExerciseCard({
     return prevSame ?? {};
   };
 
-  const completeSet = (setId: string) => {
+  const completeSet = (setId: string, anchor?: Element | null) => {
     unlockAudio();
     const idx = we.sets.findIndex((s) => s.id === setId);
     const s = we.sets[idx];
@@ -255,6 +256,10 @@ function ExerciseCard({
       x.sets[idx] = filled;
     });
     haptic(12);
+    if (live && countsForXp(filled)) {
+      const counted = workout.exercises.reduce((a, x) => a + x.sets.filter((y) => y.id !== filled.id && countsForXp(y)).length, 0);
+      if (counted < XP.setCap) popXp(anchor, `+${XP.set} XP`);
+    }
     setJustDone(filled.id);
     setTimeout(() => setJustDone((j) => (j === filled.id ? null : j)), 700);
     if (!live) return;
@@ -273,10 +278,10 @@ function ExerciseCard({
         haptic([30, 60, 30]);
       };
       if (w > bestW && w > 0) {
-        toast(t('New PR · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(w, unit)), unit }), 'pr', 4000);
+        toast(t('New PR · {exercise}: {weight} {unit} · +{xp} XP', { exercise: ex.name, weight: fmtNum(toDisplayWeight(w, unit)), unit, xp: XP.pr }), 'pr', 4000);
         celebrate();
       } else if (one > best1 + 0.01) {
-        toast(t('New best est. 1RM · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(one, unit)), unit }), 'pr', 4000);
+        toast(t('New best est. 1RM · {exercise}: {weight} {unit} · +{xp} XP', { exercise: ex.name, weight: fmtNum(toDisplayWeight(one, unit)), unit, xp: XP.pr }), 'pr', 4000);
         celebrate();
       }
     }
@@ -605,7 +610,7 @@ function ExerciseCard({
                   </td>
                 )}
                 <td>
-                  <button className={`check ${s.done ? 'on' : ''}`} onClick={() => completeSet(s.id)} aria-label={t('Done')}>
+                  <button className={`check ${s.done ? 'on' : ''}`} onClick={(e) => completeSet(s.id, e.currentTarget)} aria-label={t('Done')}>
                     <Check size={18} strokeWidth={3.5} />
                   </button>
                 </td>

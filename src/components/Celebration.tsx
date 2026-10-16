@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { bigConfetti, haptic } from '../lib/celebrate';
-import { levelInfo } from '../lib/gamification';
+import { DIVISIONS, levelInfo, type LeagueInfo } from '../lib/gamification';
+import { leagueStatus } from './League';
 import { t as tr, tn } from '../i18n';
 
 /** Full-screen "workout complete" moment with XP count-up and level progress. */
@@ -10,12 +11,17 @@ export function Celebration({
   totalXp,
   prs,
   achievements,
+  lines = [],
+  league,
   onClose,
 }: {
   xp: number;
   totalXp: number;
   prs: number;
   achievements: string[];
+  /** Where the XP came from. */
+  lines?: { label: string; xp: number }[];
+  league?: LeagueInfo;
   onClose: () => void;
 }) {
   const before = levelInfo(Math.max(0, totalXp - xp));
@@ -68,6 +74,16 @@ export function Celebration({
         <div className="num-xl accent" style={{ fontSize: 64, marginTop: 18 }}>
           +{shown} XP
         </div>
+        {lines.length > 0 && (
+          <div className="xp-lines">
+            {lines.map((l) => (
+              <div key={l.label} className="row between small">
+                <span>{l.label}</span>
+                <span className="bold accent">+{l.xp}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="card" style={{ marginTop: 18, textAlign: 'left' }}>
           <div className="row between small bold">
             <span>
@@ -80,6 +96,14 @@ export function Celebration({
           <div className="xp-bar on-card" style={{ marginTop: 8 }}>
             <div style={{ width: `${bar * 100}%` }} />
           </div>
+          {league && (
+            <div className="small mt">
+              <span className="bold" style={{ color: DIVISIONS[league.division].color }}>
+                {tr('{name} league', { name: tr(DIVISIONS[league.division].name) })}
+              </span>{' '}
+              · <span className="muted">{leagueStatus(league).text}</span>
+            </div>
+          )}
           {achievements.length > 0 && (
             <div className="small mt">
               <span className="bold">{tr('New badges:')}</span> {achievements.join(', ')}

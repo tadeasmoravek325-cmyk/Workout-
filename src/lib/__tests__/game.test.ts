@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { computeProgress, levelInfo, streakInfo, weeklyQuests, xpForLevel } from '../gamification';
+import {
+  computeProgress,
+  goalForWeek,
+  keepXp,
+  leagueInfo,
+  levelInfo,
+  muscleForms,
+  promoteXp,
+  streakInfo,
+  weeklyQuests,
+  xpForLevel,
+  XP,
+} from '../gamification';
+import { logGoalChange } from '../../store/store';
 import { strengthRank } from '../strength';
 import { generateWorkout } from '../generator';
 import { startOfWeek } from '../calc';
@@ -41,9 +54,98 @@ describe('computeProgress', () => {
     const p = computeProgress([b, a], exMap, 99);
     expect(p.perWorkout.get(a.id)!.prExercises).toEqual([]);
     expect(p.perWorkout.get(b.id)!.prExercises).toEqual(['bench-press']);
-    expect(p.perWorkout.get(a.id)!.xp).toBe(50 + 2 * 4);
-    expect(p.perWorkout.get(b.id)!.xp).toBe(50 + 4 + 25);
+    expect(p.perWorkout.get(a.id)!.xp).toBe(50 + 2 * 3);
+    expect(p.perWorkout.get(b.id)!.xp).toBe(50 + 3 + 25);
+    expect(p.perWorkout.get(b.id)!.breakdown).toEqual({ workout: 50, sets: 3, prs: 25 });
     expect(p.totalPrs).toBe(1);
+  });
+
+  it('caps sets per workout and workouts per day, and ignores empty sets', () => {
+    const t = Date.now() - 20 * DAY;
+    const many = wk(t, 'bench-press', Array.from({ length: 50 }, () => set(60, 10)));
+    expect(computeProgress([many], exMap, 99).perWorkout.get(many.id)!.breakdown.sets).toBe(XP.setCap * XP.set);
+    const noon = new Date(2026, 5, 10, 9).getTime();
+    const day = [1, 2, 3].map((h) => wk(noon + h * 3_600_000));
+    const p = computeProgress(day, exMap, 99);
+    expect(day.map((w) => p.perWorkout.get(w.id)!.breakdown.workout)).toEqual([50, 50, 0]);
+    const empty = wk(t, 'bench-press', [{ id: 'x', type: 'normal', done: true }]);
+    expect(computeProgress([empty], exMap, 99).perWorkout.get(empty.id)!.xp).toBe(0);
+  });
+
+  it('adds the weekly goal bonus and a growing streak bonus', () => {
+    const now = new Date(2026, 9, 15, 12).getTime();
+    const w1 = wk(startOfWeek(now) - 7 * DAY + DAY);
+    const w2 = wk(startOfWeek(now) + DAY);
+    const p = computeProgress([w1, w2], exMap, 1, now);
+    expect(p.weekXp.get(startOfWeek(w1.startedAt))).toBe(p.perWorkout.get(w1.id)!.xp + 100 + 10);
+    expect(p.weekXp.get(startOfWeek(w2.startedAt))).toBe(p.perWorkout.get(w2.id)!.xp + 100 + 20);
+    expect(p.goalWeeks.size).toBe(2);
+  });
+});
+
+describe('weekly goal history', () => {
+  it('judges past weeks by the goal they had', () => {
+    const now = new Date(2026, 9, 15, 12).getTime();
+    const log = logGoalChange(undefined, 2, 4, now);
+    expect(goalForWeek({ current: 4, log }, startOfWeek(now) - 7 * DAY)).toBe(2);
+    expect(goalForWeek({ current: 4, log }, startOfWeek(now))).toBe(4);
+    // Changing twice in one week keeps a single entry for it.
+    const again = logGoalChange(log, 4, 5, now);
+    expect(again).toHaveLength(2);
+    expect(goalForWeek({ current: 5, log: again }, startOfWeek(now))).toBe(5);
+  });
+
+  it('does not take back last week’s bonus when the goal is raised', () => {
+    const now = new Date(2026, 9, 15, 12).getTime();
+    const last = wk(startOfWeek(now) - 5 * DAY);
+    const before = computeProgress([last], exMap, 1, now).totalXp;
+    const after = computeProgress([last], exMap, { current: 5, log: logGoalChange(undefined, 1, 5, now) }, now).totalXp;
+    expect(after).toBe(before);
+  });
+});
+
+describe('leagueInfo', () => {
+  const now = new Date(2026, 9, 15, 12).getTime();
+  const week = (ago: number) => startOfWeek(now) - ago * 7 * DAY;
+
+  it('promotes above the line and demotes below the keep line', () => {
+    const goal = 3;
+    const xp = new Map([
+      [week(3), promoteXp(0, goal)],
+      [week(2), promoteXp(1, goal)],
+      [week(1), keepXp(2, goal) - 10],
+    ]);
+    const l = leagueInfo(xp, goal, now);
+    expect(l.history.map((h) => h.to)).toEqual([1, 2, 1]);
+    expect(l.division).toBe(1);
+  });
+
+  it('drops one division per inactive week, never below bronze', () => {
+    const xp = new Map([
+      [week(6), 5000],
+      [week(5), 5000],
+    ]);
+    expect(leagueInfo(xp, 3, now).division).toBe(0);
+    expect(leagueInfo(new Map([[week(2), 5000], [week(1), 5000]]), 3, now).division).toBe(2);
+  });
+
+  it('scales the lines with the weekly goal', () => {
+    expect(promoteXp(0, 5)).toBeGreaterThan(promoteXp(0, 2));
+    expect(keepXp(0, 3)).toBe(0);
+  });
+});
+
+describe('muscleForms', () => {
+  it('levels up with lifetime sets and fades when not trained', () => {
+    const now = Date.now();
+    const sets = Array.from({ length: 12 }, () => set(100, 5));
+    const fresh = muscleForms([wk(now - DAY, 'squat', sets)], exMap, now);
+    const old = muscleForms([wk(now - 60 * DAY, 'squat', sets)], exMap, now);
+    expect(fresh.quads.level).toBe(2);
+    expect(old.quads.level).toBe(2);
+    expect(old.quads.form).toBeLessThan(fresh.quads.form / 10);
+    expect(fresh.glutes.lifetime).toBe(9);
+    expect(fresh.chest.level).toBe(0);
   });
 });
 

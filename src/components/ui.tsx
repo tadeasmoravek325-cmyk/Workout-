@@ -292,3 +292,16 @@ export function Dialogs() {
     </div>
   );
 }
+
+/** Floating "+3 XP" above the element that earned it. Plain DOM so it survives re-renders. */
+export function popXp(from: Element | null | undefined, text: string) {
+  if (!from || typeof document === 'undefined') return;
+  const r = from.getBoundingClientRect();
+  const el = document.createElement('div');
+  el.className = 'xp-pop';
+  el.textContent = text;
+  el.style.left = `${r.left + r.width / 2}px`;
+  el.style.top = `${r.top - 8}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
