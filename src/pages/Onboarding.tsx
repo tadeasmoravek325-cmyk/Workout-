@@ -6,18 +6,19 @@ import type { Experience, Goal, Sex, Unit } from '../types';
 import { NumInput, Segmented } from '../components/ui';
 import { fromDisplayWeight } from '../lib/format';
 import { bigConfetti } from '../lib/celebrate';
+import { t, tn } from '../i18n';
 
 const GOALS: { value: Goal; icon: typeof Dumbbell; title: string; desc: string }[] = [
-  { value: 'strength', icon: Dumbbell, title: 'Síla', desc: 'Zvednout co nejvíc na velkých cvicích' },
-  { value: 'muscle', icon: BicepsFlexed, title: 'Svaly', desc: 'Nabrat svalovou hmotu a tvar' },
-  { value: 'fitness', icon: HeartPulse, title: 'Kondice', desc: 'Být fit, zdravý a plný energie' },
-  { value: 'weightloss', icon: Flame, title: 'Hubnutí', desc: 'Spálit tuk a zpevnit postavu' },
+  { value: 'strength', icon: Dumbbell, title: 'Strength', desc: 'Lift as much as you can on the big lifts' },
+  { value: 'muscle', icon: BicepsFlexed, title: 'Muscle', desc: 'Build muscle and shape' },
+  { value: 'fitness', icon: HeartPulse, title: 'Fitness', desc: 'Feel fit, healthy and full of energy' },
+  { value: 'weightloss', icon: Flame, title: 'Weight loss', desc: 'Burn fat and tone up' },
 ];
 
 const LEVELS: { value: Experience; icon: typeof Dumbbell; title: string; desc: string }[] = [
-  { value: 'beginner', icon: Sprout, title: 'Začátečník', desc: 'Cvičím méně než půl roku' },
-  { value: 'intermediate', icon: TrendingUp, title: 'Mírně pokročilý', desc: '0,5–2 roky pravidelného tréninku' },
-  { value: 'advanced', icon: Mountain, title: 'Pokročilý', desc: 'Více než 2 roky, znám své maximum' },
+  { value: 'beginner', icon: Sprout, title: 'Beginner', desc: "I've trained for less than 6 months" },
+  { value: 'intermediate', icon: TrendingUp, title: 'Intermediate', desc: '6 months to 2 years of regular training' },
+  { value: 'advanced', icon: Mountain, title: 'Advanced', desc: 'Over 2 years, I know my maxes' },
 ];
 
 const DAY_PATTERNS: Record<number, number[]> = {
@@ -73,7 +74,7 @@ export default function Onboarding() {
       {step > 0 && (
         <>
           <div className="row" style={{ marginBottom: 14 }}>
-            <button className="icon-btn" onClick={() => setStep(step - 1)} aria-label="Zpět">
+            <button className="icon-btn" onClick={() => setStep(step - 1)} aria-label={t('Back')}>
               <ArrowLeft size={20} />
             </button>
           </div>
@@ -90,23 +91,23 @@ export default function Onboarding() {
           <div className="center">
             <img src="./icon-192.png" alt="" width={96} height={96} style={{ borderRadius: 22 }} />
             <h1 style={{ fontSize: 36, marginTop: 20 }}>
-              Vítej v <span className="grad-text">Gym</span>!
+              {t('Welcome to')} <span className="grad-text">Gym</span>
             </h1>
             <p className="muted" style={{ fontSize: 17, marginTop: 8 }}>
-              Tvůj parťák do posilovny. Zapisuj tréninky, sbírej XP a sleduj, jak sílíš.
+              {t('Your gym buddy. Log workouts, earn XP and watch yourself get stronger.')}
             </p>
           </div>
           <div className="stack" style={{ marginTop: 28 }}>
             {[
-              [NotebookPen, 'Rychlé zapisování', 'Série, váhy a pauzy na pár klepnutí'],
-              [TrendingUp, 'Chytrý trenér', 'Navrhne, kolik dnes zvednout'],
-              [Trophy, 'Rekordy, úrovně a výzvy', 'Vidíš, jak sílíš, trénink po tréninku'],
-            ].map(([I, t, d]) => (
-              <div key={t as string} className="row card" style={{ padding: 14 }}>
+              [NotebookPen, 'Fast logging', 'Sets, weights and rest in a few taps'],
+              [TrendingUp, 'Smart coach', 'Suggests what to lift today'],
+              [Trophy, 'PRs, levels and quests', 'See yourself get stronger, workout by workout'],
+            ].map(([I, title, desc]) => (
+              <div key={title as string} className="row card" style={{ padding: 14 }}>
                 <span className="ce">{(() => { const C = I as typeof Trophy; return <C size={22} />; })()}</span>
                 <div>
-                  <div className="bold">{t as string}</div>
-                  <div className="small muted">{d as string}</div>
+                  <div className="bold">{t(title as string)}</div>
+                  <div className="small muted">{t(desc as string)}</div>
                 </div>
               </div>
             ))}
@@ -116,13 +117,13 @@ export default function Onboarding() {
 
       {step === 1 && (
         <div className="grow">
-          <h1>Jak ti máme říkat?</h1>
-          <p className="muted">Ať víme, koho povzbuzovat.</p>
+          <h1>{t('What should we call you?')}</h1>
+          <p className="muted">{t('So we know who to cheer on.')}</p>
           <input
             autoFocus
             className="mt-l"
             style={{ fontSize: 22, padding: 16, fontWeight: 700 }}
-            placeholder="Tvoje jméno"
+            placeholder={t('Your name')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && next()}
@@ -132,8 +133,8 @@ export default function Onboarding() {
 
       {step === 2 && (
         <div className="grow">
-          <h1>Co je tvůj cíl?</h1>
-          <p className="muted">Podle toho ti nastavíme opakování a doporučení.</p>
+          <h1>{t("What's your goal?")}</h1>
+          <p className="muted">{t("We'll tune your reps and tips to match.")}</p>
           <div className="stack mt-l">
             {GOALS.map((g) => (
               <button key={g.value} className={`choice ${goal === g.value ? 'on' : ''}`} onClick={() => setGoal(g.value)}>
@@ -141,8 +142,8 @@ export default function Onboarding() {
                   <g.icon size={24} />
                 </span>
                 <div>
-                  <div className="bold">{g.title}</div>
-                  <div className="small muted">{g.desc}</div>
+                  <div className="bold">{t(g.title)}</div>
+                  <div className="small muted">{t(g.desc)}</div>
                 </div>
               </button>
             ))}
@@ -152,7 +153,7 @@ export default function Onboarding() {
 
       {step === 3 && (
         <div className="grow">
-          <h1>Jak dlouho cvičíš?</h1>
+          <h1>{t('How long have you been training?')}</h1>
           <div className="stack mt-l">
             {LEVELS.map((l) => (
               <button key={l.value} className={`choice ${exp === l.value ? 'on' : ''}`} onClick={() => setExp(l.value)}>
@@ -160,14 +161,14 @@ export default function Onboarding() {
                   <l.icon size={24} />
                 </span>
                 <div>
-                  <div className="bold">{l.title}</div>
-                  <div className="small muted">{l.desc}</div>
+                  <div className="bold">{t(l.title)}</div>
+                  <div className="small muted">{t(l.desc)}</div>
                 </div>
               </button>
             ))}
           </div>
           <h2 className="mt-l" style={{ marginTop: 28 }}>
-            Kolikrát týdně chceš trénovat?
+            {t('How many times a week do you want to train?')}
           </h2>
           <div className="row mt" style={{ gap: 8 }}>
             {[2, 3, 4, 5, 6].map((d) => (
@@ -186,35 +187,35 @@ export default function Onboarding() {
 
       {step === 4 && (
         <div className="grow">
-          <h1>Pár údajů o tobě</h1>
-          <p className="muted">Pomůže to spočítat silové ranky. Vše je nepovinné a zůstává jen v telefonu.</p>
+          <h1>{t('A bit about you')}</h1>
+          <p className="muted">{t('This helps work out your strength ranks. Everything is optional and stays on your phone.')}</p>
           <div className="stack mt-l">
             <div className="field">
-              <label>Pohlaví</label>
+              <label>{t('Sex')}</label>
               <Segmented
                 value={sex}
                 onChange={setSex}
                 options={[
-                  { value: 'm', label: 'Muž' },
-                  { value: 'f', label: 'Žena' },
-                  { value: 'x', label: 'Neuvádět' },
+                  { value: 'm', label: t('Male') },
+                  { value: 'f', label: t('Female') },
+                  { value: 'x', label: t('Rather not say') },
                 ]}
               />
             </div>
             <div className="field">
-              <label>Jednotky</label>
+              <label>{t('Units')}</label>
               <Segmented
                 value={unit}
                 onChange={setUnit}
                 options={[
-                  { value: 'kg', label: 'Kilogramy' },
-                  { value: 'lb', label: 'Libry' },
+                  { value: 'kg', label: t('Kilograms') },
+                  { value: 'lb', label: t('Pounds') },
                 ]}
               />
             </div>
             <div className="field">
-              <label>Tělesná hmotnost ({unit})</label>
-              <NumInput value={weight} onChange={setWeight} placeholder={unit === 'kg' ? 'např. 75' : 'např. 165'} />
+              <label>{t('Bodyweight ({unit})', { unit })}</label>
+              <NumInput value={weight} onChange={setWeight} placeholder={unit === 'kg' ? t('e.g. 75') : t('e.g. 165')} />
             </div>
           </div>
         </div>
@@ -222,10 +223,10 @@ export default function Onboarding() {
 
       {step === 5 && (
         <div className="grow">
-          <h1>{name.trim() ? `${name.trim()}, je to nastavené` : 'Je to nastavené'}</h1>
-          <p className="muted">Na základě tvých odpovědí doporučujeme:</p>
+          <h1>{name.trim() ? t("{name}, you're all set", { name: name.trim() }) : t("You're all set")}</h1>
+          <p className="muted">{t('Based on your answers, we recommend:')}</p>
           <div className="hero mt-l">
-            <div className="badge white">Doporučený program</div>
+            <div className="badge white">{t('Recommended program')}</div>
             <h2 style={{ fontSize: 26, marginTop: 10 }}>{program.name}</h2>
             <div className="muted" style={{ marginTop: 6 }}>
               {program.description}
@@ -233,31 +234,33 @@ export default function Onboarding() {
             <div className="row" style={{ gap: 6, marginTop: 12 }}>
               <span className="badge white">{program.level}</span>
               <span className="badge white">{program.goal}</span>
-              <span className="badge white">{program.days.length} tréninky</span>
+              <span className="badge white">{tn(program.days.length, '{n} workout', '{n} workouts')}</span>
             </div>
           </div>
-          <p className="small muted mt">Rutiny se přidají a rozvrhneme je do tvého týdne ({days}× týdně). Kdykoli to změníš v Plánu týdne.</p>
+          <p className="small muted mt">
+            {t("We'll add the routines and spread them across your week ({days}× a week). You can change this anytime in the weekly plan.", { days })}
+          </p>
         </div>
       )}
 
       <div className="stack" style={{ marginTop: 24 }}>
         {step < STEPS ? (
           <button className="btn primary lg block" onClick={next}>
-            {step === 0 ? 'Jdeme na to' : 'Pokračovat'} <ArrowRight size={20} />
+            {step === 0 ? t("Let's go") : t('Continue')} <ArrowRight size={20} />
           </button>
         ) : (
           <>
             <button className="btn primary lg block" onClick={() => finish(true)}>
-              Přidat program a začít
+              {t('Add program and start')}
             </button>
             <button className="btn block" onClick={() => finish(false)}>
-              Začít bez programu
+              {t('Start without a program')}
             </button>
           </>
         )}
         {step === 0 && (
           <button className="btn ghost block" onClick={() => update({ onboarded: true })}>
-            Přeskočit (mám data ze Strong / zálohu)
+            {t('Skip (I have Strong data or a backup)')}
           </button>
         )}
       </div>

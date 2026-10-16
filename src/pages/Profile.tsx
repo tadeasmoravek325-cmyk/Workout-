@@ -6,7 +6,8 @@ import { useExerciseMap, useStore } from '../store/store';
 import { useGame } from '../lib/useGame';
 import { strengthRanks, TIERS } from '../lib/strength';
 import { startOfDay, startOfWeek, workoutDurationMs, workoutVolume, setsPerMuscle } from '../lib/calc';
-import { fmtNum, fmtVolume, plural, toDisplayWeight } from '../lib/format';
+import { fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
+import { LOCALE_TAG, t, tn } from '../i18n';
 import { MUSCLE_LABELS } from '../data/exercises';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
 import type { Muscle } from '../types';
@@ -71,9 +72,9 @@ export default function Profile() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          <ArrowLeft size={18} /> Zpět
+          <ArrowLeft size={18} /> {t('Back')}
         </button>
-        <Link to="/settings" className="icon-btn" aria-label="Nastavení">
+        <Link to="/settings" className="icon-btn" aria-label={t('Settings')}>
           <Cog size={19} />
         </Link>
       </div>
@@ -85,16 +86,16 @@ export default function Profile() {
             <span className="n">Lv {game.level.level}</span>
           </div>
           <div className="grow">
-            <h1 style={{ fontSize: 26 }}>{settings.name || 'Můj profil'}</h1>
+            <h1 style={{ fontSize: 26 }}>{settings.name || t('My profile')}</h1>
             <div className="bold muted">
               {game.level.title}
             </div>
           </div>
         </div>
         <div className="row between small bold" style={{ marginTop: 16, marginBottom: 6 }}>
-          <span>{game.totalXp.toLocaleString('cs-CZ')} XP</span>
+          <span>{game.totalXp.toLocaleString(LOCALE_TAG)} XP</span>
           <span className="muted">
-            další level za {(game.level.needed - game.level.current).toLocaleString('cs-CZ')} XP
+            {t('{xp} XP to next level', { xp: (game.level.needed - game.level.current).toLocaleString(LOCALE_TAG) })}
           </span>
         </div>
         <div className="xp-bar">
@@ -102,23 +103,23 @@ export default function Profile() {
         </div>
         <div className="row" style={{ gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
           <span className="badge white">
-            <Flame size={13} /> {game.streak.streak} {plural(game.streak.streak, ['týden', 'týdny', 'týdnů'])} v řadě
+            <Flame size={13} /> {tn(game.streak.streak, '{n} week streak', '{n} week streak')}
           </span>
           <span className="badge white">
-            <Snowflake size={13} /> {game.streak.freezes} {plural(game.streak.freezes, ['ochrana', 'ochrany', 'ochran'])}
+            <Snowflake size={13} /> {tn(game.streak.freezes, '{n} streak freeze', '{n} streak freezes')}
           </span>
           <span className="badge white">
-            <Medal size={13} /> {unlocked.length} odznaků
+            <Medal size={13} /> {tn(unlocked.length, '{n} badge', '{n} badges')}
           </span>
         </div>
       </div>
 
       <div className="grid-2 mt">
         {[
-          { icon: <Dumbbell size={17} />, bg: 'var(--grad)', v: workouts.length, l: 'Tréninků' },
-          { icon: <Weight size={17} />, bg: 'var(--grad-cool)', v: fmtVolume(totalVolume, unit), l: 'Zvednuto celkem' },
-          { icon: <Clock size={17} />, bg: 'var(--grad-ok)', v: `${fmtNum(totalHours, 0)} h`, l: 'V posilovně' },
-          { icon: <Trophy size={17} />, bg: 'var(--grad-gold)', v: game.progress.totalPrs, l: 'Osobních rekordů' },
+          { icon: <Dumbbell size={17} />, bg: 'var(--grad)', v: workouts.length, l: t('Workouts') },
+          { icon: <Weight size={17} />, bg: 'var(--grad-cool)', v: fmtVolume(totalVolume, unit), l: t('Total lifted') },
+          { icon: <Clock size={17} />, bg: 'var(--grad-ok)', v: `${fmtNum(totalHours, 0)} h`, l: t('In the gym') },
+          { icon: <Trophy size={17} />, bg: 'var(--grad-gold)', v: game.progress.totalPrs, l: t('PRs') },
         ].map((s) => (
           <div key={s.l} className="stat">
             <div className="ico" style={{ background: s.bg }}>
@@ -132,37 +133,37 @@ export default function Profile() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Aktivita</h2>
-          <span className="small muted">posledních 18 týdnů</span>
+          <h2>{t('Activity')}</h2>
+          <span className="small muted">{t('last {n} weeks', { n: 18 })}</span>
         </div>
         <div className="card">
           <div className="heatmap">
             {heat.map((c) => (
               <div
                 key={c.ts}
-                title={new Date(c.ts).toLocaleDateString('cs-CZ')}
+                title={new Date(c.ts).toLocaleDateString(LOCALE_TAG)}
                 style={{ background: c.future ? 'transparent' : heatColor(c.v) }}
               />
             ))}
           </div>
           <div className="row tiny muted" style={{ justifyContent: 'flex-end', marginTop: 8, gap: 4 }}>
-            méně
+            {t('less')}
             {[0, 0.25, 0.5, 0.75, 1].map((v) => (
               <span key={v} style={{ width: 11, height: 11, borderRadius: 3, background: heatColor(v), display: 'inline-block' }} />
             ))}
-            více
+            {t('more')}
           </div>
         </div>
       </div>
 
       <div className="section">
         <div className="section-title">
-          <h2>{new Date().toLocaleDateString('cs-CZ', { month: 'long' }).replace(/^./, (c) => c.toUpperCase())} v kostce</h2>
+          <h2>{t('{month} at a glance', { month: new Date().toLocaleDateString(LOCALE_TAG, { month: 'long' }).replace(/^./, (c) => c.toUpperCase()) })}</h2>
         </div>
         <div className="card">
           <div className="grid-2">
             <div>
-              <div className="small muted bold">Tréninky</div>
+              <div className="small muted bold">{t('Workouts')}</div>
               <div className="num-lg">
                 {month.count}{' '}
                 {diff(month.count, month.prevCount) !== null && (
@@ -173,7 +174,7 @@ export default function Profile() {
               </div>
             </div>
             <div>
-              <div className="small muted bold">Objem</div>
+              <div className="small muted bold">{t('Volume')}</div>
               <div className="num-lg">
                 {fmtVolume(month.volume, unit)}{' '}
                 {diff(month.volume, month.prevVolume) !== null && (
@@ -184,11 +185,11 @@ export default function Profile() {
               </div>
             </div>
             <div>
-              <div className="small muted bold">Rekordy</div>
+              <div className="small muted bold">{t('PRs')}</div>
               <div className="num-lg">{month.prs}</div>
             </div>
             <div>
-              <div className="small muted bold">Nejvíc trénováno</div>
+              <div className="small muted bold">{t('Most trained')}</div>
               <div className="num-lg" style={{ fontSize: 22 }}>{month.top ? MUSCLE_LABELS[month.top[0]] : '–'}</div>
             </div>
           </div>
@@ -197,32 +198,32 @@ export default function Profile() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Silové ranky</h2>
-          <span className="small muted">vůči tělesné hmotnosti</span>
+          <h2>{t('Strength ranks')}</h2>
+          <span className="small muted">{t('relative to bodyweight')}</span>
         </div>
         {!bodyweight ? (
           <div className="card small">
-            Zapiš si tělesnou hmotnost v{' '}
+            {t('Log your bodyweight in')}{' '}
             <Link to="/measure" className="accent bold">
-              Měření
+              {t('Measurements')}
             </Link>{' '}
-            a uvidíš, jestli jsi Bronz, nebo už Diamant.
+            {t('to see if you are Bronze or already Diamond.')}
           </div>
         ) : !ranks.length ? (
-          <div className="card small muted">Odcvič bench press, dřep, mrtvý tah, tlak nad hlavu, přítahy nebo shyby a získáš rank.</div>
+          <div className="card small muted">{t('Do a bench press, squat, deadlift, overhead press, barbell row or pull-ups to earn a rank.')}</div>
         ) : (
           <div className="list">
             {ranks.map((r) => (
               <Link key={r.exerciseId} to={`/exercises/${r.exerciseId}`} className="list-item" style={{ display: 'block' }}>
                 <div className="row between">
-                  <span className="bold">{r.label}</span>
+                  <span className="bold">{t(r.label)}</span>
                   <span className="tier-chip" style={{ background: `${r.tier.color}26`, color: r.tier.color }}>
-                    <Icon name={r.tier.icon} size={13} /> {r.tier.name}
+                    <Icon name={r.tier.icon} size={13} /> {t(r.tier.name)}
                   </span>
                 </div>
                 <div className="row small muted" style={{ marginTop: 6 }}>
                   <span>
-                    {r.byReps ? `${r.value} opak.` : `1RM ${fmtNum(toDisplayWeight(r.value, unit))} ${unit}`}
+                    {r.byReps ? tn(r.value, '{n} rep', '{n} reps') : `1RM ${fmtNum(toDisplayWeight(r.value, unit))} ${unit}`}
                   </span>
                   <div className="progress grow" style={{ height: 6 }}>
                     <div style={{ width: `${r.progress * 100}%`, background: r.next?.color ?? r.tier.color }} />
@@ -238,9 +239,9 @@ export default function Profile() {
           </div>
         )}
         <div className="row tiny muted mt" style={{ gap: 8, flexWrap: 'wrap' }}>
-          {TIERS.slice(1).map((t) => (
-            <span key={t.id}>
-              <Icon name={t.icon} size={12} style={{ color: t.color, verticalAlign: '-2px' }} /> {t.name}
+          {TIERS.slice(1).map((tier) => (
+            <span key={tier.id}>
+              <Icon name={tier.icon} size={12} style={{ color: tier.color, verticalAlign: '-2px' }} /> {t(tier.name)}
             </span>
           ))}
         </div>
@@ -248,18 +249,18 @@ export default function Profile() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Odznaky</h2>
-          <Link to="/achievements">Všechny</Link>
+          <h2>{t('Badges')}</h2>
+          <Link to="/achievements">{t('See all')}</Link>
         </div>
         <div className="card row" style={{ flexWrap: 'wrap', gap: 10 }}>
           {unlocked.length ? (
             unlocked.map((a) => (
-              <span key={a.id} title={a.title} className="ach-mini">
+              <span key={a.id} title={t(a.title)} className="ach-mini">
                 <Icon name={a.icon} size={20} />
               </span>
             ))
           ) : (
-            <span className="small muted">Zatím žádné. První dostaneš za první trénink!</span>
+            <span className="small muted">{t('None yet. Your first one comes with your first workout.')}</span>
           )}
         </div>
       </div>

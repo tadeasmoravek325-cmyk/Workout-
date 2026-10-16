@@ -3,12 +3,13 @@ import { Database, DatabaseBackup, FileDown, FileSpreadsheet, FileUp, ShieldChec
 import { useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore, type BackupData } from '../store/store';
 import { StrongImportSheet } from '../components/StrongImportSheet';
-import { fmtClock, fmtDate, fmtDateTime, fmtNum, plural, relativeDay } from '../lib/format';
+import { fmtClock, fmtDate, fmtDateTime, fmtNum, relativeDay } from '../lib/format';
 import { listSnapshots, parseBackup, readSnapshot, SNAPSHOT_REASON_LABELS, useSafety, type SnapshotMeta } from '../lib/safety';
 import { saveBackupFile, saveCsvFile } from '../lib/backup';
 import { ask, confirmDialog, Segmented, Sheet, Switch, toast } from '../components/ui';
 import type { Equipment, Experience, Goal, Sex } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
+import { t, tn } from '../i18n';
 
 function Row({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
   return (
@@ -46,14 +47,18 @@ export default function SettingsPage() {
 
   const applyBackup = async (data: Partial<BackupData>, label: string) => {
     const n = data.workouts?.length ?? 0;
-    const mode = await ask(`${label}: ${n} ${plural(n, ['trénink', 'tréninky', 'tréninků'])}`, 'Chceš ji sloučit se současnými daty, nebo jimi všechno nahradit? Před změnou si aplikace sama uloží zálohu současného stavu.', [
-      { label: 'Sloučit se současnými daty', value: 'merge' as const, kind: 'primary' },
-      { label: 'Nahradit všechna data', value: 'replace' as const, kind: 'danger' },
-      { label: 'Zrušit', value: null, kind: 'plain' },
-    ]);
+    const mode = await ask(
+      tn(n, '{label}: {n} workout', '{label}: {n} workouts', { label }),
+      t('Merge it with your current data, or replace everything? The app saves a restore point of your current data first.'),
+      [
+        { label: t('Merge with current data'), value: 'merge' as const, kind: 'primary' },
+        { label: t('Replace all data'), value: 'replace' as const, kind: 'danger' },
+        { label: t('Cancel'), value: null, kind: 'plain' },
+      ],
+    );
     if (!mode) return;
     importBackup(data, mode);
-    toast(mode === 'merge' ? 'Záloha sloučena' : 'Data nahrazena zálohou');
+    toast(mode === 'merge' ? t('Backup merged') : t('Data replaced with backup'));
   };
 
   const onJson = async (file: File) => {
@@ -62,7 +67,7 @@ export default function SettingsPage() {
       toast(parsed.error, 'error', 5000);
       return;
     }
-    await applyBackup(parsed.data as Partial<BackupData>, parsed.exportedAt ? `Záloha z ${fmtDate(Date.parse(parsed.exportedAt))}` : 'Záloha');
+    await applyBackup(parsed.data as Partial<BackupData>, parsed.exportedAt ? t('Backup from {date}', { date: fmtDate(Date.parse(parsed.exportedAt)) }) : t('Backup'));
   };
 
 
@@ -72,47 +77,47 @@ export default function SettingsPage() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1 style={{ marginBottom: 16 }}>Nastavení</h1>
+      <h1 style={{ marginBottom: 16 }}>{t('Settings')}</h1>
 
       <div className="section-title">
-        <h2>Profil</h2>
+        <h2>{t('Profile')}</h2>
       </div>
       <div className="list">
-        <Row title="Jméno">
-          <input style={{ width: 160 }} value={settings.name} placeholder="Tvoje jméno" onChange={(e) => update({ name: e.target.value })} />
+        <Row title={t('Name')}>
+          <input style={{ width: 160 }} value={settings.name} placeholder={t('Your name')} onChange={(e) => update({ name: e.target.value })} />
         </Row>
-        <Row title="Pohlaví" desc="Pro silové ranky">
+        <Row title={t('Sex')} desc={t('For strength ranks')}>
           <select style={{ width: 130 }} value={settings.sex ?? ''} onChange={(e) => update({ sex: (e.target.value || undefined) as Sex | undefined })}>
-            <option value="">Neuvádět</option>
-            <option value="m">Muž</option>
-            <option value="f">Žena</option>
+            <option value="">{t('Rather not say')}</option>
+            <option value="m">{t('Male')}</option>
+            <option value="f">{t('Female')}</option>
           </select>
         </Row>
-        <Row title="Cíl">
+        <Row title={t('Goal')}>
           <select style={{ width: 130 }} value={settings.goal} onChange={(e) => update({ goal: e.target.value as Goal })}>
-            <option value="strength">Síla</option>
-            <option value="muscle">Svaly</option>
-            <option value="fitness">Kondice</option>
-            <option value="weightloss">Hubnutí</option>
+            <option value="strength">{t('Strength')}</option>
+            <option value="muscle">{t('Muscle')}</option>
+            <option value="fitness">{t('Fitness')}</option>
+            <option value="weightloss">{t('Weight loss')}</option>
           </select>
         </Row>
-        <Row title="Zkušenosti">
+        <Row title={t('Experience')}>
           <select style={{ width: 190 }} value={settings.experience} onChange={(e) => update({ experience: e.target.value as Experience })}>
-            <option value="beginner">Začátečník</option>
-            <option value="intermediate">Mírně pokročilý</option>
-            <option value="advanced">Pokročilý</option>
+            <option value="beginner">{t('Beginner')}</option>
+            <option value="intermediate">{t('Intermediate')}</option>
+            <option value="advanced">{t('Advanced')}</option>
           </select>
         </Row>
       </div>
 
       <div className="section-title mt-l">
-        <h2>Obecné</h2>
+        <h2>{t('General')}</h2>
       </div>
       <div className="list">
-        <Row title="Jednotky">
+        <Row title={t('Units')}>
           <div style={{ width: 120 }}>
             <Segmented
               value={settings.unit}
@@ -124,20 +129,20 @@ export default function SettingsPage() {
             />
           </div>
         </Row>
-        <Row title="Vzhled">
+        <Row title={t('Appearance')}>
           <div style={{ width: 190 }}>
             <Segmented
               value={settings.theme}
               onChange={(theme) => update({ theme })}
               options={[
-                { value: 'dark', label: 'Tmavý' },
-                { value: 'light', label: 'Světlý' },
-                { value: 'system', label: 'Auto' },
+                { value: 'dark', label: t('Dark') },
+                { value: 'light', label: t('Light') },
+                { value: 'system', label: t('Auto') },
               ]}
             />
           </div>
         </Row>
-        <Row title="Týdenní cíl" desc="Počet tréninků za týden">
+        <Row title={t('Weekly goal')} desc={t('Workouts per week')}>
           <select style={{ width: 80 }} value={settings.weeklyGoal} onChange={(e) => update({ weeklyGoal: Number(e.target.value) })}>
             {[1, 2, 3, 4, 5, 6, 7].map((n) => (
               <option key={n}>{n}</option>
@@ -147,10 +152,10 @@ export default function SettingsPage() {
       </div>
 
       <div className="section-title mt-l">
-        <h2>Trénink</h2>
+        <h2>{t('Workout')}</h2>
       </div>
       <div className="list">
-        <Row title="Výchozí pauza" desc="Mezi sériemi">
+        <Row title={t('Default rest')} desc={t('Between sets')}>
           <select style={{ width: 100 }} value={settings.defaultRestSec} onChange={(e) => update({ defaultRestSec: Number(e.target.value) })}>
             {[30, 45, 60, 90, 120, 150, 180, 240, 300].map((s) => (
               <option key={s} value={s}>
@@ -159,42 +164,42 @@ export default function SettingsPage() {
             ))}
           </select>
         </Row>
-        <Row title="Automaticky spustit pauzu" desc="Po odškrtnutí série">
+        <Row title={t('Auto-start rest timer')} desc={t('When you tick off a set')}>
           <Switch on={settings.autoStartRest} onChange={(autoStartRest) => update({ autoStartRest })} />
         </Row>
-        <Row title="Zvuk na konci pauzy">
+        <Row title={t('Sound when rest ends')}>
           <Switch on={settings.sound} onChange={(sound) => update({ sound })} />
         </Row>
-        <Row title="Vibrace na konci pauzy">
+        <Row title={t('Vibrate when rest ends')}>
           <Switch on={settings.vibrate} onChange={(vibrate) => update({ vibrate })} />
         </Row>
         {notifications !== 'unsupported' && notifications !== 'granted' && (
-          <Row title="Upozornění" desc="Oznámení o konci pauzy, když je aplikace na pozadí">
+          <Row title={t('Notifications')} desc={t('Get notified when rest ends while the app is in the background')}>
             <button
               className="btn sm soft"
               onClick={async () => {
                 const r = await Notification.requestPermission();
-                toast(r === 'granted' ? 'Upozornění povolena' : 'Upozornění nepovolena');
+                toast(r === 'granted' ? t('Notifications on') : t('Notifications not allowed'));
               }}
             >
-              Povolit
+              {t('Allow')}
             </button>
           </Row>
         )}
-        <Row title="Zapisovat RPE" desc="Subjektivní náročnost série (6–10)">
+        <Row title={t('Log RPE')} desc={t('How hard a set felt (6–10)')}>
           <Switch on={settings.showRpe} onChange={(showRpe) => update({ showRpe })} />
         </Row>
-        <Row title="Chytrý trenér" desc="Návrh váhy a opakování podle minulého tréninku">
+        <Row title={t('Smart coach')} desc={t('Suggests weight and reps based on your last workout')}>
           <Switch on={settings.smartCoach} onChange={(smartCoach) => update({ smartCoach })} />
         </Row>
       </div>
 
       <div className="section-title mt-l">
-        <h2>Moje vybavení</h2>
+        <h2>{t('My equipment')}</h2>
       </div>
       <div className="card">
         <div className="small muted" style={{ marginBottom: 10 }}>
-          Generátor tréninku vybírá jen cviky s tímto vybavením.
+          {t('The workout generator only picks exercises that use this equipment.')}
         </div>
         <div className="row wrap" style={{ gap: 6 }}>
           {(Object.keys(EQUIPMENT_LABELS) as Equipment[]).map((eq) => {
@@ -205,27 +210,27 @@ export default function SettingsPage() {
                 className={`chip ${on ? 'on' : ''}`}
                 onClick={() => update({ equipment: on ? settings.equipment.filter((x) => x !== eq) : [...settings.equipment, eq] })}
               >
-                {EQUIPMENT_LABELS[eq]}
+                {t(EQUIPMENT_LABELS[eq])}
               </button>
             );
           })}
         </div>
         <div className="row mt" style={{ gap: 8 }}>
           <button className="btn sm grow" onClick={() => update({ equipment: Object.keys(EQUIPMENT_LABELS) as Equipment[] })}>
-            Posilovna
+            {t('Gym')}
           </button>
           <button className="btn sm grow" onClick={() => update({ equipment: ['dumbbell', 'bodyweight', 'band', 'other'] })}>
-            Doma
+            {t('Home')}
           </button>
         </div>
       </div>
 
       <div className="section-title mt-l">
-        <h2>Osa a kotouče</h2>
+        <h2>{t('Bar and plates')}</h2>
       </div>
       <div className="card">
         <div className="field">
-          <label>Váha osy (kg)</label>
+          <label>{t('Bar weight (kg)')}</label>
           <select value={settings.barWeightKg} onChange={(e) => update({ barWeightKg: Number(e.target.value) })}>
             {[5, 7, 10, 15, 20, 25].map((b) => (
               <option key={b} value={b}>
@@ -235,7 +240,7 @@ export default function SettingsPage() {
           </select>
         </div>
         <div className="field mt">
-          <label>Dostupné kotouče (kg)</label>
+          <label>{t('Available plates (kg)')}</label>
           <div className="row wrap" style={{ gap: 6 }}>
             {ALL_PLATES.map((p) => {
               const on = settings.plates.includes(p);
@@ -258,37 +263,39 @@ export default function SettingsPage() {
       </div>
 
       <div className="section-title mt-l">
-        <h2>Bezpečnost dat</h2>
+        <h2>{t('Data safety')}</h2>
       </div>
       <div className="card">
         <div className="row" style={{ alignItems: 'flex-start' }}>
           <ShieldCheck size={22} className="accent" style={{ marginTop: 2 }} />
           <div className="grow small">
             <div className="bold" style={{ fontSize: 15 }}>
-              Data jsou uložená jen v tomto zařízení
+              {t('Your data lives only on this device')}
             </div>
             <div className="muted" style={{ marginTop: 4 }}>
-              Každá změna se ukládá okamžitě. Aplikace si navíc každý den a před každou riskantní akcí dělá automatickou zálohu. Při ztrátě
-              nebo výměně telefonu ale pomůže jen záloha uložená mimo zařízení.
+              {t(
+                'Every change is saved instantly. The app also makes a restore point every day and before anything risky. But if you lose or replace your phone, only a backup stored off the device will help.',
+              )}
             </div>
             <div className="data-facts">
               <span>
-                Poslední uložení: <b>{lastSavedAt ? fmtDateTime(lastSavedAt) : 'v tomto spuštění zatím nic'}</b>
+                {t('Last saved:')} <b>{lastSavedAt ? fmtDateTime(lastSavedAt) : t('nothing yet this session')}</b>
               </span>
               <span>
-                Záloha do souboru: <b>{settings.lastBackupAt ? relativeDay(settings.lastBackupAt) : 'ještě nikdy'}</b>
+                {t('Backup file:')} <b>{settings.lastBackupAt ? relativeDay(settings.lastBackupAt) : t('never')}</b>
               </span>
               <span>
-                Ochrana před smazáním prohlížečem: <b>{persistent === true ? 'zapnutá' : persistent === false ? 'prohlížeč ji nepovolil' : 'nepodporováno'}</b>
+                {t('Protection from browser cleanup:')}{' '}
+                <b>{persistent === true ? t('on') : persistent === false ? t('not allowed by the browser') : t('not supported')}</b>
               </span>
             </div>
           </div>
         </div>
         <button className="btn primary block mt" onClick={() => void saveBackupFile()}>
-          <FileDown size={18} /> Uložit zálohu do souboru
+          <FileDown size={18} /> {t('Save backup to file')}
         </button>
         <div className="tiny muted mt">
-          Na telefonu se otevře sdílení. Zálohu si ulož do Souborů, na Disk Google nebo si ji pošli e-mailem.
+          {t('On your phone, the share sheet opens. Save the backup to Files or Google Drive, or email it to yourself.')}
         </div>
       </div>
 
@@ -296,16 +303,20 @@ export default function SettingsPage() {
         <button className="list-item" onClick={() => jsonRef.current?.click()}>
           <Upload size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Obnovit ze souboru</div>
-            <div className="small muted">Načte zálohu uloženou dříve. Před změnou se současný stav sám zazálohuje.</div>
+            <div className="bold">{t('Restore from file')}</div>
+            <div className="small muted">{t('Loads a backup you saved earlier. Your current data gets a restore point first.')}</div>
           </div>
         </button>
         <button className="list-item" onClick={() => setShowSnapshots(true)}>
           <DatabaseBackup size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Automatické zálohy</div>
+            <div className="bold">{t('Restore points')}</div>
             <div className="small muted">
-              {snapshots.length ? `${snapshots.length} uložených, poslední ${relativeDay(snapshots[0].at).toLowerCase()}` : 'Zatím žádná'}
+              {snapshots.length
+                ? tn(snapshots.length, '{n} saved · latest: {when}', '{n} saved · latest: {when}', {
+                    when: relativeDay(snapshots[0].at),
+                  })
+                : t('None yet')}
             </div>
           </div>
           <span className="chev" />
@@ -313,15 +324,15 @@ export default function SettingsPage() {
         <button className="list-item" onClick={() => csvRef.current?.click()}>
           <FileUp size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Importovat ze Strong</div>
-            <div className="small muted">Ve Strong: Nastavení → Export dat (CSV)</div>
+            <div className="bold">{t('Import from Strong')}</div>
+            <div className="small muted">{t('In Strong: Settings → Export data (CSV)')}</div>
           </div>
         </button>
         <button className="list-item" onClick={() => void saveCsvFile(exMap)} disabled={!workouts.length}>
           <FileSpreadsheet size={20} className="muted" />
           <div className="grow">
-            <div className="bold">Exportovat tréninky (CSV)</div>
-            <div className="small muted">Pro Excel nebo Tabulky Google, stejný formát jako Strong</div>
+            <div className="bold">{t('Export workouts (CSV)')}</div>
+            <div className="small muted">{t('For Excel or Google Sheets, same format as Strong')}</div>
           </div>
         </button>
         <button
@@ -329,28 +340,29 @@ export default function SettingsPage() {
           onClick={async () => {
             if (
               await confirmDialog(
-                'Smazat všechna data?',
-                'Tréninky, rutiny i měření zmizí z aplikace. Automatická záloha těsně před smazáním zůstane v Automatických zálohách.',
-                'Smazat vše',
+                t('Delete all data?'),
+                t('Your workouts, routines and measurements will be removed from the app. A restore point made right before deleting stays in Restore points.'),
+                t('Delete all'),
               )
             ) {
               resetAll();
-              toast('Data smazána. Obnovit je jde z automatické zálohy.', 'info', 5000);
+              toast(t('Data deleted. You can bring it back from a restore point.'), 'info', 5000);
             }
           }}
         >
           <Trash2 size={20} className="danger" />
           <div className="grow">
-            <div className="bold danger">Smazat všechna data</div>
+            <div className="bold danger">{t('Delete all data')}</div>
           </div>
         </button>
       </div>
 
       {showSnapshots && (
-        <Sheet title="Automatické zálohy" onClose={() => setShowSnapshots(false)}>
+        <Sheet title={t('Restore points')} onClose={() => setShowSnapshots(false)}>
           <p className="small muted" style={{ marginTop: 0 }}>
-            Uchovává se posledních 7 denních záloh a 10 záloh pořízených před importem, obnovením nebo smazáním dat. Jsou jen v tomto
-            zařízení.
+            {t(
+              'The app keeps the last 7 daily restore points and 10 made before an import, restore or data reset. They live only on this device.',
+            )}
           </p>
           <div className="list">
             {snapshots.map((snap) => (
@@ -359,23 +371,23 @@ export default function SettingsPage() {
                 className="list-item"
                 onClick={async () => {
                   const data = (await readSnapshot(snap.id)) as Partial<BackupData> | null;
-                  if (!data) return toast('Tuto zálohu se nepodařilo přečíst', 'error');
+                  if (!data) return toast(t("Couldn't read this restore point"), 'error');
                   setShowSnapshots(false);
-                  await applyBackup(data, `${SNAPSHOT_REASON_LABELS[snap.reason]} z ${fmtDateTime(snap.at)}`);
+                  await applyBackup(data, t('{reason} from {date}', { reason: t(SNAPSHOT_REASON_LABELS[snap.reason]), date: fmtDateTime(snap.at) }));
                 }}
               >
                 <Database size={20} className="accent" />
                 <div className="grow">
                   <div className="bold">{fmtDateTime(snap.at)}</div>
                   <div className="small muted">
-                    {SNAPSHOT_REASON_LABELS[snap.reason]} · {snap.workouts} {plural(snap.workouts, ['trénink', 'tréninky', 'tréninků'])} ·{' '}
+                    {t(SNAPSHOT_REASON_LABELS[snap.reason])} · {tn(snap.workouts, '{n} workout', '{n} workouts')} ·{' '}
                     {fmtNum(snap.bytes / 1024, 0)} kB
                   </div>
                 </div>
-                <span className="small accent bold">Obnovit</span>
+                <span className="small accent bold">{t('Restore')}</span>
               </button>
             ))}
-            {!snapshots.length && <div className="empty">Zatím žádná. První se vytvoří, jakmile budeš mít v aplikaci data.</div>}
+            {!snapshots.length && <div className="empty">{t("None yet. The first one is made as soon as you have data in the app.")}</div>}
           </div>
         </Sheet>
       )}

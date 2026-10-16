@@ -11,6 +11,7 @@ import {
 } from '../data/exercises';
 import { Sheet, toast } from './ui';
 import { uid } from '../lib/calc';
+import { t } from '../i18n';
 
 export function normalize(s: string): string {
   return s
@@ -46,10 +47,10 @@ export function ExerciseFilters({
 }) {
   return (
     <div className="stack">
-      <input type="search" placeholder="Hledat cvik nebo sval…" value={query} onChange={(e) => setQuery(e.target.value)} />
+      <input type="search" placeholder={t('Search exercise or muscle…')} value={query} onChange={(e) => setQuery(e.target.value)} />
       <div className="chips">
         <button className={`chip ${part === 'all' ? 'on' : ''}`} onClick={() => setPart('all')}>
-          Vše
+          {t('All')}
         </button>
         {(Object.keys(BODY_PART_LABELS) as BodyPart[]).map((p) => (
           <button key={p} className={`chip ${part === p ? 'on' : ''}`} onClick={() => setPart(part === p ? 'all' : p)}>
@@ -85,7 +86,7 @@ export function ExercisePicker({
   onClose,
   onPick,
   multi = true,
-  title = 'Přidat cviky',
+  title = t('Add exercises'),
 }: {
   onClose: () => void;
   onPick: (ids: string[]) => void;
@@ -154,26 +155,26 @@ export function ExercisePicker({
       full
       action={
         <button className="btn ghost" onClick={() => setCreating(true)}>
-          Nový
+          {t('New')}
         </button>
       }
     >
       <ExerciseFilters {...{ query, setQuery, part, setPart, equipment, setEquipment }} />
       {recent.length > 0 && (
         <>
-          <div className="small muted bold mt">Často používané</div>
+          <div className="small muted bold mt">{t('Frequently used')}</div>
           <div className="list mt">{recent.map(row)}</div>
-          <div className="small muted bold mt">Všechny cviky</div>
+          <div className="small muted bold mt">{t('All exercises')}</div>
         </>
       )}
       <div className="list mt">
         {list.map(row)}
         {!list.length && (
           <div className="empty">
-            Nic nenalezeno.
+            {t('Nothing found.')}
             <div className="mt">
               <button className="btn soft" onClick={() => setCreating(true)}>
-                Vytvořit „{query}“
+                {t('Create “{name}”', { name: query })}
               </button>
             </div>
           </div>
@@ -188,7 +189,7 @@ export function ExercisePicker({
               onClose();
             }}
           >
-            Přidat ({selected.length})
+            {t('Add ({n})', { n: selected.length })}
           </button>
         </div>
       )}
@@ -226,7 +227,7 @@ export function ExerciseForm({
   };
 
   const save = () => {
-    if (!name.trim()) return toast('Zadej název cviku');
+    if (!name.trim()) return toast(t('Give the exercise a name'));
     const ex: Exercise = {
       id: initial?.id ?? 'custom-' + uid(),
       name: name.trim(),
@@ -242,30 +243,30 @@ export function ExerciseForm({
       custom: true,
     };
     saveExercise(ex);
-    toast(initial ? 'Cvik upraven' : 'Cvik vytvořen');
+    toast(initial ? t('Exercise updated') : t('Exercise created'));
     onSaved?.(ex);
     onClose();
   };
 
   return (
     <Sheet
-      title={initial ? 'Upravit cvik' : 'Nový cvik'}
+      title={initial ? t('Edit exercise') : t('New exercise')}
       onClose={onClose}
       full
       action={
         <button className="btn ghost" onClick={save}>
-          Uložit
+          {t('Save')}
         </button>
       }
     >
       <div className="stack">
         <div className="field">
-          <label>Název</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="např. Tlaky na Smithově stroji" autoFocus />
+          <label>{t('Name')}</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Smith machine press')} autoFocus />
         </div>
         <div className="grid-2">
           <div className="field">
-            <label>Partie</label>
+            <label>{t('Body part')}</label>
             <select value={bodyPart} onChange={(e) => setBodyPart(e.target.value as BodyPart)}>
               {(Object.keys(BODY_PART_LABELS) as BodyPart[]).map((p) => (
                 <option key={p} value={p}>
@@ -275,7 +276,7 @@ export function ExerciseForm({
             </select>
           </div>
           <div className="field">
-            <label>Vybavení</label>
+            <label>{t('Equipment')}</label>
             <select value={equipment} onChange={(e) => setEquipment(e.target.value as Equipment)}>
               {(Object.keys(EQUIPMENT_LABELS) as Equipment[]).map((p) => (
                 <option key={p} value={p}>
@@ -286,7 +287,7 @@ export function ExerciseForm({
           </div>
         </div>
         <div className="field">
-          <label>Typ záznamu</label>
+          <label>{t('Tracking type')}</label>
           <select value={type} onChange={(e) => setType(e.target.value as ExerciseType)}>
             {(Object.keys(EXERCISE_TYPE_LABELS) as ExerciseType[]).map((p) => (
               <option key={p} value={p}>
@@ -296,7 +297,7 @@ export function ExerciseForm({
           </select>
         </div>
         <div className="field">
-          <label>Svaly (1× klepnutí = hlavní, 2× = vedlejší)</label>
+          <label>{t('Muscles (tap once = primary, twice = secondary)')}</label>
           <div className="row wrap" style={{ gap: 6 }}>
             {ALL_MUSCLES.map((m) => (
               <button
@@ -311,11 +312,11 @@ export function ExerciseForm({
           </div>
         </div>
         <div className="field">
-          <label>Postup (každý krok na nový řádek)</label>
+          <label>{t('How to (one step per line)')}</label>
           <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={4} />
         </div>
         <button className="btn primary block" onClick={save}>
-          Uložit cvik
+          {t('Save exercise')}
         </button>
       </div>
     </Sheet>

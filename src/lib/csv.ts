@@ -1,6 +1,7 @@
 import type { BodyPart, Equipment, Exercise, ExerciseType, SetType, Unit, Workout, WorkoutExercise } from '../types';
 import { uid } from './calc';
 import { KG_PER_LB } from './format';
+import { t } from '../i18n';
 
 /** Parses CSV text (RFC 4180 quoting). Detects `,` or `;` delimiter from the header line. */
 export function parseCsv(text: string): string[][] {
@@ -213,7 +214,7 @@ export function strongExerciseId(name: string): string {
   const key = strongKey(name);
   const slug = key
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 40);
@@ -274,12 +275,12 @@ export interface StrongAnalysis {
  */
 export function analyzeStrongCsv(text: string, knownExercises: Exercise[]): StrongAnalysis {
   const rows = parseCsv(text);
-  if (rows.length < 2) throw new Error('The file is empty.');
+  if (rows.length < 2) throw new Error(t('The file is empty.'));
   const header = readHeader(rows[0]);
   const iDate = header.index['date'];
   const iEx = header.index['exercise name'];
   if (iDate === undefined || iEx === undefined) {
-    throw new Error("This doesn't look like a Strong export (the Date and Exercise Name columns are missing).");
+    throw new Error(t("This doesn't look like a Strong export (the Date and Exercise Name columns are missing)."));
   }
   const iName = header.index['workout name'];
   const iOrder = header.index['set order'];

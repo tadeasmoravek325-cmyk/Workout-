@@ -5,6 +5,7 @@ import { analyzeStrongCsv, buildStrongImport, type StrongAnalysis } from '../lib
 import type { Unit } from '../types';
 import { ExercisePicker } from './ExercisePicker';
 import { Segmented, Sheet, Switch, toast } from './ui';
+import { t, tn } from '../i18n';
 
 /**
  * Two-step Strong import: the user reviews how every Strong exercise maps to the library
@@ -35,9 +36,9 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
 
   if ('error' in analysis) {
     return (
-      <Sheet title="Import from Strong" onClose={onClose}>
+      <Sheet title={t('Import from Strong')} onClose={onClose}>
         <div className="card">
-          <div className="bold danger">Can't read this file</div>
+          <div className="bold danger">{t("Can't read this file")}</div>
           <div className="small muted" style={{ marginTop: 6 }}>
             {analysis.error}
           </div>
@@ -52,28 +53,28 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
   const run = () => {
     const result = buildStrongImport(analysis, mapping, unit, all);
     const n = importWorkouts(result.workouts, result.newExercises, replace);
-    toast(`Imported ${n} workout${n === 1 ? '' : 's'}`);
+    toast(tn(n, 'Imported {n} workout', 'Imported {n} workouts'));
     onClose();
   };
 
   return (
-    <Sheet title="Import from Strong" onClose={onClose} full>
+    <Sheet title={t('Import from Strong')} onClose={onClose} full>
       <div className="grid-2">
         <div className="stat">
           <div className="v">{analysis.workoutCount}</div>
-          <div className="l">workouts</div>
+          <div className="l">{tn(analysis.workoutCount, 'workout', 'workouts')}</div>
         </div>
         <div className="stat">
           <div className="v">{totalSets}</div>
-          <div className="l">sets</div>
+          <div className="l">{tn(totalSets, 'set', 'sets')}</div>
         </div>
       </div>
 
       {analysis.unitFromFile ? (
-        <div className="small muted mt">Weights are in {analysis.unitFromFile}, read from the file.</div>
+        <div className="small muted mt">{t('Weights are in {unit}, read from the file.', { unit: analysis.unitFromFile })}</div>
       ) : (
         <div className="field mt">
-          <label>Weight unit used in Strong</label>
+          <label>{t('Weight unit used in Strong')}</label>
           <Segmented
             value={unit}
             onChange={setUnit}
@@ -86,14 +87,15 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
       )}
 
       <div className="section-title mt-l">
-        <h2>Exercises</h2>
+        <h2>{t('Exercises')}</h2>
         <span className="small muted">
-          {matched} matched · {analysis.exercises.length - matched} new
+          {t('{matched} matched · {fresh} new', { matched, fresh: analysis.exercises.length - matched })}
         </span>
       </div>
       <p className="small muted" style={{ marginTop: -4 }}>
-        Check that every exercise lands where it should. Tap a row to change it. Names that don't match exactly become new
-        exercises, so different movements are never merged.
+        {t(
+          "Check that every exercise lands where it should. Tap a row to change it. Names that don't match exactly become new exercises, so different movements are never merged.",
+        )}
       </p>
       <div className="list">
         {analysis.exercises.map((e) => {
@@ -105,10 +107,10 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
                 <div className="bold ellipsis">{e.name}</div>
                 <div className="small muted row" style={{ gap: 6 }}>
                   <ArrowRight size={13} aria-hidden="true" />
-                  <span className={`ellipsis ${ex ? 'accent' : ''}`}>{ex ? ex.name : 'New exercise'}</span>
+                  <span className={`ellipsis ${ex ? 'accent' : ''}`}>{ex ? ex.name : t('New exercise')}</span>
                 </div>
               </div>
-              <span className="small muted">{e.sets} sets</span>
+              <span className="small muted">{tn(e.sets, '{n} set', '{n} sets')}</span>
             </button>
           );
         })}
@@ -116,17 +118,19 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
 
       <div className="card mt-l row between">
         <div className="grow">
-          <div className="bold">Replace earlier Strong import</div>
-          <div className="small muted">Removes workouts that start at the same time as ones in this file, then imports them again.</div>
+          <div className="bold">{t('Replace earlier Strong import')}</div>
+          <div className="small muted">
+            {t('Removes workouts that start at the same time as ones in this file, then imports them again.')}
+          </div>
         </div>
-        <Switch on={replace} onChange={setReplace} label="Replace earlier import" />
+        <Switch on={replace} onChange={setReplace} label={t('Replace earlier import')} />
       </div>
 
       <div style={{ position: 'sticky', bottom: 0, paddingTop: 16, background: 'var(--bg-2)' }}>
         <button className="btn primary block" onClick={run}>
-          Import {analysis.workoutCount} workouts
+          {tn(analysis.workoutCount, 'Import {n} workout', 'Import {n} workouts')}
         </button>
-        <div className="tiny muted center mt">A backup of your current data is saved automatically first.</div>
+        <div className="tiny muted center mt">{t('A backup of your current data is saved automatically first.')}</div>
       </div>
 
       {editing && (
@@ -159,15 +163,15 @@ function MappingPicker({
   onClose: () => void;
 }) {
   const [picking, setPicking] = useState(false);
-  if (picking) return <ExercisePicker multi={false} title={`Match “${name}”`} onClose={onClose} onPick={(ids) => onPick(ids[0])} />;
+  if (picking) return <ExercisePicker multi={false} title={t('Match “{name}”', { name })} onClose={onClose} onPick={(ids) => onPick(ids[0])} />;
   return (
     <Sheet title={name} onClose={onClose}>
       <div className="stack">
         <button className="btn primary block" onClick={() => setPicking(true)}>
-          Match to an exercise
+          {t('Match to an exercise')}
         </button>
         <button className="btn block" onClick={onNew}>
-          <Plus size={18} aria-hidden="true" /> Keep as a new exercise
+          <Plus size={18} aria-hidden="true" /> {t('Keep as a new exercise')}
         </button>
       </div>
     </Sheet>

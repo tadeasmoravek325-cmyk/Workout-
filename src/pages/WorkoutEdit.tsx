@@ -1,6 +1,7 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
+import { t } from '../i18n';
 
 function toLocalInput(ts: number) {
   const d = new Date(ts);
@@ -21,9 +22,9 @@ export default function WorkoutEdit() {
     <div className="page">
       <div className="page-header">
         <span />
-        <h2>Upravit trénink</h2>
+        <h2>{t('Edit workout')}</h2>
         <button className="btn ok sm" onClick={() => navigate(`/history/${id}`, { replace: true })}>
-          Hotovo
+          {t('Done')}
         </button>
       </div>
       <div className="stack">
@@ -39,23 +40,23 @@ export default function WorkoutEdit() {
         />
         <div className="grid-2">
           <div className="field">
-            <label>Začátek</label>
+            <label>{t('Start time')}</label>
             <input
               type="datetime-local"
               value={toLocalInput(workout.startedAt)}
               onChange={(e) => {
-                const t = new Date(e.target.value).getTime();
-                if (!Number.isNaN(t))
+                const ts = new Date(e.target.value).getTime();
+                if (!Number.isNaN(ts))
                   mutate((w) => {
                     const dur = (w.finishedAt ?? w.startedAt) - w.startedAt;
-                    w.startedAt = t;
-                    w.finishedAt = t + dur;
+                    w.startedAt = ts;
+                    w.finishedAt = ts + dur;
                   });
               }}
             />
           </div>
           <div className="field">
-            <label>Délka (min)</label>
+            <label>{t('Duration (min)')}</label>
             <input
               inputMode="numeric"
               value={durMin}

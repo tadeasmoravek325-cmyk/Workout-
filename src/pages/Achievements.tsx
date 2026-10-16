@@ -3,6 +3,7 @@ import { Icon } from '../components/Icon';
 import { useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { ACHIEVEMENTS, achievementStats } from '../lib/achievements';
+import { t } from '../i18n';
 
 export default function Achievements() {
   const workouts = useStore((s) => s.workouts);
@@ -17,12 +18,12 @@ export default function Achievements() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1>Odznaky</h1>
+      <h1>{t('Badges')}</h1>
       <div className="muted small" style={{ marginBottom: 12 }}>
-        Odemčeno {unlocked} z {ACHIEVEMENTS.length}
+        {t('{unlocked} of {total} unlocked', { unlocked, total: ACHIEVEMENTS.length })}
       </div>
       <div className="progress" style={{ marginBottom: 16 }}>
         <div style={{ width: `${(unlocked / ACHIEVEMENTS.length) * 100}%` }} />
@@ -35,10 +36,10 @@ export default function Achievements() {
             </div>
             <div className="grow">
               <div className="row between">
-                <span className="bold">{a.title}</span>
-                {p >= 1 ? <span className="badge gold">Získáno</span> : <span className="small muted">{Math.floor(p * 100)} %</span>}
+                <span className="bold">{t(a.title)}</span>
+                {p >= 1 ? <span className="badge gold">{t('Earned')}</span> : <span className="small muted">{Math.floor(p * 100)} %</span>}
               </div>
-              <div className="small muted">{a.description}</div>
+              <div className="small muted">{t(a.description)}</div>
               {p < 1 && p > 0 && (
                 <div className="progress" style={{ height: 5, marginTop: 6 }}>
                   <div style={{ width: `${p * 100}%` }} />

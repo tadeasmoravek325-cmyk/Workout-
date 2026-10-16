@@ -3,9 +3,10 @@ import { useExerciseMap, useStore } from '../store/store';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { Empty } from '../components/ui';
 import { detectPRs, workoutVolume } from '../lib/calc';
-import { fmtVolume, plural } from '../lib/format';
+import { fmtVolume } from '../lib/format';
+import { LOCALE_TAG, t, tn } from '../i18n';
 
-const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
 export default function History() {
   const workouts = useStore((s) => s.workouts);
@@ -46,26 +47,26 @@ export default function History() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Historie</h1>
+        <h1>{t('History')}</h1>
         <span className="muted small">
-          celkem {workouts.length} {plural(workouts.length, ['trénink', 'tréninky', 'tréninků'])}
+          {tn(workouts.length, '{n} workout in total', '{n} workouts in total')}
         </span>
       </div>
 
       <div className="card">
         <div className="row between" style={{ marginBottom: 10 }}>
-          <button className="icon-btn" onClick={() => shift(-1)} aria-label="Předchozí měsíc">
+          <button className="icon-btn" onClick={() => shift(-1)} aria-label={t('Previous month')}>
             ‹
           </button>
           <div className="center">
             <div className="bold" style={{ textTransform: 'capitalize' }}>
-              {m.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' })}
+              {m.toLocaleDateString(LOCALE_TAG, { month: 'long', year: 'numeric' })}
             </div>
             <div className="tiny muted">
-              {inMonth.length} {plural(inMonth.length, ['trénink', 'tréninky', 'tréninků'])} · {fmtVolume(volume, unit)}
+              {tn(inMonth.length, '{n} workout', '{n} workouts')} · {fmtVolume(volume, unit)}
             </div>
           </div>
-          <button className="icon-btn" onClick={() => shift(1)} aria-label="Další měsíc">
+          <button className="icon-btn" onClick={() => shift(1)} aria-label={t('Next month')}>
             ›
           </button>
         </div>
@@ -96,15 +97,15 @@ export default function History() {
       <div className="section stack">
         {day && (
           <button className="btn sm" onClick={() => setDay(null)}>
-            Zobrazit celý měsíc
+            {t('Show whole month')}
           </button>
         )}
         {shown.map((w) => (
           <WorkoutCard key={w.id} w={w} prCount={prCounts.get(w.id)} />
         ))}
         {!shown.length && (
-          <Empty title="V tomto měsíci žádný trénink">
-            {workouts.length ? 'Přepni na jiný měsíc šipkami nahoře.' : 'Tvoje dokončené tréninky se objeví tady.'}
+          <Empty title={t('No workouts this month')}>
+            {workouts.length ? t('Use the arrows above to switch months.') : t('Your finished workouts will show up here.')}
           </Empty>
         )}
       </div>

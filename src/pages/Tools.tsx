@@ -5,6 +5,7 @@ import { e1rm, plateCalc, roundTo, warmupSets, weightForReps } from '../lib/calc
 import { fmtNum, fromDisplayWeight, KG_PER_LB, toDisplayWeight } from '../lib/format';
 import { NumInput, Segmented } from '../components/ui';
 import { PlateVisual } from '../components/PlateVisual';
+import { t } from '../i18n';
 
 export default function Tools() {
   const settings = useStore((s) => s.settings);
@@ -29,17 +30,17 @@ export default function Tools() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1 style={{ marginBottom: 14 }}>Nástroje</h1>
+      <h1 style={{ marginBottom: 14 }}>{t('Tools')}</h1>
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
-          { value: 'plates', label: 'Kotouče' },
+          { value: 'plates', label: t('Plates') },
           { value: '1rm', label: '1RM' },
-          { value: 'warmup', label: 'Rozcvička' },
+          { value: 'warmup', label: t('Warm-up') },
         ]}
       />
 
@@ -47,27 +48,30 @@ export default function Tools() {
         <div className="card mt">
           <div className="grid-2">
             <div className="field">
-              <label>Cílová váha ({unit})</label>
+              <label>{t('Target weight ({unit})', { unit })}</label>
               <NumInput value={target} onChange={setTarget} />
             </div>
             <div className="field">
-              <label>Osa ({unit})</label>
+              <label>{t('Bar ({unit})', { unit })}</label>
               <NumInput value={bar} onChange={setBar} />
             </div>
           </div>
           <PlateVisual plates={perSideDisplay} />
           <div className="center">
-            <div className="small muted">Na každou stranu</div>
+            <div className="small muted">{t('Per side')}</div>
             <div className="bold" style={{ fontSize: 18 }}>
-              {perSideDisplay.length ? perSideDisplay.map((p) => fmtNum(p, 2)).join(' + ') : 'Jen osa'}
+              {perSideDisplay.length ? perSideDisplay.map((p) => fmtNum(p, 2)).join(' + ') : t('Just the bar')}
             </div>
             {res.remainder > 0.01 && (
               <div className="small" style={{ color: 'var(--warn)', marginTop: 6 }}>
-                Nejbližší možná váha: {fmtNum(toDisplayWeight(res.achieved, unit))} {unit} (chybí {fmtNum(toDisplayWeight(res.remainder, unit))} {unit})
+                {t('Closest possible: {achieved} ({missing} short)', {
+                  achieved: `${fmtNum(toDisplayWeight(res.achieved, unit))} ${unit}`,
+                  missing: `${fmtNum(toDisplayWeight(res.remainder, unit))} ${unit}`,
+                })}
               </div>
             )}
           </div>
-          <div className="tiny muted center mt">Dostupné kotouče nastavíš v Nastavení.</div>
+          <div className="tiny muted center mt">{t('Set your available plates in Settings.')}</div>
         </div>
       )}
 
@@ -76,16 +80,16 @@ export default function Tools() {
           <div className="card mt">
             <div className="grid-2">
               <div className="field">
-                <label>Váha ({unit})</label>
+                <label>{t('Weight ({unit})', { unit })}</label>
                 <NumInput value={weight} onChange={setWeight} />
               </div>
               <div className="field">
-                <label>Opakování</label>
+                <label>{t('Reps')}</label>
                 <NumInput value={reps} onChange={(v) => setReps(v === undefined ? undefined : Math.round(v))} />
               </div>
             </div>
             <div className="center mt-l">
-              <div className="small muted">Odhadované maximum (1RM)</div>
+              <div className="small muted">{t('Estimated max (1RM)')}</div>
               <div className="num-xl accent">
                 {oneRm ? `${fmtNum(toDisplayWeight(oneRm, unit))} ${unit}` : '–'}
               </div>
@@ -95,8 +99,8 @@ export default function Tools() {
             <div className="list mt">
               <div className="list-item small muted bold">
                 <span style={{ width: 60 }}>%</span>
-                <span className="grow">Váha</span>
-                <span>Opakování</span>
+                <span className="grow">{t('Weight')}</span>
+                <span>{t('Reps')}</span>
               </div>
               {[100, 95, 90, 85, 80, 75, 70, 65, 60, 50].map((pct) => {
                 const w = roundTo((toDisplayWeight(oneRm, unit) ?? 0) * (pct / 100), step);
@@ -117,8 +121,9 @@ export default function Tools() {
           )}
           {oneRm > 0 && (
             <div className="tiny muted mt">
-              Výpočet podle Epleyho vzorce. Např. na 8 opakování zvládneš asi{' '}
-              {fmtNum(roundTo(toDisplayWeight(weightForReps(oneRm, 8), unit) ?? 0, step))} {unit}.
+              {t('Based on the Epley formula. For 8 reps you can handle about {weight}.', {
+                weight: `${fmtNum(roundTo(toDisplayWeight(weightForReps(oneRm, 8), unit) ?? 0, step))} ${unit}`,
+              })}
             </div>
           )}
         </>
@@ -127,7 +132,7 @@ export default function Tools() {
       {tab === 'warmup' && (
         <div className="card mt">
           <div className="field">
-            <label>Pracovní váha ({unit})</label>
+            <label>{t('Working weight ({unit})', { unit })}</label>
             <NumInput value={target} onChange={setTarget} />
           </div>
           <div className="list mt">
@@ -140,12 +145,12 @@ export default function Tools() {
                 <span className="small muted">
                   {plateCalc(s.weight, barKg, plates)
                     .perSide.map((p) => fmtNum(toDisplayWeight(p, unit), 2))
-                    .join('+') || 'osa'}
+                    .join('+') || t('bar')}
                 </span>
               </div>
             ))}
             <div className="list-item">
-              <span className="badge accent">Práce</span>
+              <span className="badge accent">{t('Work')}</span>
               <span className="grow bold">
                 {fmtNum(target)} {unit}
               </span>

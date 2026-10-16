@@ -13,7 +13,8 @@ import type {
   WorkoutSet,
 } from '../types';
 import { defaultSettings, uid } from '../lib/calc';
-import { BUILTIN_EXERCISES } from '../data/exercises';
+import { BUILTIN_EXERCISES, normalizeMuscles } from '../data/exercises';
+import { LOCALE_TAG, t } from '../i18n';
 import { PROGRAMS } from '../data/programs';
 
 /** Monday = 0 … Sunday = 6 → routine id. */
@@ -114,10 +115,10 @@ function workoutFromRoutine(r: Routine): Workout {
 
 function defaultWorkoutName(ts = Date.now()): string {
   const h = new Date(ts).getHours();
-  if (h < 11) return 'Ranní trénink';
-  if (h < 14) return 'Polední trénink';
-  if (h < 18) return 'Odpolední trénink';
-  return 'Večerní trénink';
+  if (h < 11) return t('Morning workout');
+  if (h < 14) return t('Midday workout');
+  if (h < 18) return t('Afternoon workout');
+  return t('Evening workout');
 }
 
 function routineExercisesFromWorkout(w: Workout): RoutineExercise[] {
@@ -424,7 +425,9 @@ let cacheVal: Exercise[] = BUILTIN_EXERCISES;
 function useMemoExercises(custom: Exercise[]): Exercise[] {
   if (cacheKey !== custom) {
     cacheKey = custom;
-    cacheVal = [...BUILTIN_EXERCISES, ...custom].sort((a, b) => a.name.localeCompare(b.name, 'cs'));
+    // Custom exercises may predate the detailed muscle list ('shoulders'), so normalise them on read.
+    const fixed = custom.map((e) => ({ ...e, primary: normalizeMuscles(e.primary), secondary: normalizeMuscles(e.secondary) }));
+    cacheVal = [...BUILTIN_EXERCISES, ...fixed].sort((a, b) => a.name.localeCompare(b.name, LOCALE_TAG));
   }
   return cacheVal;
 }

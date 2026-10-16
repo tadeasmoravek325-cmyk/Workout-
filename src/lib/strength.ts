@@ -10,12 +10,12 @@ export interface Tier {
 }
 
 export const TIERS: Tier[] = [
-  { id: 'none', name: 'Bez ranku', color: '#6b6b6b', icon: 'circle' },
-  { id: 'bronze', name: 'Bronz', color: '#c27a3d', icon: 'medal' },
-  { id: 'silver', name: 'Stříbro', color: '#c4c4c4', icon: 'medal' },
-  { id: 'gold', name: 'Zlato', color: '#f2b233', icon: 'medal' },
-  { id: 'platinum', name: 'Platina', color: '#e8e4da', icon: 'shield' },
-  { id: 'diamond', name: 'Diamant', color: '#ff7a1a', icon: 'gem' },
+  { id: 'none', name: 'Unranked', color: '#6b6b6b', icon: 'circle' },
+  { id: 'bronze', name: 'Bronze', color: '#c27a3d', icon: 'medal' },
+  { id: 'silver', name: 'Silver', color: '#c4c4c4', icon: 'medal' },
+  { id: 'gold', name: 'Gold', color: '#f2b233', icon: 'medal' },
+  { id: 'platinum', name: 'Platinum', color: '#e8e4da', icon: 'shield' },
+  { id: 'diamond', name: 'Diamond', color: '#ff7a1a', icon: 'gem' },
 ];
 
 /**
@@ -24,11 +24,11 @@ export const TIERS: Tier[] = [
  */
 const STANDARDS: Record<string, { label: string; m: number[]; upper: boolean; reps?: boolean }> = {
   'bench-press': { label: 'Bench press', m: [0.5, 0.75, 1.0, 1.5, 2.0], upper: true },
-  squat: { label: 'Dřep', m: [0.75, 1.25, 1.5, 2.25, 2.75], upper: false },
-  deadlift: { label: 'Mrtvý tah', m: [1.0, 1.5, 2.0, 2.5, 3.0], upper: false },
-  ohp: { label: 'Tlak nad hlavu', m: [0.35, 0.55, 0.75, 1.0, 1.25], upper: true },
-  'barbell-row': { label: 'Přítahy v předklonu', m: [0.5, 0.75, 1.0, 1.5, 1.75], upper: true },
-  'pull-up': { label: 'Shyby', m: [1, 5, 10, 18, 25], upper: true, reps: true },
+  squat: { label: 'Squat', m: [0.75, 1.25, 1.5, 2.25, 2.75], upper: false },
+  deadlift: { label: 'Deadlift', m: [1.0, 1.5, 2.0, 2.5, 3.0], upper: false },
+  ohp: { label: 'Overhead press', m: [0.35, 0.55, 0.75, 1.0, 1.25], upper: true },
+  'barbell-row': { label: 'Barbell row', m: [0.5, 0.75, 1.0, 1.5, 1.75], upper: true },
+  'pull-up': { label: 'Pull-ups', m: [1, 5, 10, 18, 25], upper: true, reps: true },
 };
 
 export const RANKED_EXERCISES = Object.keys(STANDARDS);

@@ -4,7 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, ClipboardList, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { muscleRecovery, startOfWeek, workoutVolume } from '../lib/calc';
-import { fmtVolume, plural, relativeDay } from '../lib/format';
+import { fmtVolume, relativeDay } from '../lib/format';
+import { LOCALE_TAG, t, tn } from '../i18n';
 import { BodyMap, RECOVERY_COLORS, recoveryColor } from '../components/BodyMap';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { GeneratorSheet } from '../components/GeneratorSheet';
@@ -14,8 +15,8 @@ import { useGame } from '../lib/useGame';
 import { backupDue, saveBackupFile } from '../lib/backup';
 import type { Muscle } from '../types';
 
-const DOW = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
-const DAY_NAMES = ['pondělí', 'úterý', 'středa', 'čtvrtek', 'pátek', 'sobota', 'neděle'];
+const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const DAY = 86_400_000;
 
 
@@ -60,7 +61,7 @@ export default function Home() {
   }, [workouts, exMap, measurements]);
 
   const hour = new Date().getHours();
-  const greeting = hour < 10 ? 'Dobré ráno' : hour < 18 ? 'Ahoj' : 'Dobrý večer';
+  const greeting = hour < 10 ? t('Good morning') : hour < 18 ? t('Hey') : t('Good evening');
   const name = settings.name ? `, ${settings.name}` : '';
   const unit = settings.unit;
 
@@ -77,14 +78,14 @@ export default function Home() {
       <div className="page-header" style={{ marginBottom: 14 }}>
         <div className="grow">
           <div className="small muted bold">
-            {new Date().toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase())}
+            {new Date().toLocaleDateString(LOCALE_TAG, { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase())}
           </div>
           <h1 className="ellipsis">
             {greeting}
             {name}
           </h1>
         </div>
-        <Link to="/profile" className="icon-btn" aria-label="Profil">
+        <Link to="/profile" className="icon-btn" aria-label={t('Profile')}>
           <User size={19} />
         </Link>
       </div>
@@ -93,24 +94,24 @@ export default function Home() {
       <Link to="/profile" className="hero" style={{ display: 'block' }}>
         <div className="hero-stats">
           <div>
-            <div className="label">Level</div>
+            <div className="label">{t('Level')}</div>
             <div className="num-xl accent">{game.level.level}</div>
             <div className="small bold">{game.level.title}</div>
           </div>
           <div>
-            <div className="label">V řadě</div>
+            <div className="label">{t('Streak')}</div>
             <div className="num-xl">
               {game.streak.streak}
-              <span className="unit">{plural(game.streak.streak, ['týden', 'týdny', 'týdnů'])}</span>
+              <span className="unit">{tn(game.streak.streak, 'week', 'weeks')}</span>
             </div>
             <div className="small muted">
               {game.streak.freezes > 0 ? (
                 <>
-                  <Snowflake size={12} style={{ verticalAlign: '-1px' }} /> {game.streak.freezes}{' '}
-                  {plural(game.streak.freezes, ['ochrana', 'ochrany', 'ochran'])}
+                  <Snowflake size={12} style={{ verticalAlign: '-1px' }} />{' '}
+                  {tn(game.streak.freezes, '{n} streak freeze', '{n} streak freezes')}
                 </>
               ) : (
-                'Splň týdenní cíl'
+                t('Hit your weekly goal')
               )}
             </div>
           </div>
@@ -120,19 +121,22 @@ export default function Home() {
         </div>
         <div className="row between small muted" style={{ marginTop: 6 }}>
           <span className="tabular">
-            {game.level.current.toLocaleString('cs-CZ')} / {game.level.needed.toLocaleString('cs-CZ')} XP
+            {game.level.current.toLocaleString(LOCALE_TAG)} / {game.level.needed.toLocaleString(LOCALE_TAG)} XP
           </span>
-          <span>do levelu {game.level.level + 1}</span>
+          <span>{t('to level {level}', { level: game.level.level + 1 })}</span>
         </div>
       </Link>
 
       {/* Week */}
       <div className="card mt">
         <div className="row between" style={{ marginBottom: 12 }}>
-          <h3>Tento týden</h3>
+          <h3>{t('This week')}</h3>
           <span className="small bold">
             <span className="accent">{thisWeek.length}</span>
-            <span className="muted"> / {settings.weeklyGoal} tréninků · {fmtVolume(weekVolume, unit)}</span>
+            <span className="muted">
+              {' '}
+              / {tn(settings.weeklyGoal, '{n} workout', '{n} workouts')} · {fmtVolume(weekVolume, unit)}
+            </span>
           </span>
         </div>
         <div className="week-dots">
@@ -154,21 +158,24 @@ export default function Home() {
 
       {backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
         <div className="card backup-nudge mt">
-          <div className="bold">Ulož si zálohu tréninků</div>
+          <div className="bold">{t('Back up your workouts')}</div>
           <div className="small muted" style={{ marginTop: 4 }}>
-            Máš {workouts.length} {plural(workouts.length, ['trénink', 'tréninky', 'tréninků'])} jen v tomto telefonu
-            {settings.lastBackupAt ? ` a poslední záloha je ${relativeDay(settings.lastBackupAt).toLowerCase()}` : ''}. Při ztrátě telefonu by
-            zmizely.
+            {tn(
+              workouts.length,
+              'You have {n} workout saved only on this phone. If you lose the phone, it is gone.',
+              'You have {n} workouts saved only on this phone. If you lose the phone, they are gone.',
+            )}
+            {settings.lastBackupAt ? ` ${t('Last backup: {when}.', { when: relativeDay(settings.lastBackupAt) })}` : ''}
           </div>
           <div className="row mt" style={{ gap: 8 }}>
             <button className="btn primary sm grow" onClick={() => void saveBackupFile()}>
-              Uložit zálohu
+              {t('Save backup')}
             </button>
             <button
               className="btn sm"
               onClick={() => useStore.getState().updateSettings({ backupSnoozeUntil: Date.now() + 7 * DAY })}
             >
-              Za týden
+              {t('In a week')}
             </button>
           </div>
         </div>
@@ -181,21 +188,21 @@ export default function Home() {
             <div className="grow">
               <div className="small accent bold">
                 <span className="pulse" style={{ background: 'var(--accent)', width: 8, height: 8, borderRadius: 9, display: 'inline-block', marginRight: 6 }} />
-                Probíhá trénink
+                {t('Workout in progress')}
               </div>
               <h3>{active.name}</h3>
             </div>
-            <span className="btn primary sm">Pokračovat</span>
+            <span className="btn primary sm">{t('Resume')}</span>
           </Link>
         ) : (
           <>
             {todayRoutine && !doneToday && (
               <div className="card" style={{ marginBottom: 12 }}>
-                <div className="small accent bold">Dnes na plánu · {DAY_NAMES[todayIdx]}</div>
+                <div className="small accent bold">{t('On the plan today · {day}', { day: t(DAY_NAMES[todayIdx]) })}</div>
                 <h2 style={{ margin: '4px 0 6px' }}>{todayRoutine.name}</h2>
                 <div className="small muted ellipsis">{todayRoutine.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}</div>
                 <button className="btn primary block mt" onClick={() => start(todayRoutine.id)}>
-                  Začít trénink
+                  {t('Start workout')}
                 </button>
               </div>
             )}
@@ -204,19 +211,19 @@ export default function Home() {
                 <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent)', display: 'grid', placeItems: 'center', color: 'var(--on-accent)' }}>
                   <Plus size={22} strokeWidth={3} />
                 </div>
-                <div className="small bold">Prázdný</div>
+                <div className="small bold">{t('Empty')}</div>
               </button>
               <button className="card tap center" style={{ padding: 14 }} onClick={() => setGenerator(true)}>
                 <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <Sparkles size={21} />
                 </div>
-                <div className="small bold">Vygenerovat</div>
+                <div className="small bold">{t('Generate')}</div>
               </button>
               <Link to="/train" className="card tap center" style={{ padding: 14 }}>
                 <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--accent-soft)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <ClipboardList size={21} />
                 </div>
-                <div className="small bold">Rutiny</div>
+                <div className="small bold">{t('Routines')}</div>
               </Link>
             </div>
           </>
@@ -226,9 +233,9 @@ export default function Home() {
       {/* Quests */}
       <div className="section">
         <div className="section-title">
-          <h2>Týdenní výzvy</h2>
+          <h2>{t('Weekly quests')}</h2>
           <span className="small muted bold">
-            {questsDone}/{game.quests.length} splněno
+            {t('{done}/{total} done', { done: questsDone, total: game.quests.length })}
           </span>
         </div>
         <div className="list">
@@ -261,34 +268,34 @@ export default function Home() {
       {Object.keys(recovery).length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Připravenost svalů</h2>
-            <Link to="/stats">Statistiky</Link>
+            <h2>{t('Muscle recovery')}</h2>
+            <Link to="/stats">{t('Stats')}</Link>
           </div>
           <div className="card">
             <BodyMap color={(m) => recoveryColor(recovery[m])} height={210} />
             <div className="row small bold" style={{ justifyContent: 'center', gap: 14 }}>
               <span>
-                <span style={{ color: RECOVERY_COLORS.tired }}>●</span> unavené
+                <span style={{ color: RECOVERY_COLORS.tired }}>●</span> {t('tired')}
               </span>
               <span>
-                <span style={{ color: RECOVERY_COLORS.recovering }}>●</span> regenerují
+                <span style={{ color: RECOVERY_COLORS.recovering }}>●</span> {t('recovering')}
               </span>
               <span>
-                <span style={{ color: RECOVERY_COLORS.ready }}>●</span> připravené
+                <span style={{ color: RECOVERY_COLORS.ready }}>●</span> {t('ready')}
               </span>
             </div>
             {ready.length > 0 && (
               <div className="small mt">
-                <span className="ok bold">Připravené:</span> {ready.map((m) => MUSCLE_LABELS[m]).join(', ')}
+                <span className="ok bold">{t('Ready:')}</span> {ready.map((m) => MUSCLE_LABELS[m]).join(', ')}
               </div>
             )}
             {tired.length > 0 && (
               <div className="small" style={{ marginTop: 4 }}>
-                <span className="danger bold">Ještě odpočívají:</span> {tired.map((m) => MUSCLE_LABELS[m]).join(', ')}
+                <span className="danger bold">{t('Still recovering:')}</span> {tired.map((m) => MUSCLE_LABELS[m]).join(', ')}
               </div>
             )}
             <button className="btn cool block mt" onClick={() => setGenerator(true)}>
-              <Sparkles size={17} /> Trénink podle regenerace
+              <Sparkles size={17} /> {t('Workout for fresh muscles')}
             </button>
           </div>
         </div>
@@ -297,7 +304,7 @@ export default function Home() {
       {recentPRs.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Nedávné rekordy</h2>
+            <h2>{t('Recent PRs')}</h2>
           </div>
           <div className="list">
             {recentPRs.map((p, i) => (
@@ -319,16 +326,16 @@ export default function Home() {
       {nextAchievement && (
         <div className="section">
           <div className="section-title">
-            <h2>Další odznak</h2>
-            <Link to="/achievements">Všechny</Link>
+            <h2>{t('Next badge')}</h2>
+            <Link to="/achievements">{t('See all')}</Link>
           </div>
           <Link to="/achievements" className="card ach tap">
             <div className="ico">
               <Icon name={nextAchievement.a.icon} size={22} />
             </div>
             <div className="grow">
-              <div className="bold">{nextAchievement.a.title}</div>
-              <div className="small muted">{nextAchievement.a.description}</div>
+              <div className="bold">{t(nextAchievement.a.title)}</div>
+              <div className="small muted">{t(nextAchievement.a.description)}</div>
               <div className="progress mt" style={{ height: 6 }}>
                 <div style={{ width: `${nextAchievement.p * 100}%` }} />
               </div>
@@ -339,8 +346,8 @@ export default function Home() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Poslední tréninky</h2>
-          <Link to="/history">Historie</Link>
+          <h2>{t('Recent workouts')}</h2>
+          <Link to="/history">{t('History')}</Link>
         </div>
         {workouts.length ? (
           <div className="stack">
@@ -351,12 +358,12 @@ export default function Home() {
         ) : (
           <div className="card empty">
             <div className="bold" style={{ color: 'var(--text)' }}>
-              Tvůj první trénink čeká
+              {t('Your first workout is waiting')}
             </div>
-            Za každý trénink dostaneš XP a za rekordy bonus navíc.
+            {t('Every workout earns you XP, and PRs earn a bonus on top.')}
             <div className="mt">
               <Link to="/settings" className="btn sm soft">
-                Importovat data ze Strong
+                {t('Import data from Strong')}
               </Link>
             </div>
           </div>

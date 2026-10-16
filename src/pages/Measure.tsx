@@ -6,21 +6,22 @@ import { useStore } from '../store/store';
 import type { MeasurementType, Unit } from '../types';
 import { fmtDate, fmtNum, fromDisplayWeight, toDisplayWeight } from '../lib/format';
 import { NumInput, Sheet, toast, undoToast } from '../components/ui';
+import { t } from '../i18n';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
-  bodyweight: 'Tělesná hmotnost',
-  bodyfat: 'Tělesný tuk',
-  neck: 'Krk',
-  shoulders: 'Ramena',
-  chest: 'Hrudník',
-  waist: 'Pas',
-  hips: 'Boky',
-  bicepsL: 'Biceps (levý)',
-  bicepsR: 'Biceps (pravý)',
-  forearm: 'Předloktí',
-  thighL: 'Stehno (levé)',
-  thighR: 'Stehno (pravé)',
-  calf: 'Lýtko',
+  bodyweight: 'Bodyweight',
+  bodyfat: 'Body fat',
+  neck: 'Neck',
+  shoulders: 'Shoulders',
+  chest: 'Chest',
+  waist: 'Waist',
+  hips: 'Hips',
+  bicepsL: 'Biceps (left)',
+  bicepsR: 'Biceps (right)',
+  forearm: 'Forearm',
+  thighL: 'Thigh (left)',
+  thighR: 'Thigh (right)',
+  calf: 'Calf',
 };
 
 const ICONS: Partial<Record<MeasurementType, typeof Ruler>> = { bodyweight: Scale, bodyfat: Droplet };
@@ -59,7 +60,7 @@ export default function Measure() {
     const ts = new Date(y, mo - 1, d, 12).getTime();
     add({ type: open, value: v, date: ts });
     setValue(undefined);
-    toast('Uloženo');
+    toast(t('Saved'));
   };
 
   const list = open ? byType(open) : [];
@@ -69,32 +70,32 @@ export default function Measure() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1 style={{ marginBottom: 14 }}>Měření těla</h1>
+      <h1 style={{ marginBottom: 14 }}>{t('Body measurements')}</h1>
       <div className="list">
-        {types.map((t) => {
-          const items = byType(t);
+        {types.map((mt) => {
+          const items = byType(mt);
           const last = items[items.length - 1];
           const first = items[0];
-          const diff = last && first && items.length > 1 ? toDisplay(t, last.value, unit) - toDisplay(t, first.value, unit) : 0;
+          const diff = last && first && items.length > 1 ? toDisplay(mt, last.value, unit) - toDisplay(mt, first.value, unit) : 0;
           return (
-            <button key={t} className="list-item" onClick={() => setOpen(t)}>
+            <button key={mt} className="list-item" onClick={() => setOpen(mt)}>
               <div className="avatar">{(() => {
-                const I = ICONS[t] ?? Ruler;
+                const I = ICONS[mt] ?? Ruler;
                 return <I size={19} />;
               })()}</div>
               <div className="grow">
-                <div className="bold">{MEASUREMENT_LABELS[t]}</div>
-                <div className="small muted">{last ? fmtDate(last.date) : 'Zatím bez záznamu'}</div>
+                <div className="bold">{MEASUREMENT_LABELS[mt]}</div>
+                <div className="small muted">{last ? fmtDate(last.date) : t('No entries yet')}</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div className="bold">{last ? `${fmtNum(toDisplay(t, last.value, unit))} ${unitOf(t, unit)}` : '–'}</div>
+                <div className="bold">{last ? `${fmtNum(toDisplay(mt, last.value, unit))} ${unitOf(mt, unit)}` : '–'}</div>
                 {diff !== 0 && (
                   <div className="tiny muted">
                     {diff > 0 ? '+' : ''}
-                    {fmtNum(diff)} od začátku
+                    {t('{diff} since start', { diff: fmtNum(diff) })}
                   </div>
                 )}
               </div>
@@ -108,16 +109,16 @@ export default function Measure() {
           <div className="card">
             <div className="grid-2">
               <div className="field">
-                <label>Hodnota ({unitOf(open, unit)})</label>
+                <label>{t('Value ({unit})', { unit: unitOf(open, unit) })}</label>
                 <NumInput value={value} onChange={setValue} placeholder="0" />
               </div>
               <div className="field">
-                <label>Datum</label>
+                <label>{t('Date')}</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
             </div>
             <button className="btn primary block mt" onClick={save} disabled={value === undefined}>
-              Přidat záznam
+              {t('Add entry')}
             </button>
           </div>
           {chartData.length > 1 && (
@@ -154,9 +155,9 @@ export default function Measure() {
                   className="del-set"
                   onClick={() => {
                     del(m.id);
-                    undoToast('Záznam smazán', () => useStore.getState().restoreMeasurement(m));
+                    undoToast(t('Entry deleted'), () => useStore.getState().restoreMeasurement(m));
                   }}
-                  aria-label="Smazat"
+                  aria-label={t('Delete')}
                 >
                   <X size={15} />
                 </button>

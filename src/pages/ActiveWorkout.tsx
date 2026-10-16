@@ -4,6 +4,7 @@ import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
 import { confirmDialog, undoToast, useNow } from '../components/ui';
 import { fmtClock } from '../lib/format';
+import { t, tn } from '../i18n';
 
 export default function ActiveWorkout() {
   const active = useStore((s) => s.active);
@@ -23,7 +24,7 @@ export default function ActiveWorkout() {
     const copy = structuredClone(active);
     discard();
     navigate('/', { replace: true });
-    undoToast('Trénink zrušen', () => {
+    undoToast(t('Workout discarded'), () => {
       useStore.getState().restoreActive(copy);
       navigate('/workout');
     });
@@ -39,7 +40,7 @@ export default function ActiveWorkout() {
     <div className="page">
       <div className="wk-header">
         <div className="row between">
-          <button className="btn ghost" onClick={() => navigate(-1)} aria-label="Minimalizovat">
+          <button className="btn ghost" onClick={() => navigate(-1)} aria-label={t('Minimize')}>
             ⌄
           </button>
           <div className="center">
@@ -47,11 +48,11 @@ export default function ActiveWorkout() {
               {fmtClock((now - active.startedAt) / 1000)}
             </div>
             <div className="tiny muted">
-              {done}/{total} sérií
+              {t('{done}/{total} sets', { done, total })}
             </div>
           </div>
           <button className="btn ok sm" onClick={() => (done < total || done === 0 ? setConfirming(true) : doFinish())}>
-            Dokončit
+            {t('Finish')}
           </button>
         </div>
         <div className="progress" style={{ marginTop: 10, height: 4 }}>
@@ -75,12 +76,12 @@ export default function ActiveWorkout() {
       <button
         className="btn danger block mt-l"
         onClick={async () => {
-          if (await confirmDialog('Zrušit trénink?', 'Nic z tohoto tréninku se neuloží.', 'Zrušit trénink')) {
+          if (await confirmDialog(t('Discard workout?'), t("Nothing from this workout will be saved."), t('Discard workout'))) {
             discardWithUndo();
           }
         }}
       >
-        Zrušit trénink
+        {t('Discard workout')}
       </button>
 
       {confirming && (
@@ -89,11 +90,11 @@ export default function ActiveWorkout() {
             <div className="sheet-body">
               {done === 0 ? (
                 <>
-                  <h2>Žádná dokončená série</h2>
-                  <p className="muted">Trénink bez dokončených sérií se neuloží. Chceš ho zahodit?</p>
+                  <h2>{t('No sets completed')}</h2>
+                  <p className="muted">{t("A workout with no completed sets won't be saved. Discard it?")}</p>
                   <div className="grid-2">
                     <button className="btn" onClick={() => setConfirming(false)}>
-                      Pokračovat
+                      {t('Continue')}
                     </button>
                     <button
                       className="btn danger"
@@ -101,22 +102,26 @@ export default function ActiveWorkout() {
                         discardWithUndo();
                       }}
                     >
-                      Zahodit
+                      {t('Discard')}
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <h2>Dokončit trénink?</h2>
+                  <h2>{t('Finish workout?')}</h2>
                   <p className="muted">
-                    Máš {total - done} nedokončených sérií. Ty se při uložení vynechají.
+                    {tn(
+                      total - done,
+                      "You have {n} unfinished set. It won't be saved.",
+                      "You have {n} unfinished sets. They won't be saved.",
+                    )}
                   </p>
                   <div className="grid-2">
                     <button className="btn" onClick={() => setConfirming(false)}>
-                      Pokračovat
+                      {t('Continue')}
                     </button>
                     <button className="btn ok" onClick={doFinish}>
-                      Dokončit
+                      {t('Finish')}
                     </button>
                   </div>
                 </>

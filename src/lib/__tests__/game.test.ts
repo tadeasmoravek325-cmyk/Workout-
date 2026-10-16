@@ -23,7 +23,7 @@ describe('levels', () => {
     expect(levelInfo(0).level).toBe(1);
     expect(levelInfo(xpForLevel(5)).level).toBe(5);
     expect(levelInfo(xpForLevel(5) - 1).level).toBe(4);
-    expect(levelInfo(xpForLevel(50)).title).toBe('Legenda');
+    expect(levelInfo(xpForLevel(50)).title).toBe('Gym legend');
   });
   it('reports progress inside the level', () => {
     const l = levelInfo(xpForLevel(3) + 10);

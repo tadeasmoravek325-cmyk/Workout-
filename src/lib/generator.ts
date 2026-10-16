@@ -4,22 +4,22 @@ import { exerciseHistory, muscleRecovery, setsPerMuscle, suggestNext, uid } from
 export type Focus = 'auto' | 'push' | 'pull' | 'legs' | 'upper' | 'lower' | 'full';
 
 export const FOCUS_LABELS: Record<Focus, string> = {
-  auto: 'Podle regenerace',
-  push: 'Tlaky',
-  pull: 'Přítahy',
-  legs: 'Nohy',
-  upper: 'Horní polovina',
-  lower: 'Dolní polovina',
-  full: 'Celé tělo',
+  auto: 'Based on recovery',
+  push: 'Push',
+  pull: 'Pull',
+  legs: 'Legs',
+  upper: 'Upper body',
+  lower: 'Lower body',
+  full: 'Full body',
 };
 
 const FOCUS_MUSCLES: Record<Exclude<Focus, 'auto'>, Muscle[]> = {
-  push: ['chest', 'shoulders', 'triceps', 'chest', 'shoulders', 'triceps'],
-  pull: ['lats', 'traps', 'lats', 'biceps', 'rearDelts', 'biceps'],
+  push: ['chest', 'frontDelts', 'triceps', 'chest', 'sideDelts', 'triceps'],
+  pull: ['lats', 'upperBack', 'lats', 'biceps', 'rearDelts', 'biceps'],
   legs: ['quads', 'hamstrings', 'glutes', 'quads', 'calves', 'abs'],
-  upper: ['chest', 'lats', 'shoulders', 'lats', 'triceps', 'biceps', 'rearDelts'],
+  upper: ['chest', 'lats', 'sideDelts', 'upperBack', 'triceps', 'biceps', 'rearDelts'],
   lower: ['quads', 'hamstrings', 'glutes', 'calves', 'abs', 'lowerBack'],
-  full: ['quads', 'chest', 'lats', 'hamstrings', 'shoulders', 'abs', 'biceps'],
+  full: ['quads', 'chest', 'lats', 'hamstrings', 'frontDelts', 'abs', 'biceps'],
 };
 
 export interface GenerateOptions {

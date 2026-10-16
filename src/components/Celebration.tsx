@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { bigConfetti, haptic } from '../lib/celebrate';
 import { levelInfo } from '../lib/gamification';
+import { t as tr, tn } from '../i18n';
 
 /** Full-screen "workout complete" moment with XP count-up and level progress. */
 export function Celebration({
@@ -56,9 +57,13 @@ export function Celebration({
         <div className="big-emoji">
           <Icon name={levelUp ? after.icon : prs ? 'trophy' : 'flag'} size={44} />
         </div>
-        <h1 style={{ color: '#f5f5f5', marginTop: 16 }}>{levelUp ? 'Level up!' : 'Trénink dokončen!'}</h1>
+        <h1 style={{ color: '#f5f5f5', marginTop: 16 }}>{levelUp ? tr('Level up!') : tr('Workout complete!')}</h1>
         <div style={{ color: '#bdbdbd', marginTop: 6, fontWeight: 600 }}>
-          {levelUp ? `Teď jsi Level ${after.level} · ${after.title}` : prs ? `${prs}× nový osobní rekord!` : 'Skvělá práce, takhle dál.'}
+          {levelUp
+            ? tr("You're now level {level} · {title}", { level: after.level, title: after.title })
+            : prs
+              ? tn(prs, '{n} new personal record!', '{n} new personal records!')
+              : tr('Great work. Keep it up.')}
         </div>
         <div className="num-xl accent" style={{ fontSize: 64, marginTop: 18 }}>
           +{shown} XP
@@ -66,7 +71,7 @@ export function Celebration({
         <div className="card" style={{ marginTop: 18, textAlign: 'left' }}>
           <div className="row between small bold">
             <span>
-              <Icon name={after.icon} size={15} style={{ verticalAlign: '-2px' }} /> Level {levelUp && bar < 1 && bar !== after.progress ? before.level : after.level}
+              <Icon name={after.icon} size={15} style={{ verticalAlign: '-2px' }} /> {tr('Level')} {levelUp && bar < 1 && bar !== after.progress ? before.level : after.level}
             </span>
             <span className="muted">
               {after.current} / {after.needed} XP
@@ -77,12 +82,12 @@ export function Celebration({
           </div>
           {achievements.length > 0 && (
             <div className="small mt">
-              <span className="bold">Nové odznaky:</span> {achievements.join(', ')}
+              <span className="bold">{tr('New badges:')}</span> {achievements.join(', ')}
             </div>
           )}
         </div>
         <button className="btn primary lg block" style={{ marginTop: 18 }} onClick={onClose}>
-          Zobrazit shrnutí
+          {tr('View summary')}
         </button>
       </div>
     </div>

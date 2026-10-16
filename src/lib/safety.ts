@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 import { del, get, set } from 'idb-keyval';
 import type { StateStorage } from 'zustand/middleware';
+import { t } from '../i18n';
 
 export const STORE_KEY = 'silak-data';
 const SNAPSHOT_INDEX = 'gym-snapshots';
@@ -63,7 +64,7 @@ export const safeStorage: StateStorage = {
     try {
       raw = await get<string>(name);
     } catch (e) {
-      throw new Error(`Úložiště prohlížeče nejde přečíst (${(e as Error).message || e}).`);
+      throw new Error(t("Couldn't read the browser storage ({error}).", { error: String((e as Error).message || e) }));
     }
     if (raw == null) return null;
     try {
@@ -75,7 +76,7 @@ export const safeStorage: StateStorage = {
       } catch {
         /* ignore */
       }
-      throw new Error('Uložená data jsou poškozená. Původní kopie byla odložena stranou.');
+      throw new Error(t('The saved data is damaged. The original copy was set aside.'));
     }
     return raw;
   },
@@ -90,8 +91,8 @@ export const safeStorage: StateStorage = {
       const quota = err?.name === 'QuotaExceededError' || /quota/i.test(err?.message ?? '');
       useSafety.setState({
         saveError: quota
-          ? 'V zařízení došlo místo pro data aplikace. Uvolni místo nebo si stáhni zálohu.'
-          : `Změny se nepodařilo uložit (${err?.message || e}).`,
+          ? t('Your device is out of space for app data. Free up some space or download a backup.')
+          : t("Couldn't save your changes ({error}).", { error: String(err?.message || e) }),
       });
     }
   },
@@ -141,11 +142,11 @@ const KEEP_DAILY = 7;
 const KEEP_OTHER = 10;
 
 export const SNAPSHOT_REASON_LABELS: Record<SnapshotReason, string> = {
-  daily: 'Denní záloha',
-  'before-import': 'Před importem',
-  'before-reset': 'Před smazáním dat',
-  'before-restore': 'Před obnovením zálohy',
-  manual: 'Ruční záloha',
+  daily: 'Daily restore point',
+  'before-import': 'Before import',
+  'before-reset': 'Before deleting data',
+  'before-restore': 'Before restoring a backup',
+  manual: 'Manual restore point',
 };
 
 export async function listSnapshots(): Promise<SnapshotMeta[]> {
@@ -241,33 +242,33 @@ export function parseBackup(text: string): { ok: true; data: Record<string, unkn
   try {
     json = JSON.parse(text);
   } catch {
-    return { ok: false, error: 'Soubor není platný JSON. Vybral jsi správný soubor se zálohou?' };
+    return { ok: false, error: t("This file isn't valid JSON. Did you pick the right backup file?") };
   }
   let data: unknown = json;
   let exportedAt: string | undefined;
   if (isObj(json) && json.app === BACKUP_APP_ID) {
     if (typeof json.schema === 'number' && json.schema > BACKUP_SCHEMA) {
-      return { ok: false, error: 'Záloha je z novější verze aplikace. Aktualizuj aplikaci a zkus to znovu.' };
+      return { ok: false, error: t('This backup is from a newer version of the app. Update the app and try again.') };
     }
     data = json.data;
     exportedAt = typeof json.exportedAt === 'string' ? json.exportedAt : undefined;
   }
   if (!isObj(data) || !Array.isArray(data.workouts)) {
-    return { ok: false, error: 'V souboru nejsou žádné tréninky. Tohle nevypadá jako záloha z této aplikace.' };
+    return { ok: false, error: t("There are no workouts in this file. It doesn't look like a backup from this app.") };
   }
   for (const [i, w] of (data.workouts as unknown[]).entries()) {
     if (!isObj(w) || typeof w.id !== 'string' || typeof w.startedAt !== 'number' || !Array.isArray(w.exercises)) {
-      return { ok: false, error: `Trénink č. ${i + 1} v záloze je poškozený. Nic jsem nezměnil.` };
+      return { ok: false, error: t('Workout #{num} in the backup is damaged. Nothing was changed.', { num: i + 1 }) };
     }
     for (const e of w.exercises as unknown[]) {
       if (!isObj(e) || typeof e.exerciseId !== 'string' || !Array.isArray(e.sets)) {
-        return { ok: false, error: `Trénink č. ${i + 1} obsahuje poškozený cvik. Nic jsem nezměnil.` };
+        return { ok: false, error: t('Workout #{num} contains a damaged exercise. Nothing was changed.', { num: i + 1 }) };
       }
     }
   }
   for (const key of ['routines', 'customExercises', 'measurements'] as const) {
     if (data[key] !== undefined && !Array.isArray(data[key])) {
-      return { ok: false, error: 'Záloha má neočekávaný formát. Nic jsem nezměnil.' };
+      return { ok: false, error: t('The backup has an unexpected format. Nothing was changed.') };
     }
   }
   return { ok: true, data, exportedAt };

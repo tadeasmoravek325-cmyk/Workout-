@@ -7,6 +7,7 @@ import { fmtDate, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib
 import { ALL_MUSCLES, MUSCLE_LABELS } from '../data/exercises';
 import { BodyMap, volumeColor } from '../components/BodyMap';
 import { Empty, Segmented } from '../components/ui';
+import { t, tn } from '../i18n';
 
 type Period = '1w' | '4w' | '12w';
 const WEEKS: Record<Period, number> = { '1w': 1, '4w': 4, '12w': 12 };
@@ -54,9 +55,9 @@ export default function Stats() {
   const big3 = useMemo(
     () =>
       [
-        ['squat', 'Dřep'],
+        ['squat', 'Squat'],
         ['bench-press', 'Bench press'],
-        ['deadlift', 'Mrtvý tah'],
+        ['deadlift', 'Deadlift'],
       ].map(([id, label]) => ({ id, label, e1rm: computeRecords(exerciseHistory(workouts, id)).maxE1rm })),
     [workouts],
   );
@@ -71,12 +72,12 @@ export default function Stats() {
       <div className="page">
         <div className="page-header">
           <button className="back" onClick={() => navigate(-1)}>
-            ‹ Zpět
+            ‹ {t('Back')}
           </button>
         </div>
-        <h1>Statistiky</h1>
-        <Empty title="Zatím tu nic není">
-          Odcvič první trénink a statistiky se začnou plnit.
+        <h1>{t('Stats')}</h1>
+        <Empty title={t('Nothing here yet')}>
+          {t('Finish your first workout and your stats will start filling up.')}
         </Empty>
       </div>
     );
@@ -86,47 +87,47 @@ export default function Stats() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1 style={{ marginBottom: 14 }}>Statistiky</h1>
+      <h1 style={{ marginBottom: 14 }}>{t('Stats')}</h1>
       <Segmented
         value={period}
         onChange={setPeriod}
         options={[
-          { value: '1w', label: 'Tento týden' },
-          { value: '4w', label: '4 týdny' },
-          { value: '12w', label: '12 týdnů' },
+          { value: '1w', label: t('This week') },
+          { value: '4w', label: tn(4, '{n} week', '{n} weeks') },
+          { value: '12w', label: tn(12, '{n} week', '{n} weeks') },
         ]}
       />
 
       <div className="grid-2 mt">
         <div className="stat">
           <div className="v">{inPeriod.length}</div>
-          <div className="l">Tréninků</div>
+          <div className="l">{t('Workouts')}</div>
         </div>
         <div className="stat">
           <div className="v">{fmtVolume(totalVolume, unit)}</div>
-          <div className="l">Celkový objem</div>
+          <div className="l">{t('Total volume')}</div>
         </div>
         <div className="stat">
           <div className="v">{fmtDuration(totalTime)}</div>
-          <div className="l">Čas v posilovně</div>
+          <div className="l">{t('Time in the gym')}</div>
         </div>
         <div className="stat">
           <div className="v">{inPeriod.length ? fmtDuration(totalTime / inPeriod.length) : '–'}</div>
-          <div className="l">Průměrná délka</div>
+          <div className="l">{t('Average length')}</div>
         </div>
       </div>
 
       <div className="section">
         <div className="section-title">
-          <h2>Série na sval {weeks > 1 ? '(průměr za týden)' : ''}</h2>
+          <h2>{weeks > 1 ? t('Sets per muscle (weekly average)') : t('Sets per muscle')}</h2>
         </div>
         <div className="card">
           <BodyMap color={(m) => volumeColor(perWeek(m))} height={210} />
           <div className="small muted center" style={{ margin: '4px 0 10px' }}>
-            Doporučeno 10–20 sérií týdně na sval (zelená zóna).
+            {t('Aim for 10–20 sets per muscle each week (green zone).')}
           </div>
           {ALL_MUSCLES.map((m) => {
             const v = perWeek(m);
@@ -149,31 +150,31 @@ export default function Stats() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Posledních 12 týdnů</h2>
+          <h2>{t('Last {n} weeks', { n: 12 })}</h2>
         </div>
         <div className="card">
           <Segmented
             value={chart}
             onChange={setChart}
             options={[
-              { value: 'count', label: 'Tréninky' },
-              { value: 'volume', label: 'Objem' },
-              { value: 'time', label: 'Čas' },
+              { value: 'count', label: t('Workouts') },
+              { value: 'volume', label: t('Volume') },
+              { value: 'time', label: t('Time') },
             ]}
           />
           <div style={{ height: 200, marginTop: 12 }}>
             <ResponsiveContainer>
               <BarChart data={weekly} margin={{ top: 4, right: 4, bottom: 0, left: -18 }}>
                 <CartesianGrid stroke="var(--line)" vertical={false} />
-                <XAxis dataKey="week" tickFormatter={(t) => fmtDate(t, { day: 'numeric', month: 'numeric' })} stroke="var(--line)" />
+                <XAxis dataKey="week" tickFormatter={(ts) => fmtDate(ts, { day: 'numeric', month: 'numeric' })} stroke="var(--line)" />
                 <YAxis stroke="var(--line)" allowDecimals={false} tickFormatter={(v) => (chart === 'volume' && v >= 1000 ? `${fmtNum(v / 1000, 0)}k` : String(Math.round(v)))} />
                 <Tooltip
                   cursor={{ fill: 'var(--accent-soft)' }}
                   contentStyle={{ background: 'var(--card-2)', border: '1px solid var(--line)', borderRadius: 10 }}
-                  labelFormatter={(t) => `Týden od ${fmtDate(Number(t), { day: 'numeric', month: 'long' })}`}
+                  labelFormatter={(ts) => t('Week of {date}', { date: fmtDate(Number(ts), { day: 'numeric', month: 'long' }) })}
                   formatter={(v) => [
                     chart === 'count' ? `${v}` : chart === 'volume' ? `${fmtNum(Number(v), 0)} ${unit}` : `${fmtNum(Number(v), 0)} min`,
-                    chart === 'count' ? 'Tréninky' : chart === 'volume' ? 'Objem' : 'Čas',
+                    chart === 'count' ? t('Workouts') : chart === 'volume' ? t('Volume') : t('Time'),
                   ]}
                 />
                 <Bar dataKey={chart} fill="var(--accent)" radius={[6, 6, 0, 0]} />
@@ -186,28 +187,32 @@ export default function Stats() {
       {total > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Velká trojka (odhad 1RM)</h2>
+            <h2>{t('Big 3 (est. 1RM)')}</h2>
           </div>
           <div className="card">
             {big3.map((b) => (
               <Link key={b.id} to={`/exercises/${b.id}`} className="row between" style={{ padding: '6px 0' }}>
-                <span>{b.label}</span>
+                <span>{t(b.label)}</span>
                 <span className="bold">{b.e1rm ? `${fmtNum(toDisplayWeight(b.e1rm, unit))} ${unit}` : '–'}</span>
               </Link>
             ))}
             <div className="row between" style={{ paddingTop: 10, marginTop: 6 }}>
-              <span className="bold">Součet</span>
+              <span className="bold">{t('Total')}</span>
               <span className="bold accent">
                 {fmtNum(toDisplayWeight(total, unit))} {unit}
               </span>
             </div>
             {bw ? (
               <div className="small muted mt">
-                To je {fmtNum(total / bw, 2)}× tvoje tělesná hmotnost ({fmtNum(toDisplayWeight(bw, unit))} {unit}).
+                {t('That is {ratio}× your bodyweight ({bw}).', { ratio: fmtNum(total / bw, 2), bw: `${fmtNum(toDisplayWeight(bw, unit))} ${unit}` })}
               </div>
             ) : (
               <div className="small muted mt">
-                Zapiš si tělesnou hmotnost v sekci <Link to="/measure" className="accent">Měření</Link> a uvidíš poměr síly k váze.
+                {t('Log your bodyweight in')}{' '}
+                <Link to="/measure" className="accent">
+                  {t('Measurements')}
+                </Link>{' '}
+                {t('to see your strength-to-weight ratio.')}
               </div>
             )}
           </div>
@@ -217,13 +222,13 @@ export default function Stats() {
       {topExercises.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Nejčastější cviky</h2>
+            <h2>{t('Top exercises')}</h2>
           </div>
           <div className="list">
             {topExercises.map(([id, sets]) => (
               <Link key={id} to={`/exercises/${id}`} className="list-item">
                 <span className="grow bold ellipsis">{exMap.get(id)?.name ?? id}</span>
-                <span className="muted small">{sets} sérií</span>
+                <span className="muted small">{tn(sets, '{n} set', '{n} sets')}</span>
               </Link>
             ))}
           </div>

@@ -7,6 +7,7 @@ import { BODY_PART_LABELS } from '../data/exercises';
 import { fmtNum, toDisplayWeight } from '../lib/format';
 import { ExerciseAvatar } from './ExercisePicker';
 import { Sheet, toast } from './ui';
+import { t, tn } from '../i18n';
 
 const MINUTES = [30, 45, 60, 75];
 
@@ -31,7 +32,7 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
 
   const start = () => {
     if (active) {
-      toast('Už máš rozběhnutý trénink');
+      toast(t('You already have a workout in progress'));
       return;
     }
     startWorkout(gen.routine);
@@ -41,19 +42,19 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Sheet title="Vygenerovat trénink" onClose={onClose} full>
+    <Sheet title={t('Generate workout')} onClose={onClose} full>
       <div className="hero cool" style={{ padding: 16 }}>
         <div className="row">
           <Sparkles size={22} />
-          <div className="bold">Trénink na míru</div>
+          <div className="bold">{t('Made just for you')}</div>
         </div>
         <div className="small muted" style={{ marginTop: 4 }}>
-          Sestavíme ho podle regenerace svalů, tvého cíle, vybavení a historie. Váhy navrhne chytrý trenér.
+          {t('Built from your muscle recovery, goal, equipment and history. The smart coach suggests the weights.')}
         </div>
       </div>
 
       <div className="field mt-l">
-        <label>Zaměření</label>
+        <label>{t('Focus')}</label>
         <div className="chips">
           {(Object.keys(FOCUS_LABELS) as Focus[]).map((f) => (
             <button key={f} className={`chip ${focus === f ? 'on' : ''}`} onClick={() => setFocus(f)}>
@@ -63,7 +64,7 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
         </div>
       </div>
       <div className="field mt">
-        <label>Délka</label>
+        <label>{t('Duration')}</label>
         <div className="row" style={{ gap: 8 }}>
           {MINUTES.map((m) => (
             <button key={m} className={`btn sm grow ${minutes === m ? 'primary' : ''}`} onClick={() => setMinutes(m)}>
@@ -75,10 +76,10 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
 
       <div className="row between mt-l">
         <h3>
-          {focus === 'auto' ? `Dnes doporučujeme: ${FOCUS_LABELS[gen.focus]}` : FOCUS_LABELS[gen.focus]}
+          {focus === 'auto' ? t('Today we suggest: {focus}', { focus: FOCUS_LABELS[gen.focus] }) : FOCUS_LABELS[gen.focus]}
         </h3>
         <button className="btn sm soft" onClick={() => setSeed((s) => s + 7)}>
-          <Shuffle size={15} /> Jiné cviky
+          <Shuffle size={15} /> {t('Shuffle')}
         </button>
       </div>
       <div className="list mt">
@@ -93,28 +94,28 @@ export function GeneratorSheet({ onClose }: { onClose: () => void }) {
                 <div className="bold ellipsis">{ex.name}</div>
                 <div className="small muted">
                   {BODY_PART_LABELS[ex.bodyPart]} · {re.sets.length} ×{' '}
-                  {s.durationSec ? `${s.durationSec} s` : `${s.reps} opak.`}
+                  {s.durationSec ? `${s.durationSec} s` : tn(s.reps ?? 0, '{n} rep', '{n} reps')}
                   {s.weight ? ` · ${fmtNum(toDisplayWeight(s.weight, unit))} ${unit}` : ''}
                 </div>
               </div>
             </div>
           );
         })}
-        {!gen.routine.exercises.length && <div className="empty">S vybraným vybavením nic nenajdeme. Uprav vybavení v Nastavení.</div>}
+        {!gen.routine.exercises.length && <div className="empty">{t('Nothing matches your equipment. Adjust it in Settings.')}</div>}
       </div>
 
       <div className="stack mt-l">
         <button className="btn primary lg block" onClick={start} disabled={!gen.routine.exercises.length}>
-          Začít trénink
+          {t('Start workout')}
         </button>
         <button
           className="btn block"
           onClick={() => {
-            saveRoutine({ ...gen.routine, folder: 'Vygenerované' });
-            toast('Uloženo mezi rutiny');
+            saveRoutine({ ...gen.routine, folder: t('Generated') });
+            toast(t('Saved to routines'));
           }}
         >
-          Uložit jako rutinu
+          {t('Save as routine')}
         </button>
       </div>
     </Sheet>

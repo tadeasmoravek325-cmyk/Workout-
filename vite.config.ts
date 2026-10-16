@@ -10,10 +10,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Gym – deník tréninků',
+        name: 'Gym – workout log',
         short_name: 'Gym',
-        description: 'Zapisuj tréninky, sleduj progres a překonávej rekordy.',
-        lang: 'cs',
+        description: 'Log your workouts, track your progress and set new PRs.',
+        lang: 'en',
         theme_color: '#0a0a0a',
         background_color: '#0a0a0a',
         display: 'standalone',

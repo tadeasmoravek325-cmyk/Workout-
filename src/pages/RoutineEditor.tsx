@@ -7,6 +7,7 @@ import { uid } from '../lib/calc';
 import { fmtClock, fmtNum, fromDisplayWeight, parseClock, toDisplayWeight } from '../lib/format';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { NumInput, toast } from '../components/ui';
+import { t } from '../i18n';
 
 const TYPES: SetType[] = ['normal', 'warmup', 'drop', 'failure'];
 const LABEL: Record<SetType, string> = { normal: '', warmup: 'W', drop: 'D', failure: 'F' };
@@ -47,10 +48,10 @@ export default function RoutineEditor() {
     });
 
   const save = () => {
-    if (!draft.name.trim()) return toast('Pojmenuj rutinu');
-    if (!draft.exercises.length) return toast('Přidej alespoň jeden cvik');
+    if (!draft.name.trim()) return toast(t('Give your routine a name'));
+    if (!draft.exercises.length) return toast(t('Add at least one exercise'));
     saveRoutine({ ...draft, name: draft.name.trim(), folder: draft.folder?.trim() || undefined });
-    toast('Rutina uložena');
+    toast(t('Routine saved'));
     navigate('/train', { replace: true });
   };
 
@@ -58,18 +59,18 @@ export default function RoutineEditor() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          Zrušit
+          {t('Cancel')}
         </button>
-        <h2>{existing ? 'Upravit rutinu' : 'Nová rutina'}</h2>
+        <h2>{existing ? t('Edit routine') : t('New routine')}</h2>
         <button className="btn primary sm" onClick={save}>
-          Uložit
+          {t('Save')}
         </button>
       </div>
 
       <div className="stack">
         <input
           className="wk-title"
-          placeholder="Název rutiny"
+          placeholder={t('Routine name')}
           value={draft.name}
           onChange={(e) => {
             const v = e.target.value;
@@ -78,11 +79,11 @@ export default function RoutineEditor() {
           autoFocus={!existing}
         />
         <div className="field">
-          <label>Složka (nepovinné)</label>
+          <label>{t('Folder (optional)')}</label>
           <input
             list="folders"
             value={draft.folder ?? ''}
-            placeholder="např. Push/Pull/Legs"
+            placeholder={t('e.g. Push/Pull/Legs')}
             onChange={(e) => {
               const v = e.target.value;
               edit((r) => void (r.folder = v));
@@ -95,7 +96,7 @@ export default function RoutineEditor() {
           </datalist>
         </div>
         <div className="field">
-          <label>Poznámka</label>
+          <label>{t('Note')}</label>
           <textarea
             value={draft.notes ?? ''}
             onChange={(e) => {
@@ -127,13 +128,13 @@ export default function RoutineEditor() {
               <button
                 className="icon-btn"
                 onClick={() => edit((r) => void (r.exercises = r.exercises.filter((x) => x.id !== re.id)))}
-                aria-label="Odebrat"
+                aria-label={t('Remove')}
               >
                 <Trash2 size={17} />
               </button>
             </div>
             <div className="row small" style={{ gap: 8, marginTop: 8 }}>
-              <span className="muted">Pauza</span>
+              <span className="muted">{t('Rest')}</span>
               <select
                 style={{ width: 'auto', padding: '5px 8px' }}
                 value={re.restSec ?? ''}
@@ -142,10 +143,10 @@ export default function RoutineEditor() {
                   editEx(re.id, (x) => void (x.restSec = v === '' ? undefined : Number(v)));
                 }}
               >
-                <option value="">Výchozí ({fmtClock(settings.defaultRestSec)})</option>
+                <option value="">{t('Default ({time})', { time: fmtClock(settings.defaultRestSec) })}</option>
                 {[0, 30, 45, 60, 90, 120, 150, 180, 240, 300].map((s) => (
                   <option key={s} value={s}>
-                    {s === 0 ? 'Vypnuto' : fmtClock(s)}
+                    {s === 0 ? t('Off') : fmtClock(s)}
                   </option>
                 ))}
               </select>
@@ -167,17 +168,17 @@ export default function RoutineEditor() {
                     })
                   }
                 >
-                  <Link2 size={14} /> Supersérie s dalším
+                  <Link2 size={14} /> {t('Superset with next')}
                 </button>
               )}
             </div>
             <table className="set-table">
               <thead>
                 <tr>
-                  <th style={{ width: 34 }}>Série</th>
+                  <th style={{ width: 34 }}>{t('Set')}</th>
                   {showW && <th>{unit}</th>}
-                  {showR && <th>Opak.</th>}
-                  {showT && <th>Čas</th>}
+                  {showR && <th>{t('Reps')}</th>}
+                  {showT && <th>{t('Time')}</th>}
                   <th style={{ width: 22 }} />
                 </tr>
               </thead>
@@ -239,11 +240,13 @@ export default function RoutineEditor() {
               className="btn sm block mt"
               onClick={() => editEx(re.id, (x) => void x.sets.push({ ...(x.sets[x.sets.length - 1] ?? { type: 'normal' }) }))}
             >
-              + Přidat sérii
+              + {t('Add set')}
             </button>
             {re.sets.some((s) => s.weight) && (
               <div className="tiny muted mt">
-                Celkem {fmtNum(toDisplayWeight(re.sets.reduce((a, s) => a + (s.weight ?? 0) * (s.reps ?? 0), 0), unit), 0)} {unit} objemu
+                {t('{volume} total volume', {
+                  volume: `${fmtNum(toDisplayWeight(re.sets.reduce((a, s) => a + (s.weight ?? 0) * (s.reps ?? 0), 0), unit), 0)} ${unit}`,
+                })}
               </div>
             )}
           </div>
@@ -251,7 +254,7 @@ export default function RoutineEditor() {
       })}
 
       <button className="btn soft block mt-l" onClick={() => setPicker(true)}>
-        + Přidat cvik
+        + {t('Add exercise')}
       </button>
 
       {picker && (

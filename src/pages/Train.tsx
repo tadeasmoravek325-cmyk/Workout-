@@ -7,7 +7,8 @@ import { confirmDialog, Sheet, toast, undoToast } from '../components/ui';
 import { GeneratorSheet } from '../components/GeneratorSheet';
 import { Sparkles } from 'lucide-react';
 import { exerciseHistory } from '../lib/calc';
-import { plural, relativeDay } from '../lib/format';
+import { relativeDay } from '../lib/format';
+import { t, tn } from '../i18n';
 import { uid } from '../lib/calc';
 import type { Routine } from '../types';
 
@@ -27,7 +28,7 @@ export default function Train() {
 
   const start = (r?: Routine) => {
     if (active) {
-      toast('Už máš rozběhnutý trénink');
+      toast(t('You already have a workout going'));
       navigate('/workout');
       return;
     }
@@ -37,7 +38,7 @@ export default function Train() {
 
   const folders = new Map<string, Routine[]>();
   for (const r of routines) {
-    const f = r.folder || 'Moje rutiny';
+    const f = r.folder || t('My routines');
     folders.set(f, [...(folders.get(f) ?? []), r]);
   }
 
@@ -46,26 +47,26 @@ export default function Train() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Trénink</h1>
+        <h1>{t('Workout')}</h1>
       </div>
 
       <button className="btn primary block" onClick={() => start()}>
-        {active ? '▶ Pokračovat v tréninku' : '+ Začít prázdný trénink'}
+        {active ? `▶ ${t('Resume workout')}` : `+ ${t('Start empty workout')}`}
       </button>
       {!active && (
         <button className="btn cool block mt" onClick={() => setGenerator(true)}>
-          <Sparkles size={18} /> Vygenerovat trénink na míru
+          <Sparkles size={18} /> {t('Generate a custom workout')}
         </button>
       )}
 
       <div className="section">
         <div className="section-title">
-          <h2>Rutiny</h2>
-          <Link to="/routines/new">+ Nová rutina</Link>
+          <h2>{t('Routines')}</h2>
+          <Link to="/routines/new">+ {t('New routine')}</Link>
         </div>
         {!routines.length && (
           <div className="card empty">
-            Zatím nemáš žádnou rutinu. Vytvoř si vlastní, nebo importuj hotový program níže.
+            {t('No routines yet. Build your own, or grab a ready-made program below.')}
           </div>
         )}
         {[...folders.entries()].map(([folder, list]) => (
@@ -83,7 +84,7 @@ export default function Train() {
                       {r.exercises.map((e) => exMap.get(e.exerciseId)?.name).join(', ')}
                     </div>
                     <div className="tiny muted" style={{ marginTop: 6 }}>
-                      {last ? `Naposledy: ${relativeDay(last)}` : 'Ještě neodcvičeno'}
+                      {last ? t('Last done: {when}', { when: relativeDay(last) }) : t('Not done yet')}
                     </div>
                   </button>
                 );
@@ -95,14 +96,14 @@ export default function Train() {
 
       <div className="section">
         <div className="section-title">
-          <h2>Hotové programy</h2>
+          <h2>{t('Ready-made programs')}</h2>
         </div>
         <div className="stack">
           {PROGRAMS.map((p) => (
             <button key={p.id} className="card tap" style={{ textAlign: 'left' }} onClick={() => setProgram(p)}>
               <div className="row between">
                 <h3>{p.name}</h3>
-                <span className="badge accent">{p.daysPerWeek}× týdně</span>
+                <span className="badge accent">{t('{n}× a week', { n: p.daysPerWeek })}</span>
               </div>
               <div className="small muted" style={{ marginTop: 4 }}>
                 {p.level} · {p.goal}
@@ -122,7 +123,7 @@ export default function Train() {
           <div className="row" style={{ gap: 6 }}>
             <span className="badge">{program.level}</span>
             <span className="badge">{program.goal}</span>
-            <span className="badge">{program.daysPerWeek}× týdně</span>
+            <span className="badge">{t('{n}× a week', { n: program.daysPerWeek })}</span>
           </div>
           {program.days.map((d) => (
             <div key={d.name} className="card mt">
@@ -141,11 +142,11 @@ export default function Train() {
             className="btn primary block mt-l"
             onClick={() => {
               const n = importProgram(program.id);
-              toast(`${plural(n, ['Přidána', 'Přidány', 'Přidáno'])} ${n} ${plural(n, ['rutina', 'rutiny', 'rutin'])} do složky „${program.name}“`);
+              toast(tn(n, 'Added {n} routine to the “{folder}” folder', 'Added {n} routines to the “{folder}” folder', { folder: program.name }));
               setProgram(null);
             }}
           >
-            Přidat do mých rutin
+            {t('Add to my routines')}
           </button>
         </Sheet>
       )}
@@ -162,7 +163,7 @@ export default function Train() {
                     <div className="bold">
                       {e.sets.length} × {exMap.get(e.exerciseId)?.name}
                     </div>
-                    <div className="small muted">{last ? `Naposledy ${relativeDay(last.date)}` : 'Nový cvik'}</div>
+                    <div className="small muted">{last ? t('Last done {when}', { when: relativeDay(last.date) }) : t('New exercise')}</div>
                   </div>
                   {e.supersetId && <span className="badge" style={{ color: 'var(--purple)' }}>SS</span>}
                 </div>
@@ -170,33 +171,33 @@ export default function Train() {
             })}
           </div>
           <button className="btn primary block mt" onClick={() => start(preview)}>
-            Začít trénink
+            {t('Start workout')}
           </button>
           <div className="grid-3 mt">
             <button className="btn sm" onClick={() => navigate(`/routines/${preview.id}`)}>
-              <Pencil size={15} /> Upravit
+              <Pencil size={15} /> {t('Edit')}
             </button>
             <button
               className="btn sm"
               onClick={() => {
-                saveRoutine({ ...structuredClone(preview), id: uid(), name: preview.name + ' (kopie)', createdAt: Date.now() });
-                toast('Rutina zkopírována');
+                saveRoutine({ ...structuredClone(preview), id: uid(), name: t('{name} (copy)', { name: preview.name }), createdAt: Date.now() });
+                toast(t('Routine copied'));
                 setPreview(null);
               }}
             >
-              <Copy size={15} /> Kopie
+              <Copy size={15} /> {t('Copy')}
             </button>
             <button
               className="btn sm danger"
               onClick={async () => {
-                if (await confirmDialog(`Smazat rutinu „${preview.name}“?`, 'Odcvičené tréninky v historii zůstanou.', 'Smazat')) {
+                if (await confirmDialog(t('Delete routine “{name}”?', { name: preview.name }), t('Your finished workouts stay in history.'), t('Delete'))) {
                   const copy = structuredClone(preview);
                   const days = Object.entries(useStore.getState().schedule)
                     .filter(([, id]) => id === preview.id)
                     .map(([d]) => Number(d));
                   deleteRoutine(preview.id);
                   setPreview(null);
-                  undoToast('Rutina smazána', () => {
+                  undoToast(t('Routine deleted'), () => {
                     const st = useStore.getState();
                     st.saveRoutine(copy);
                     for (const d of days) st.setSchedule(d, copy.id);
@@ -204,7 +205,7 @@ export default function Train() {
                 }
               }}
             >
-              <Trash2 size={15} /> Smazat
+              <Trash2 size={15} /> {t('Delete')}
             </button>
           </div>
         </Sheet>

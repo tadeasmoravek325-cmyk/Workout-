@@ -7,6 +7,7 @@ import { Dialogs, Toasts, useNow } from './components/ui';
 import { DataRecovery, SaveErrorBanner } from './components/DataGuard';
 import { useSafety } from './lib/safety';
 import { fmtClock } from './lib/format';
+import { t } from './i18n';
 import Home from './pages/Home';
 import Train from './pages/Train';
 import RoutineEditor from './pages/RoutineEditor';
@@ -64,29 +65,29 @@ function BottomNav() {
         <span className="i">
           <House size={21} strokeWidth={2.4} />
         </span>
-        Přehled
+        {t('Home')}
       </NavLink>
       <NavLink to="/history">
         <span className="i">
           <CalendarDays size={21} strokeWidth={2.4} />
         </span>
-        Historie
+        {t('History')}
       </NavLink>
       <NavLink to={active ? '/workout' : '/train'} className="train">
         <span className="i">{active ? <Play size={22} fill="currentColor" strokeWidth={2.4} /> : <Dumbbell size={24} strokeWidth={2.6} />}</span>
-        Trénink
+        {t('Workout')}
       </NavLink>
       <NavLink to="/exercises">
         <span className="i">
           <BookOpen size={21} strokeWidth={2.4} />
         </span>
-        Cviky
+        {t('Exercises')}
       </NavLink>
       <NavLink to="/more">
         <span className="i">
           <LayoutGrid size={21} strokeWidth={2.4} />
         </span>
-        Více
+        {t('More')}
       </NavLink>
     </nav>
   );
@@ -133,7 +134,7 @@ export default function App() {
   const onboarded = useStore((s) => s.settings.onboarded);
   const loadError = useSafety((s) => s.loadError);
   useTheme();
-  if (!hydrated) return <div className="splash">Načítám…</div>;
+  if (!hydrated) return <div className="splash">{t('Loading…')}</div>;
   if (loadError) return <DataRecovery />;
   if (!onboarded)
     return (

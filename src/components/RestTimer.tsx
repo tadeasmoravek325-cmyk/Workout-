@@ -4,6 +4,7 @@ import { useStore } from '../store/store';
 import { beep, vibrate } from '../lib/feedback';
 import { fmtClock } from '../lib/format';
 import { useNow } from './ui';
+import { t } from '../i18n';
 
 export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
   const rest = useStore((s) => s.rest);
@@ -24,7 +25,7 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
       if (settings.vibrate) vibrate();
       if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
         try {
-          new Notification('Pauza skončila', { body: 'Čas na další sérii.', tag: 'rest' });
+          new Notification(t('Rest is over'), { body: t('Time for your next set.'), tag: 'rest' });
         } catch {
           /* ignore */
         }
@@ -48,7 +49,7 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
           +15
         </button>
         <button className="btn sm primary" onClick={stop}>
-          Přeskočit
+          {t('Skip')}
         </button>
       </div>
     </div>

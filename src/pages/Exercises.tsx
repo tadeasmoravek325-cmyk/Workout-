@@ -5,6 +5,7 @@ import { useAllExercises, useStore } from '../store/store';
 import { ExerciseAvatar, ExerciseFilters, ExerciseForm, filterExercises } from '../components/ExercisePicker';
 import { BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
 import { relativeDay } from '../lib/format';
+import { t, tn } from '../i18n';
 
 export default function Exercises() {
   const all = useAllExercises();
@@ -33,20 +34,20 @@ export default function Exercises() {
   return (
     <div className="page">
       <div className="page-header">
-        <h1>Cviky</h1>
+        <h1>{t('Exercises')}</h1>
         <button className="btn soft sm" onClick={() => setCreating(true)}>
-          + Nový
+          + {t('New')}
         </button>
       </div>
       <ExerciseFilters {...{ query, setQuery, part, setPart, equipment, setEquipment }} />
       <div className="row between mt">
-        <span className="small muted">{list.length} cviků</span>
+        <span className="small muted">{tn(list.length, '{n} exercise', '{n} exercises')}</span>
         <div className="segmented" style={{ width: 200 }}>
           <button className={sort === 'name' ? 'on' : ''} onClick={() => setSort('name')}>
             A–Z
           </button>
           <button className={sort === 'used' ? 'on' : ''} onClick={() => setSort('used')}>
-            Nejčastější
+            {t('Most used')}
           </button>
         </div>
       </div>
@@ -58,7 +59,7 @@ export default function Exercises() {
               <ExerciseAvatar ex={e} />
               <div className="grow">
                 <div className="bold ellipsis">
-                  {e.name} {e.custom && <span className="badge">vlastní</span>}
+                  {e.name} {e.custom && <span className="badge">{t('custom')}</span>}
                 </div>
                 <div className="small muted">
                   {BODY_PART_LABELS[e.bodyPart]} · {EQUIPMENT_LABELS[e.equipment]}

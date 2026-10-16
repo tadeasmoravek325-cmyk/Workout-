@@ -2,6 +2,7 @@ import type { Exercise, Settings, Workout } from '../types';
 import logoUrl from '../assets/logo.png';
 import { doneSetCount, e1rm, isWorkingSet, workoutDurationMs, workoutVolume } from './calc';
 import { fmtDate, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from './format';
+import { t as tr, tn } from '../i18n';
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -81,10 +82,10 @@ export async function renderShareCard(
 
   const unit = settings.unit;
   const stats: [string, string][] = [
-    ['Délka', fmtDuration(workoutDurationMs(w))],
-    ['Objem', fmtVolume(workoutVolume(w, exMap), unit)],
-    ['Série', String(doneSetCount(w))],
-    ['Rekordy', extra.prs ? `${extra.prs}` : '–'],
+    [tr('Duration'), fmtDuration(workoutDurationMs(w))],
+    [tr('Volume'), fmtVolume(workoutVolume(w, exMap), unit)],
+    [tr('Sets'), String(doneSetCount(w))],
+    [tr('PRs'), extra.prs ? `${extra.prs}` : '–'],
   ];
   const boxW = (W - 140 - 3 * 24) / 4;
   stats.forEach(([label, value], i) => {
@@ -119,7 +120,7 @@ export async function renderShareCard(
         best.weight && best.reps
           ? `${fmtNum(toDisplayWeight(best.weight, unit))} ${unit} × ${best.reps}`
           : best.reps
-            ? `${best.reps} opak.`
+            ? tn(best.reps, '{n} rep', '{n} reps')
             : best.durationSec
               ? `${Math.round(best.durationSec)} s`
               : '';
@@ -133,16 +134,16 @@ export async function renderShareCard(
   if (w.exercises.length > items.length) {
     ctx.font = font(700, 30);
     ctx.globalAlpha = 0.8;
-    ctx.fillText(`+ ${w.exercises.length - items.length} dalších cviků`, 110, y);
+    ctx.fillText(tn(w.exercises.length - items.length, '+ {n} more exercise', '+ {n} more exercises'), 110, y);
     ctx.globalAlpha = 1;
   }
 
   ctx.fillStyle = '#fff';
   ctx.font = font(900, 34);
-  ctx.fillText(`Level ${extra.level} · ${extra.levelTitle}`, 70, H - 90);
+  ctx.fillText(tr('Level {level} · {title}', { level: extra.level, title: extra.levelTitle }), 70, H - 90);
   if (extra.streak > 0) {
     ctx.textAlign = 'right';
-    ctx.fillText(`${extra.streak} týdnů v řadě`, W - 70, H - 90);
+    ctx.fillText(tn(extra.streak, '{n} week in a row', '{n} weeks in a row'), W - 70, H - 90);
     ctx.textAlign = 'left';
   }
 

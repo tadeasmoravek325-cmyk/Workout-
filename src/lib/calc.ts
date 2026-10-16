@@ -1,4 +1,6 @@
 import type { Exercise, Muscle, Settings, Workout, WorkoutSet } from '../types';
+import { muscleLoad } from '../data/exercises';
+import { t, tn } from '../i18n';
 
 export function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
@@ -235,11 +237,11 @@ export function suggestNext(ex: Exercise, history: Session[]): Suggestion | null
 
   if (ex.type === 'reps_only') {
     const best = Math.max(...working.map((s) => s.reps ?? 0));
-    return { kind: 'increase', reps: best + 1, reason: `Minule max ${best} opakování – zkus o jedno víc.` };
+    return { kind: 'increase', reps: best + 1, reason: tn(best, 'Last time you hit {n} rep. Go for one more.', 'Last time you hit {n} reps. Go for one more.') };
   }
   if (ex.type === 'duration') {
     const best = Math.max(...working.map((s) => s.durationSec ?? 0));
-    return { kind: 'increase', durationSec: best + 5, reason: 'Přidej 5 sekund k nejlepší sérii.' };
+    return { kind: 'increase', durationSec: best + 5, reason: t('Add 5 seconds to your best set.') };
   }
   if (ex.type === 'distance_duration') return null;
 
@@ -253,9 +255,9 @@ export function suggestNext(ex: Exercise, history: Session[]): Suggestion | null
 
   if (ex.type === 'assisted_bodyweight') {
     if (held && !hardRpe) {
-      return { kind: 'increase', weight: Math.max(0, top - inc), reps: firstReps, reason: 'Zvládl jsi všechny série – uber dopomoc.' };
+      return { kind: 'increase', weight: Math.max(0, top - inc), reps: firstReps, reason: t('You nailed every set. Use less assistance.') };
     }
-    return { kind: 'repeat', weight: top, reps: firstReps, reason: 'Zopakuj stejnou dopomoc a dorovnej opakování.' };
+    return { kind: 'repeat', weight: top, reps: firstReps, reason: t('Keep the same assistance and match your reps.') };
   }
 
   // Stall detection: top-weight e1RM not improving over the last 3 sessions.
@@ -267,7 +269,7 @@ export function suggestNext(ex: Exercise, history: Session[]): Suggestion | null
         kind: 'deload',
         weight: roundTo(top * 0.9, 2.5),
         reps: firstReps,
-        reason: 'Tři tréninky bez zlepšení. Uber 10 % a postav se zpět nahoru.',
+        reason: t('Three workouts without progress. Drop 10% and build back up.'),
       };
     }
   }
@@ -277,14 +279,16 @@ export function suggestNext(ex: Exercise, history: Session[]): Suggestion | null
       kind: 'increase',
       weight: top + inc,
       reps: firstReps,
-      reason: `Minule ${topSets.length}× ${firstReps} opak. bez poklesu – přidej ${inc} kg.`,
+      reason: t('Last time {sets}× {reps} reps with no drop-off. Add {inc} kg.', { sets: topSets.length, reps: firstReps, inc }),
     };
   }
   return {
     kind: 'repeat',
     weight: top,
     reps: firstReps,
-    reason: hardRpe ? 'Minule to bylo na hraně (RPE 10). Zůstaň u stejné váhy.' : 'Opakování klesala – zůstaň u váhy a dorovnej je.',
+    reason: hardRpe
+      ? t('Last time was a grind (RPE 10). Stay at the same weight.')
+      : t('Your reps dropped off. Stay at this weight and match them.'),
   };
 }
 
@@ -328,7 +332,10 @@ export function workoutsThisWeek(workouts: Workout[], now = Date.now()): number 
   return workouts.filter((w) => w.startedAt >= s).length;
 }
 
-/** Hard sets per muscle: primary muscle counts 1, secondary 0.5. Warm-ups are ignored. */
+/**
+ * Fractional hard sets per muscle: every working set adds the exercise's load for each muscle
+ * (prime mover 1, synergists 0.25–0.75). Warm-ups are ignored.
+ */
 export function setsPerMuscle(workouts: Workout[], exMap: Map<string, Exercise>, since: number): Record<Muscle, number> {
   const out = {} as Record<Muscle, number>;
   for (const w of workouts) {
@@ -338,8 +345,7 @@ export function setsPerMuscle(workouts: Workout[], exMap: Map<string, Exercise>,
       if (!ex) continue;
       const n = we.sets.filter((s) => s.done && isWorkingSet(s)).length;
       if (!n) continue;
-      for (const m of ex.primary) out[m] = (out[m] ?? 0) + n;
-      for (const m of ex.secondary) out[m] = (out[m] ?? 0) + n * 0.5;
+      for (const [m, w] of Object.entries(muscleLoad(ex)) as [Muscle, number][]) out[m] = (out[m] ?? 0) + n * w;
     }
   }
   return out;
@@ -353,8 +359,12 @@ const RECOVERY_HOURS: Partial<Record<Muscle, number>> = {
   chest: 60,
   lats: 60,
   traps: 48,
-  shoulders: 48,
+  upperBack: 48,
+  frontDelts: 48,
+  sideDelts: 36,
   rearDelts: 36,
+  adductors: 60,
+  obliques: 36,
   biceps: 48,
   triceps: 48,
   forearms: 36,
@@ -362,7 +372,10 @@ const RECOVERY_HOURS: Partial<Record<Muscle, number>> = {
   calves: 36,
 };
 
-/** Recovery estimate 0..1 per muscle based on the last time it was trained as a primary mover. */
+/**
+ * Recovery estimate 0..1 per muscle based on the last session that loaded it meaningfully
+ * (load ≥ 0.5). The fatigue scales with the fractional sets.
+ */
 export function muscleRecovery(workouts: Workout[], exMap: Map<string, Exercise>, now = Date.now()): Partial<Record<Muscle, number>> {
   const last: Partial<Record<Muscle, { at: number; sets: number }>> = {};
   for (const w of workouts) {
@@ -372,10 +385,11 @@ export function muscleRecovery(workouts: Workout[], exMap: Map<string, Exercise>
       if (!ex) continue;
       const n = we.sets.filter((s) => s.done && isWorkingSet(s)).length;
       if (!n) continue;
-      for (const m of ex.primary) {
+      for (const [m, w] of Object.entries(muscleLoad(ex)) as [Muscle, number][]) {
+        if (w < 0.5) continue;
         const prev = last[m];
-        if (!prev || prev.at < at) last[m] = { at, sets: n };
-        else if (prev.at === at) prev.sets += n;
+        if (!prev || prev.at < at) last[m] = { at, sets: n * w };
+        else if (prev.at === at) prev.sets += n * w;
       }
     }
   }

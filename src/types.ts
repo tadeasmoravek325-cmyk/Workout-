@@ -21,19 +21,26 @@ export type BodyPart = 'chest' | 'back' | 'legs' | 'shoulders' | 'arms' | 'core'
 
 export type Muscle =
   | 'chest'
-  | 'lats'
-  | 'traps'
-  | 'lowerBack'
-  | 'shoulders'
+  | 'frontDelts'
+  | 'sideDelts'
   | 'rearDelts'
   | 'biceps'
   | 'triceps'
   | 'forearms'
+  | 'lats'
+  | 'traps'
+  | 'upperBack'
+  | 'lowerBack'
   | 'abs'
+  | 'obliques'
   | 'quads'
   | 'hamstrings'
   | 'glutes'
+  | 'adductors'
   | 'calves';
+
+/** How much a muscle works in an exercise: 1 = prime mover, 0.5 = strong synergist, 0.25 = stabiliser. */
+export type MuscleLoad = Partial<Record<Muscle, number>>;
 
 export interface Exercise {
   id: string;
@@ -43,6 +50,8 @@ export interface Exercise {
   bodyPart: BodyPart;
   primary: Muscle[];
   secondary: Muscle[];
+  /** Fractional involvement per muscle. Derived from primary/secondary when missing. */
+  load?: MuscleLoad;
   instructions?: string[];
   custom?: boolean;
 }

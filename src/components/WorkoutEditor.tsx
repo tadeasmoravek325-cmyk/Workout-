@@ -24,16 +24,17 @@ import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, Sheet, toast, undoToast } from './ui';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
+import { t, tn } from '../i18n';
 
 type Mutate = (fn: (w: Workout) => void) => void;
 
 const SET_TYPES: SetType[] = ['normal', 'warmup', 'drop', 'failure'];
 const SET_TYPE_LABEL: Record<SetType, string> = { normal: '', warmup: 'W', drop: 'D', failure: 'F' };
 const SET_TYPE_NAME: Record<SetType, string> = {
-  normal: 'Běžná série',
-  warmup: 'Rozcvičovací',
-  drop: 'Drop série',
-  failure: 'Do selhání',
+  normal: 'Working set',
+  warmup: 'Warm-up',
+  drop: 'Drop set',
+  failure: 'Failure',
 };
 const RPE_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 const REST_OPTIONS = [0, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300];
@@ -55,11 +56,11 @@ export function describeSet(s: Partial<WorkoutSet>, ex: Exercise, settings: Sett
     case 'weight_reps':
       return `${fmtNum(w ?? 0)} ${unit} × ${s.reps ?? 0}`;
     case 'weighted_bodyweight':
-      return w ? `+${fmtNum(w)} ${unit} × ${s.reps ?? 0}` : `${s.reps ?? 0} opak.`;
+      return w ? `+${fmtNum(w)} ${unit} × ${s.reps ?? 0}` : tn(s.reps ?? 0, '{n} rep', '{n} reps');
     case 'assisted_bodyweight':
       return `−${fmtNum(w ?? 0)} ${unit} × ${s.reps ?? 0}`;
     case 'reps_only':
-      return `${s.reps ?? 0} opak.`;
+      return tn(s.reps ?? 0, '{n} rep', '{n} reps');
     case 'duration':
       return fmtClock(s.durationSec ?? 0);
     case 'distance_duration':
@@ -123,7 +124,7 @@ export function WorkoutEditor({
       {workout.exercises.length === 0 && (
         <div className="empty">
           <Dumbbell size={36} className="muted" />
-          <div style={{ marginTop: 8 }}>Přidej první cvik.</div>
+          <div style={{ marginTop: 8 }}>{t('Add your first exercise.')}</div>
         </div>
       )}
       {workout.exercises.map((we, i) => {
@@ -145,14 +146,14 @@ export function WorkoutEditor({
       })}
 
       <button className="btn soft block mt-l" onClick={() => setPicker(true)}>
-        + Přidat cvik
+        + {t('Add exercise')}
       </button>
 
       <div className="field mt-l">
-        <label>Poznámka k tréninku</label>
+        <label>{t('Workout note')}</label>
         <textarea
           value={workout.notes ?? ''}
-          placeholder="Jak ses cítil, spánek, energie…"
+          placeholder={t('How did you feel? Sleep, energy…')}
           onChange={(e) => {
             const v = e.target.value;
             mutate((w) => {
@@ -248,8 +249,8 @@ function ExerciseCard({
       distance: s.distance ?? (ex.type === 'distance_duration' ? ph.distance : undefined),
       done: true,
     };
-    if (hasReps(ex) && !filled.reps) return toast('Zadej počet opakování');
-    if (hasTime(ex) && !filled.durationSec) return toast('Zadej čas');
+    if (hasReps(ex) && !filled.reps) return toast(t('Enter your reps'));
+    if (hasTime(ex) && !filled.durationSec) return toast(t('Enter a time'));
     upd((x) => {
       x.sets[idx] = filled;
     });
@@ -272,10 +273,10 @@ function ExerciseCard({
         haptic([30, 60, 30]);
       };
       if (w > bestW && w > 0) {
-        toast(`Nový rekord · ${ex.name}: ${fmtNum(toDisplayWeight(w, unit))} ${unit}`, 'pr', 4000);
+        toast(t('New PR · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(w, unit)), unit }), 'pr', 4000);
         celebrate();
       } else if (one > best1 + 0.01) {
-        toast(`Nové maximum (odhad 1RM) · ${ex.name}: ${fmtNum(toDisplayWeight(one, unit))} ${unit}`, 'pr', 4000);
+        toast(t('New best est. 1RM · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(one, unit)), unit }), 'pr', 4000);
         celebrate();
       }
     }
@@ -300,8 +301,8 @@ function ExerciseCard({
   const cols = [
     hasWeight(ex) && (ex.type === 'assisted_bodyweight' ? `−${unit}` : ex.type === 'weighted_bodyweight' ? `+${unit}` : unit),
     ex.type === 'distance_duration' && 'km',
-    hasReps(ex) && 'Opak.',
-    hasTime(ex) && 'Čas',
+    hasReps(ex) && t('Reps'),
+    hasTime(ex) && t('Time'),
     hasReps(ex) && settings.showRpe && 'RPE',
   ].filter(Boolean) as string[];
 
@@ -315,16 +316,16 @@ function ExerciseCard({
         <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis">
           {ex.name}
         </Link>
-        {allDone && <span className="badge ok">Hotovo</span>}
-        {we.supersetId && <span className="badge" style={{ color: 'var(--purple)' }}>Supersérie</span>}
-        <button className="icon-btn" onClick={() => setMenu(!menu)} aria-label="Možnosti cviku">
+        {allDone && <span className="badge ok">{t('Done')}</span>}
+        {we.supersetId && <span className="badge" style={{ color: 'var(--purple)' }}>{t('Superset')}</span>}
+        <button className="icon-btn" onClick={() => setMenu(!menu)} aria-label={t('Exercise options')}>
           ⋯
         </button>
       </div>
       <div className="row small muted" style={{ gap: 12, marginTop: 2 }}>
         {live && (
           <button className="small muted" onClick={() => setSheet('rest')}>
-            <Timer size={13} style={{ verticalAlign: '-2px' }} /> {we.restSec === 0 ? 'Pauza vyp.' : fmtClock(we.restSec ?? settings.defaultRestSec)}
+            <Timer size={13} style={{ verticalAlign: '-2px' }} /> {we.restSec === 0 ? t('Rest off') : fmtClock(we.restSec ?? settings.defaultRestSec)}
           </button>
         )}
         {records.maxE1rm > 0 && <span>1RM ≈ {fmtNum(toDisplayWeight(records.maxE1rm, unit))} {unit}</span>}
@@ -333,7 +334,7 @@ function ExerciseCard({
       {menu && (
         <div className="menu" onClick={() => setMenu(false)}>
           <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>
-            <NotebookPen size={17} /> Poznámka k dnešku
+            <NotebookPen size={17} /> {t("Note for today")}
           </button>
           <button
             onClick={() => {
@@ -341,19 +342,19 @@ function ExerciseCard({
               setSheet('pin');
             }}
           >
-            <Pin size={17} /> Připnutá poznámka
+            <Pin size={17} /> {t('Pinned note')}
           </button>
           {ex.equipment === 'barbell' && <button onClick={() => setSheet('plates')}>
-              <Calculator size={17} /> Rozložení kotoučů
+              <Calculator size={17} /> {t('Plate calculator')}
             </button>}
           {hasWeight(ex) && ex.type === 'weight_reps' && <button onClick={() => setSheet('warmup')}>
-              <Flame size={17} /> Rozcvičovací série
+              <Flame size={17} /> {t('Warm-up sets')}
             </button>}
           <button onClick={() => setSheet('rest')}>
-            <Timer size={17} /> Nastavit pauzu
+            <Timer size={17} /> {t('Set rest time')}
           </button>
           <button onClick={() => setSheet('substitute')}>
-            <Replace size={17} /> Nahradit cvik
+            <Replace size={17} /> {t('Replace exercise')}
           </button>
           {index < workout.exercises.length - 1 && !we.supersetId && (
             <button
@@ -367,7 +368,7 @@ function ExerciseCard({
                 })
               }
             >
-              <Link2 size={17} /> Supersérie s dalším cvikem
+              <Link2 size={17} /> {t('Superset with next exercise')}
             </button>
           )}
           {we.supersetId && (
@@ -379,7 +380,7 @@ function ExerciseCard({
                 })
               }
             >
-              <Unlink size={17} /> Zrušit supersérii
+              <Unlink size={17} /> {t('Remove superset')}
             </button>
           )}
           {index > 0 && (
@@ -390,7 +391,7 @@ function ExerciseCard({
                 })
               }
             >
-              <ArrowUp size={17} /> Posunout nahoru
+              <ArrowUp size={17} /> {t('Move up')}
             </button>
           )}
           {index < workout.exercises.length - 1 && (
@@ -401,7 +402,7 @@ function ExerciseCard({
                 })
               }
             >
-              <ArrowDown size={17} /> Posunout dolů
+              <ArrowDown size={17} /> {t('Move down')}
             </button>
           )}
           <button
@@ -411,14 +412,14 @@ function ExerciseCard({
               mutate((w) => {
                 w.exercises = w.exercises.filter((x) => x.id !== we.id);
               });
-              undoToast(`${ex.name} odebrán`, () =>
+              undoToast(t('{exercise} removed', { exercise: ex.name }), () =>
                 mutate((w) => {
                   if (!w.exercises.some((x) => x.id === copy.id)) w.exercises.splice(Math.min(index, w.exercises.length), 0, copy);
                 }),
               );
             }}
           >
-            <Trash2 size={17} /> Odebrat cvik
+            <Trash2 size={17} /> {t('Remove exercise')}
           </button>
         </div>
       )}
@@ -427,7 +428,7 @@ function ExerciseCard({
         <textarea
           className="mt"
           style={{ minHeight: 44 }}
-          placeholder="Poznámka ke cviku (nastavení sedačky, úchop…)"
+          placeholder={t('Exercise note (seat setting, grip…)')}
           value={we.notes}
           onChange={(e) => {
             const v = e.target.value;
@@ -459,7 +460,7 @@ function ExerciseCard({
           </span>
           <div className="grow">
             <div className="bold">
-              Dnes:{' '}
+              {t('Today:')}{' '}
               {describeSet(
                 { weight: suggestion.weight, reps: suggestion.reps, durationSec: suggestion.durationSec },
                 ex,
@@ -469,7 +470,7 @@ function ExerciseCard({
             <div className="muted tiny">{suggestion.reason}</div>
           </div>
           <button className="btn sm soft" onClick={applySuggestion}>
-            Použít
+            {t('Apply')}
           </button>
         </div>
       )}
@@ -477,8 +478,8 @@ function ExerciseCard({
       <table className="set-table">
         <thead>
           <tr>
-            <th style={{ width: 34 }}>Série</th>
-            <th>Předchozí</th>
+            <th style={{ width: 34 }}>{t('Set')}</th>
+            <th>{t('Previous')}</th>
             {cols.map((c) => (
               <th key={c} style={{ width: c === 'RPE' ? 48 : undefined }}>
                 {c}
@@ -526,7 +527,7 @@ function ExerciseCard({
                 <td>
                   <button
                     className={`set-type ${s.type}`}
-                    aria-label={`Série ${SET_TYPE_LABEL[s.type] || normalNo}: ${SET_TYPE_NAME[s.type]}. Možnosti`}
+                    aria-label={t('Set {n}: {type}. Options', { n: SET_TYPE_LABEL[s.type] || normalNo, type: t(SET_TYPE_NAME[s.type]) })}
                     onClick={() => setSetIdx(i)}
                   >
                     {SET_TYPE_LABEL[s.type] || normalNo}
@@ -550,7 +551,7 @@ function ExerciseCard({
                 {hasWeight(ex) && (
                   <td>
                     <NumInput
-                      ariaLabel="Váha"
+                      ariaLabel={t('Weight')}
                       value={toDisplayWeight(s.weight, unit)}
                       placeholder={ph.weight !== undefined ? fmtNum(toDisplayWeight(ph.weight, unit)) : ''}
                       onChange={(v) => setField({ weight: fromDisplayWeight(v, unit) })}
@@ -560,7 +561,7 @@ function ExerciseCard({
                 {ex.type === 'distance_duration' && (
                   <td>
                     <NumInput
-                      ariaLabel="Vzdálenost"
+                      ariaLabel={t('Distance')}
                       value={s.distance}
                       placeholder={ph.distance !== undefined ? fmtNum(ph.distance, 2) : ''}
                       onChange={(v) => setField({ distance: v })}
@@ -570,7 +571,7 @@ function ExerciseCard({
                 {hasReps(ex) && (
                   <td>
                     <NumInput
-                      ariaLabel="Opakování"
+                      ariaLabel={t('Reps')}
                       value={s.reps}
                       placeholder={ph.reps !== undefined ? String(ph.reps) : ''}
                       onChange={(v) => setField({ reps: v === undefined ? undefined : Math.round(v) })}
@@ -597,14 +598,14 @@ function ExerciseCard({
                       <option value="">–</option>
                       {RPE_OPTIONS.map((r) => (
                         <option key={r} value={r}>
-                          {String(r).replace('.', ',')}
+                          {fmtNum(r, 1)}
                         </option>
                       ))}
                     </select>
                   </td>
                 )}
                 <td>
-                  <button className={`check ${s.done ? 'on' : ''}`} onClick={() => completeSet(s.id)} aria-label="Hotovo">
+                  <button className={`check ${s.done ? 'on' : ''}`} onClick={() => completeSet(s.id)} aria-label={t('Done')}>
                     <Check size={18} strokeWidth={3.5} />
                   </button>
                 </td>
@@ -622,28 +623,28 @@ function ExerciseCard({
           })
         }
       >
-        + Přidat sérii
+        + {t('Add set')}
       </button>
 
       {setIdx !== null && we.sets[setIdx] && (
-        <Sheet title={`Série ${setIdx + 1}`} onClose={() => setSetIdx(null)}>
+        <Sheet title={t('Set {n}', { n: setIdx + 1 })} onClose={() => setSetIdx(null)}>
           <div className="small muted" style={{ marginBottom: 10 }}>
-            Typ série
+            {t('Set type')}
           </div>
           <div className="set-menu-types">
-            {SET_TYPES.map((t) => (
+            {SET_TYPES.map((st) => (
               <button
-                key={t}
-                className={we.sets[setIdx].type === t ? 'on' : ''}
+                key={st}
+                className={we.sets[setIdx].type === st ? 'on' : ''}
                 onClick={() => {
                   upd((x) => {
-                    x.sets[setIdx].type = t;
+                    x.sets[setIdx].type = st;
                   });
                   setSetIdx(null);
                 }}
               >
-                <span className="t">{SET_TYPE_LABEL[t] || '1'}</span>
-                {SET_TYPE_NAME[t]}
+                <span className="t">{SET_TYPE_LABEL[st] || '1'}</span>
+                {t(SET_TYPE_NAME[st])}
               </button>
             ))}
           </div>
@@ -659,7 +660,7 @@ function ExerciseCard({
                 setSetIdx(null);
               }}
             >
-              <Copy size={18} /> Zduplikovat sérii
+              <Copy size={18} /> {t('Duplicate set')}
             </button>
             <button
               className="btn danger block"
@@ -670,21 +671,21 @@ function ExerciseCard({
                   x.sets.splice(i, 1);
                 });
                 setSetIdx(null);
-                undoToast('Série smazána', () =>
+                undoToast(t('Set deleted'), () =>
                   upd((x) => {
                     if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
                   }),
                 );
               }}
             >
-              <Trash2 size={18} /> Smazat sérii
+              <Trash2 size={18} /> {t('Delete set')}
             </button>
           </div>
         </Sheet>
       )}
 
       {sheet === 'rest' && (
-        <Sheet title="Pauza po sérii" onClose={() => setSheet(null)}>
+        <Sheet title={t('Rest after each set')} onClose={() => setSheet(null)}>
           <div className="grid-3">
             {REST_OPTIONS.map((sec) => (
               <button
@@ -697,7 +698,7 @@ function ExerciseCard({
                   setSheet(null);
                 }}
               >
-                {sec === 0 ? 'Vypnuto' : fmtClock(sec)}
+                {sec === 0 ? t('Off') : fmtClock(sec)}
               </button>
             ))}
           </div>
@@ -706,7 +707,7 @@ function ExerciseCard({
 
       {sheet === 'pin' && (
         <Sheet
-          title="Připnutá poznámka"
+          title={t('Pinned note')}
           onClose={() => setSheet(null)}
           action={
             <button
@@ -716,14 +717,14 @@ function ExerciseCard({
                 setSheet(null);
               }}
             >
-              Uložit
+              {t('Save')}
             </button>
           }
         >
           <p className="small muted" style={{ marginTop: 0 }}>
-            Zobrazí se pokaždé, když budeš dělat {ex.name}. Ideální na nastavení stroje, úchop nebo technické body.
+            {t('Shows up every time you do {exercise}. Great for machine settings, grip or form cues.', { exercise: ex.name })}
           </p>
-          <textarea autoFocus value={pinDraft} onChange={(e) => setPinDraft(e.target.value)} placeholder="např. Sedačka na 4, úchop na šířku ramen" />
+          <textarea autoFocus value={pinDraft} onChange={(e) => setPinDraft(e.target.value)} placeholder={t('e.g. Seat on 4, shoulder-width grip')} />
           <div className="grid-2 mt">
             <button
               className="btn danger"
@@ -732,7 +733,7 @@ function ExerciseCard({
                 setSheet(null);
               }}
             >
-              Odepnout
+              {t('Unpin')}
             </button>
             <button
               className="btn primary"
@@ -741,14 +742,14 @@ function ExerciseCard({
                 setSheet(null);
               }}
             >
-              Uložit
+              {t('Save')}
             </button>
           </div>
         </Sheet>
       )}
 
       {sheet === 'plates' && (
-        <Sheet title="Rozložení kotoučů" onClose={() => setSheet(null)}>
+        <Sheet title={t('Plate calculator')} onClose={() => setSheet(null)}>
           {(() => {
             const target = we.sets.find((x) => !x.done && x.weight)?.weight ?? workingWeight;
             const res = plateCalc(target, settings.barWeightKg, settings.plates);
@@ -759,13 +760,13 @@ function ExerciseCard({
                   {fmtNum(toDisplayWeight(target, unit))} {unit}
                 </div>
                 <PlateVisual plates={per} />
-                <div className="small muted">Na každou stranu</div>
+                <div className="small muted">{t('Per side')}</div>
                 <div className="bold" style={{ fontSize: 18 }}>
-                  {per.length ? per.map((p) => fmtNum(p, 2)).join(' + ') : 'Jen osa'}
+                  {per.length ? per.map((p) => fmtNum(p, 2)).join(' + ') : t('Just the bar')}
                 </div>
                 {res.remainder > 0.01 && (
                   <div className="small" style={{ color: 'var(--warn)', marginTop: 6 }}>
-                    Nejbližší možná: {fmtNum(toDisplayWeight(res.achieved, unit))} {unit}
+                    {t('Closest possible: {weight} {unit}', { weight: fmtNum(toDisplayWeight(res.achieved, unit)), unit })}
                   </div>
                 )}
               </div>
@@ -792,9 +793,9 @@ function ExerciseCard({
       )}
 
       {sheet === 'substitute' && (
-        <Sheet title={`Náhrada za: ${ex.name}`} onClose={() => setSheet(null)}>
+        <Sheet title={t('Replace {exercise}', { exercise: ex.name })} onClose={() => setSheet(null)}>
           <p className="small muted" style={{ marginTop: 0 }}>
-            Stroj obsazený? Tyhle cviky zapojují stejné svaly.
+            {t('Machine taken? These exercises work the same muscles.')}
           </p>
           <div className="list">
             {findSubstitutes(ex, allEx).map((alt) => (
@@ -807,7 +808,7 @@ function ExerciseCard({
                     for (const s of x.sets) if (!s.done) delete s.weight;
                   });
                   setSheet(null);
-                  toast(`Nahrazeno: ${alt.name}`);
+                  toast(t('Replaced with {exercise}', { exercise: alt.name }));
                 }}
               >
                 <ExerciseAvatar ex={alt} />
@@ -842,10 +843,10 @@ function WarmupSheet({
   const kg = fromDisplayWeight(target, unit) ?? 0;
   const sets = warmupSets(kg, settings.barWeightKg, unit === 'kg' ? 2.5 : 5 * 0.45359237);
   return (
-    <Sheet title="Rozcvičovací série" onClose={onClose}>
+    <Sheet title={t('Warm-up sets')} onClose={onClose}>
       <div className="field">
-        <label>Pracovní váha ({unit})</label>
-        <NumInput value={target} onChange={setTarget} placeholder="např. 100" />
+        <label>{t('Working weight ({unit})', { unit })}</label>
+        <NumInput value={target} onChange={setTarget} placeholder={t('e.g. 100')} />
       </div>
       <div className="list mt">
         {sets.map((s, i) => (
@@ -859,10 +860,12 @@ function WarmupSheet({
             <span className="small muted">{Math.round((s.weight / kg) * 100)} %</span>
           </div>
         ))}
-        {!sets.length && <div className="empty">Zadej pracovní váhu vyšší než osa ({fmtNum(toDisplayWeight(settings.barWeightKg, unit))} {unit}).</div>}
+        {!sets.length && <div className="empty">
+            {t('Enter a working weight heavier than the bar ({weight} {unit}).', { weight: fmtNum(toDisplayWeight(settings.barWeightKg, unit)), unit })}
+          </div>}
       </div>
       <button className="btn primary block mt" disabled={!sets.length} onClick={() => onAdd(sets)}>
-        Přidat rozcvičku
+        {t('Add warm-up')}
       </button>
     </Sheet>
   );

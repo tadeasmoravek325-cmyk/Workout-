@@ -21,14 +21,15 @@ import type { Routine } from '../types';
 import { useGame } from '../lib/useGame';
 import { Celebration } from '../components/Celebration';
 import { renderShareCard } from '../lib/shareCard';
+import { t, tn } from '../i18n';
 
 const PR_LABEL: Record<PrHit['kind'], string> = {
-  weight: 'Nejvyšší váha',
-  e1rm: 'Odhad 1RM',
-  reps: 'Nejvíc opakování',
-  volume: 'Objem série',
-  duration: 'Nejdelší čas',
-  distance: 'Nejdelší vzdálenost',
+  weight: 'Heaviest weight',
+  e1rm: 'Est. 1RM',
+  reps: 'Most reps',
+  volume: 'Set volume',
+  duration: 'Longest time',
+  distance: 'Longest distance',
 };
 
 export default function WorkoutDetail() {
@@ -70,7 +71,7 @@ export default function WorkoutDetail() {
   const routine = routines.find((r) => r.id === w.routineId);
 
   const repeat = () => {
-    if (active) return toast('Nejdřív dokonči rozběhnutý trénink');
+    if (active) return toast(t('Finish your current workout first'));
     const temp: Routine = {
       id: w.routineId ?? uid(),
       name: w.name,
@@ -89,14 +90,14 @@ export default function WorkoutDetail() {
   };
 
   const shareText = () => {
-    const lines = [`${w.name} – ${fmtDateTime(w.startedAt)}`, `${fmtDuration(workoutDurationMs(w))} · objem ${fmtVolume(volume, unit)}`, ''];
+    const lines = [`${w.name} – ${fmtDateTime(w.startedAt)}`, t('{duration} · volume {volume}', { duration: fmtDuration(workoutDurationMs(w)), volume: fmtVolume(volume, unit) }), ''];
     for (const we of w.exercises) {
       const ex = exMap.get(we.exerciseId);
       if (!ex) continue;
       lines.push(ex.name);
       we.sets.forEach((s, i) => lines.push(`  ${s.type === 'warmup' ? 'W' : i + 1}. ${describeSet(s, ex, settings)}`));
     }
-    if (prs.length) lines.push('', `Nové osobní rekordy: ${prs.length}`);
+    if (prs.length) lines.push('', t('New personal records: {n}', { n: prs.length }));
     return lines.join('\n');
   };
 
@@ -108,16 +109,16 @@ export default function WorkoutDetail() {
         levelTitle: game.level.title,
         streak: game.streak.streak,
       });
-      const file = new File([blob], 'gym-trenink.png', { type: 'image/png' });
+      const file = new File([blob], 'gym-workout.png', { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: w.name });
       else {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'gym-trenink.png';
+        a.download = 'gym-workout.png';
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toast('Obrázek stažen');
+        toast(t('Image downloaded'));
       }
     } catch {
       /* cancelled */
@@ -130,7 +131,7 @@ export default function WorkoutDetail() {
       if (navigator.share) await navigator.share({ title: w.name, text });
       else {
         await navigator.clipboard.writeText(text);
-        toast('Zkopírováno do schránky');
+        toast(t('Copied to clipboard'));
       }
     } catch {
       /* cancelled */
@@ -141,27 +142,26 @@ export default function WorkoutDetail() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => (isSummary ? navigate('/', { replace: true }) : navigate(-1))}>
-          {isSummary ? 'Hotovo' : '‹ Zpět'}
+          {isSummary ? t('Done') : `‹ ${t('Back')}`}
         </button>
         <Link to={`/history/${w.id}/edit`} className="btn ghost">
-          <Pencil size={16} /> Upravit
+          <Pencil size={16} /> {t('Edit')}
         </Link>
       </div>
 
       {isSummary && (
         <div className="hero center" style={{ marginBottom: 16 }}>
-          <h1 style={{ fontSize: 24 }}>Skvělá práce!</h1>
+          <h1 style={{ fontSize: 24 }}>{t('Great work!')}</h1>
           <div className="badge white" style={{ marginTop: 8 }}>
             +{xp} XP
           </div>
           <div className="muted small" style={{ marginTop: 8 }}>
-            Trénink č. {older.length + 1}
+            {t('Workout #{n}', { n: older.length + 1 })}
             {diff !== null && (
               <>
                 {' · '}
                 <span className="bold">
-                  objem {diff >= 0 ? '+' : ''}
-                  {fmtNum(diff, 0)} % oproti minule
+                  {t('volume {diff} % vs last time', { diff: `${diff >= 0 ? '+' : ''}${fmtNum(diff, 0)}` })}
                 </span>
               </>
             )}
@@ -175,29 +175,29 @@ export default function WorkoutDetail() {
       <div className="grid-3 mt">
         <div className="stat">
           <div className="v">{fmtDuration(workoutDurationMs(w))}</div>
-          <div className="l">Délka</div>
+          <div className="l">{t('Duration')}</div>
         </div>
         <div className="stat">
           <div className="v">{fmtVolume(volume, unit)}</div>
-          <div className="l">Objem</div>
+          <div className="l">{t('Volume')}</div>
         </div>
         <div className="stat">
           <div className="v">{doneSetCount(w)}</div>
-          <div className="l">Sérií</div>
+          <div className="l">{t('Sets')}</div>
         </div>
       </div>
 
       {prs.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Osobní rekordy ({prs.length})</h2>
+            <h2>{t('Personal records ({n})', { n: prs.length })}</h2>
           </div>
           <div className="list">
             {prs.map((p, i) => {
               const ex = exMap.get(p.exerciseId);
               const val =
                 p.kind === 'reps'
-                  ? `${p.value} opak.`
+                  ? tn(p.value, '{n} rep', '{n} reps')
                   : p.kind === 'duration'
                     ? `${Math.round(p.value)} s`
                     : p.kind === 'distance'
@@ -207,7 +207,7 @@ export default function WorkoutDetail() {
                 <div key={i} className="list-item">
                   <div className="grow">
                     <div className="bold ellipsis">{ex?.name}</div>
-                    <div className="small muted">{PR_LABEL[p.kind]}</div>
+                    <div className="small muted">{t(PR_LABEL[p.kind])}</div>
                   </div>
                   <span className="badge gold">{val}</span>
                 </div>
@@ -220,7 +220,7 @@ export default function WorkoutDetail() {
       {newAchievements.length > 0 && (
         <div className="section">
           <div className="section-title">
-            <h2>Nové odznaky</h2>
+            <h2>{t('New badges')}</h2>
           </div>
           <div className="stack">
             {newAchievements.map((a) => (
@@ -245,20 +245,20 @@ export default function WorkoutDetail() {
               className="btn soft block"
               onClick={() => {
                 updateRoutineFromWorkout(w.id);
-                toast(`Rutina „${routine.name}“ aktualizována`);
+                toast(t('Routine “{name}” updated', { name: routine.name }));
               }}
             >
-              <RefreshCw size={16} /> Aktualizovat rutinu podle tohoto tréninku
+              <RefreshCw size={16} /> {t('Update routine from this workout')}
             </button>
           ) : (
             <button
               className="btn soft block"
               onClick={() => {
                 routineFromWorkout(w.id);
-                toast('Uloženo jako nová rutina');
+                toast(t('Saved as a new routine'));
               }}
             >
-              <Save size={16} /> Uložit jako rutinu
+              <Save size={16} /> {t('Save as routine')}
             </button>
           )}
         </div>
@@ -266,7 +266,7 @@ export default function WorkoutDetail() {
 
       {w.notes && (
         <div className="card mt-l">
-          <div className="small muted bold">Poznámka</div>
+          <div className="small muted bold">{t('Note')}</div>
           <div style={{ whiteSpace: 'pre-wrap' }}>{w.notes}</div>
         </div>
       )}
@@ -293,7 +293,7 @@ export default function WorkoutDetail() {
                           {s.type === 'normal' ? n : s.type === 'warmup' ? 'W' : s.type === 'drop' ? 'D' : 'F'}
                         </span>
                         {describeSet(s, ex, settings)}
-                        {s.rpe ? <span className="muted"> @ RPE {String(s.rpe).replace('.', ',')}</span> : null}
+                        {s.rpe ? <span className="muted"> @ RPE {fmtNum(s.rpe, 1)}</span> : null}
                       </span>
                       {s.weight && s.reps && ex.type === 'weight_reps' ? (
                         <span className="muted tiny">1RM {fmtNum(toDisplayWeight(e1rm(s.weight, s.reps), unit))}</span>
@@ -304,7 +304,7 @@ export default function WorkoutDetail() {
               </div>
               {best > 0 && ex.type === 'weight_reps' && (
                 <div className="tiny muted" style={{ marginTop: 4 }}>
-                  Nejlepší odhad 1RM: {fmtNum(toDisplayWeight(best, unit))} {unit}
+                  {t('Best est. 1RM: {value} {unit}', { value: fmtNum(toDisplayWeight(best, unit)), unit })}
                 </div>
               )}
             </div>
@@ -313,27 +313,27 @@ export default function WorkoutDetail() {
       </div>
 
       <button className="btn primary block section" onClick={shareImage}>
-        <ImageDown size={18} /> Sdílet obrázek tréninku
+        <ImageDown size={18} /> {t('Share workout image')}
       </button>
       <div className="grid-3 mt">
         <button className="btn sm" onClick={repeat}>
-          <Repeat2 size={16} /> Znovu
+          <Repeat2 size={16} /> {t('Repeat')}
         </button>
         <button className="btn sm" onClick={share}>
-          <Share2 size={16} /> Text
+          <Share2 size={16} /> {t('Text')}
         </button>
         <button
           className="btn sm danger"
           onClick={async () => {
-            if (await confirmDialog('Smazat tento trénink?', 'Ještě pár sekund půjde smazání vrátit.', 'Smazat')) {
+            if (await confirmDialog(t('Delete this workout?'), t('You can undo this for a few seconds.'), t('Delete'))) {
               const copy = structuredClone(w);
               deleteWorkout(w.id);
               navigate('/history', { replace: true });
-              undoToast('Trénink smazán', () => useStore.getState().restoreWorkout(copy));
+              undoToast(t('Workout deleted'), () => useStore.getState().restoreWorkout(copy));
             }
           }}
         >
-          <Trash2 size={16} /> Smazat
+          <Trash2 size={16} /> {t('Delete')}
         </button>
       </div>
       {celebrating && (
@@ -350,10 +350,10 @@ export default function WorkoutDetail() {
           className="btn block mt"
           onClick={() => {
             routineFromWorkout(w.id);
-            toast('Uloženo jako nová rutina');
+            toast(t('Saved as a new routine'));
           }}
         >
-          <Save size={16} /> Uložit jako rutinu
+          <Save size={16} /> {t('Save as routine')}
         </button>
       )}
     </div>

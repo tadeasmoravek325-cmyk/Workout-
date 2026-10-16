@@ -1,77 +1,77 @@
-import type { Muscle } from '../types';
+import type { Muscle, Sex } from '../types';
 import { MUSCLE_LABELS } from '../data/exercises';
+import { ANATOMY, type AnatomyRegion, type AnatomyView } from '../data/anatomy';
+import { useStore } from '../store/store';
+import { t } from '../i18n';
 
-type Shape =
-  | { k: 'e'; cx: number; cy: number; rx: number; ry: number }
-  | { k: 'r'; x: number; y: number; w: number; h: number; r?: number }
-  | { k: 'p'; d: string };
+/** Fill for muscles with no data. Theme-aware, defined in index.css. */
+export const IDLE = 'var(--muscle-idle)';
 
-const e = (cx: number, cy: number, rx: number, ry: number): Shape => ({ k: 'e', cx, cy, rx, ry });
-const r = (x: number, y: number, w: number, h: number, rr = 4): Shape => ({ k: 'r', x, y, w, h, r: rr });
-const p = (d: string): Shape => ({ k: 'p', d });
+interface Props {
+  /** Fill for a muscle. Return IDLE for muscles with nothing to show. */
+  color: (m: Muscle) => string;
+  /**
+   * Ranks muscles that share one drawn region (the deltoid shows front or rear plus side delts).
+   * The muscle with the highest value is drawn. Defaults to the first muscle of the region.
+   */
+  value?: (m: Muscle) => number;
+  height?: number;
+  /** Body model. Defaults to the profile setting, male when unset. */
+  sex?: Sex;
+  /** Show only one side, for small thumbnails. */
+  side?: 'front' | 'back';
+  onPick?: (m: Muscle) => void;
+  labels?: boolean;
+}
 
-const FRONT: [Muscle, Shape[]][] = [
-  ['shoulders', [e(31, 47, 8, 7), e(69, 47, 8, 7)]],
-  ['chest', [r(37, 42, 12.5, 17, 5), r(50.5, 42, 12.5, 17, 5)]],
-  ['biceps', [e(25, 66, 5, 11), e(75, 66, 5, 11)]],
-  ['forearms', [e(20, 91, 4.5, 12), e(80, 91, 4.5, 12)]],
-  ['abs', [r(41, 61, 18, 33, 5)]],
-  ['quads', [e(42, 124, 8, 22), e(58, 124, 8, 22)]],
-  ['calves', [e(41.5, 170, 5, 15), e(58.5, 170, 5, 15)]],
-];
+function pick(region: AnatomyRegion, value?: (m: Muscle) => number): Muscle | null {
+  if (!region.m) return null;
+  if (!value || region.m.length === 1) return region.m[0];
+  return region.m.reduce((best, m) => (value(m) > value(best) ? m : best), region.m[0]);
+}
 
-const BACK: [Muscle, Shape[]][] = [
-  ['traps', [p('M138 33 L162 33 L171 45 L156 52 L144 52 L129 45 Z')]],
-  ['rearDelts', [e(129, 48, 7, 7), e(171, 48, 7, 7)]],
-  ['lats', [p('M135 54 L148 54 L148 82 L139 78 Z'), p('M165 54 L152 54 L152 82 L161 78 Z')]],
-  ['triceps', [e(124, 66, 5, 11), e(176, 66, 5, 11)]],
-  ['forearms', [e(120, 91, 4.5, 12), e(180, 91, 4.5, 12)]],
-  ['lowerBack', [r(141, 82, 18, 14, 4)]],
-  ['glutes', [e(142, 107, 9, 10), e(158, 107, 9, 10)]],
-  ['hamstrings', [e(142, 134, 8, 19), e(158, 134, 8, 19)]],
-  ['calves', [e(141.5, 170, 6, 15), e(158.5, 170, 6, 15)]],
-];
-
-function Silhouette({ x }: { x: number }) {
+function View({ view, color, value, onPick }: { view: AnatomyView } & Pick<Props, 'color' | 'value' | 'onPick'>) {
   return (
-    <g fill="var(--card-2)" opacity={0.55}>
-      <circle cx={x} cy={18} r={10} />
-      <rect x={x - 4} y={27} width={8} height={8} rx={2} />
-      <rect x={x - 21} y={38} width={42} height={64} rx={14} />
-      <rect x={x - 17} y={98} width={34} height={20} rx={8} />
-      <rect x={x - 33} y={42} width={10} height={64} rx={5} />
-      <rect x={x + 23} y={42} width={10} height={64} rx={5} />
-      <rect x={x - 17} y={110} width={15} height={78} rx={7} />
-      <rect x={x + 2} y={110} width={15} height={78} rx={7} />
-    </g>
+    <svg viewBox={view.viewBox} className="body-view" role="presentation">
+      {view.regions.map((r, i) => {
+        const m = pick(r, value);
+        const fill = m ? color(m) : 'var(--body-skin)';
+        return (
+          <g
+            key={i}
+            fill={fill}
+            className={m && onPick ? 'muscle tappable' : m ? 'muscle' : undefined}
+            onClick={m && onPick ? () => onPick(m) : undefined}
+          >
+            {m && <title>{MUSCLE_LABELS[m]}</title>}
+            {r.d.map((d, j) => (
+              <path key={j} d={d} />
+            ))}
+          </g>
+        );
+      })}
+      <path d={view.outline} fill="none" stroke="var(--body-outline)" strokeWidth={2} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
 
-function draw(shape: Shape, fill: string, key: string, title: string) {
-  const common = { fill, stroke: 'var(--bg)', strokeWidth: 0.8, key };
-  const t = <title>{title}</title>;
-  if (shape.k === 'e') return <ellipse {...common} cx={shape.cx} cy={shape.cy} rx={shape.rx} ry={shape.ry}>{t}</ellipse>;
-  if (shape.k === 'r') return <rect {...common} x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={shape.r}>{t}</rect>;
-  return <path {...common} d={shape.d}>{t}</path>;
-}
-
-/** Front/back body silhouette with muscles colored by `color(muscle)`. */
-export function BodyMap({ color, height = 260 }: { color: (m: Muscle) => string; height?: number }) {
-  const render = (groups: [Muscle, Shape[]][]) =>
-    groups.flatMap(([m, shapes]) => shapes.map((s, i) => draw(s, color(m), `${m}-${i}`, MUSCLE_LABELS[m])));
+/**
+ * Anatomical front/back figure, male or female, with muscles coloured by `color(muscle)`.
+ * Artwork from react-muscle-highlighter (MIT), see src/data/anatomy.ts.
+ */
+export function BodyMap({ color, value, height = 260, sex, side, onPick, labels = true }: Props) {
+  const profileSex = useStore((s) => s.settings.sex);
+  const model = ANATOMY[(sex ?? profileSex) === 'f' ? 'female' : 'male'];
+  const sides = side ? [side] : (['front', 'back'] as const);
   return (
-    <svg viewBox="0 0 200 200" style={{ width: '100%', height, display: 'block' }} role="img" aria-label="Mapa svalů">
-      <Silhouette x={50} />
-      <Silhouette x={150} />
-      {render(FRONT)}
-      {render(BACK)}
-      <text x={50} y={198} textAnchor="middle" fontSize={8} fill="var(--muted)">
-        Zepředu
-      </text>
-      <text x={150} y={198} textAnchor="middle" fontSize={8} fill="var(--muted)">
-        Zezadu
-      </text>
-    </svg>
+    <div className={`body-map ${labels ? '' : 'no-labels'}`} style={{ height }} role="img" aria-label={t('Muscle map')}>
+      {sides.map((s) => (
+        <figure key={s}>
+          <View view={model[s]} color={color} value={value} onPick={onPick} />
+          {labels && <figcaption>{s === 'front' ? t('Front') : t('Back')}</figcaption>}
+        </figure>
+      ))}
+    </div>
   );
 }
 
@@ -83,17 +83,24 @@ export function mix(a: string, b: string, t: number): string {
   return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`;
 }
 
+/** Involvement of a muscle in one exercise (0..1) → colour. */
+export function loadColor(load: number | undefined): string {
+  if (!load) return IDLE;
+  return mix('#5a2a10', '#ff7a1a', Math.min(1, load));
+}
+
 export const RECOVERY_COLORS = { tired: '#b3200f', recovering: '#ff7a1a', ready: '#ffd29a' };
 
+/** Weekly fractional sets → colour. 10–20 is the productive zone for most people. */
 export function volumeColor(sets: number): string {
-  if (!sets) return '#3a3a3a';
-  if (sets < 10) return mix('#4a2410', '#ff7a1a', Math.min(1, sets / 10));
+  if (sets < 0.25) return IDLE;
+  if (sets < 10) return mix('#5a2a10', '#ff7a1a', Math.min(1, sets / 10));
   if (sets <= 20) return '#ffa030';
   return '#ff4433';
 }
 
 export function recoveryColor(v: number | undefined): string {
-  if (v === undefined) return '#3a3a3a';
+  if (v === undefined) return IDLE;
   if (v < 0.5) return mix(RECOVERY_COLORS.tired, RECOVERY_COLORS.recovering, v * 2);
   return mix(RECOVERY_COLORS.recovering, RECOVERY_COLORS.ready, (v - 0.5) * 2);
 }

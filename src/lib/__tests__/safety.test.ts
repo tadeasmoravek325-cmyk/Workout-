@@ -34,7 +34,7 @@ describe('guarded storage', () => {
 
   it('quarantines corrupted data and keeps writes blocked', async () => {
     db.set(STORE_KEY, '{"state": {broken');
-    await expect(safeStorage.getItem(STORE_KEY)).rejects.toThrow(/poškozená/);
+    await expect(safeStorage.getItem(STORE_KEY)).rejects.toThrow(/damaged/);
     expect([...db.keys()].some((k) => k.startsWith('gym-quarantine:'))).toBe(true);
     finishLoad(new Error('x'));
     await safeStorage.setItem(STORE_KEY, '{"state":{"workouts":[]}}');
@@ -46,7 +46,7 @@ describe('guarded storage', () => {
     finishLoad();
     failNextWrite = Object.assign(new Error('full'), { name: 'QuotaExceededError' });
     await expect(safeStorage.setItem(STORE_KEY, '{}')).resolves.toBeUndefined();
-    expect(useSafety.getState().saveError).toMatch(/místo/);
+    expect(useSafety.getState().saveError).toMatch(/out of space/);
     await safeStorage.setItem(STORE_KEY, '{}');
     expect(useSafety.getState().saveError).toBeNull();
   });
@@ -86,7 +86,7 @@ describe('parseBackup', () => {
     expect(parseBackup('{"foo":1}').ok).toBe(false);
     const bad = parseBackup(JSON.stringify({ workouts: [{ id: 'a', exercises: 'x' }] }));
     expect(bad.ok).toBe(false);
-    if (!bad.ok) expect(bad.error).toMatch(/Nic jsem nezměnil/);
+    if (!bad.ok) expect(bad.error).toMatch(/Nothing was changed/);
   });
 
   it('rejects backups from a newer schema', () => {

@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { startOfWeek } from '../lib/calc';
+import { t } from '../i18n';
 
-const DAYS = ['Pondělí', 'Úterý', 'Středa', 'Čtvrtek', 'Pátek', 'Sobota', 'Neděle'];
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Planner() {
   const routines = useStore((s) => s.routines);
@@ -26,18 +27,18 @@ export default function Planner() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ Zpět
+          ‹ {t('Back')}
         </button>
       </div>
-      <h1>Plán týdne</h1>
-      <p className="muted small">Přiřaď rutiny ke dnům. Na přehledu pak uvidíš, co máš dnes na programu.</p>
+      <h1>{t('Weekly plan')}</h1>
+      <p className="muted small">{t('Assign routines to days. Your home screen will then show what’s on for today.')}</p>
 
       {!routines.length ? (
         <div className="card empty">
-          Nejdřív si vytvoř rutinu nebo importuj program.
+          {t('Create a routine or add a program first.')}
           <div className="mt">
             <Link to="/train" className="btn soft sm">
-              Přejít na rutiny
+              {t('Go to routines')}
             </Link>
           </div>
         </div>
@@ -49,15 +50,15 @@ export default function Planner() {
             return (
               <div key={d} className={`list-item ${i === todayIdx ? 'active' : ''}`} style={{ flexWrap: 'wrap' }}>
                 <div style={{ width: 84 }}>
-                  <div className="bold">{d}</div>
-                  {done ? <div className="tiny ok">odcvičeno</div> : i === todayIdx ? <div className="tiny accent">dnes</div> : null}
+                  <div className="bold">{t(d)}</div>
+                  {done ? <div className="tiny ok">{t('done')}</div> : i === todayIdx ? <div className="tiny accent">{t('today')}</div> : null}
                 </div>
                 <select
                   className="grow"
                   value={schedule[i] ?? ''}
                   onChange={(e) => setSchedule(i, e.target.value || undefined)}
                 >
-                  <option value="">Volno</option>
+                  <option value="">{t('Rest day')}</option>
                   {routines.map((r) => (
                     <option key={r.id} value={r.id}>
                       {r.folder ? `${r.folder} – ` : ''}
@@ -79,8 +80,8 @@ export default function Planner() {
       <div className="card mt-l">
         <div className="row between">
           <div>
-            <div className="bold">Týdenní cíl</div>
-            <div className="small muted">Kolik tréninků týdně chceš stihnout</div>
+            <div className="bold">{t('Weekly goal')}</div>
+            <div className="small muted">{t('How many workouts you want to fit in each week')}</div>
           </div>
           <div className="row">
             <button className="icon-btn" onClick={() => updateSettings({ weeklyGoal: Math.max(1, weeklyGoal - 1) })}>
@@ -96,7 +97,7 @@ export default function Planner() {
         </div>
         {planned > 0 && planned !== weeklyGoal && (
           <button className="btn sm soft mt" onClick={() => updateSettings({ weeklyGoal: planned })}>
-            Nastavit cíl podle plánu ({planned})
+            {t('Match goal to plan ({n})', { n: planned })}
           </button>
         )}
       </div>

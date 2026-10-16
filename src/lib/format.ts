@@ -1,4 +1,5 @@
 import type { Unit } from '../types';
+import { LOCALE_TAG, t, tn } from '../i18n';
 
 export const KG_PER_LB = 0.45359237;
 
@@ -16,7 +17,7 @@ export function fromDisplayWeight(v: number | undefined, unit: Unit): number | u
 export function fmtNum(v: number | undefined, digits = 1): string {
   if (v === undefined || v === null || Number.isNaN(v)) return '–';
   const r = Math.round(v * 10 ** digits) / 10 ** digits;
-  return r.toLocaleString('cs-CZ', { maximumFractionDigits: digits });
+  return r.toLocaleString(LOCALE_TAG, { maximumFractionDigits: digits });
 }
 
 export function fmtWeight(kg: number | undefined, unit: Unit, digits = 1): string {
@@ -57,11 +58,11 @@ export function parseClock(text: string): number | undefined {
 }
 
 export function fmtDate(ts: number, opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' }): string {
-  return new Date(ts).toLocaleDateString('cs-CZ', opts);
+  return new Date(ts).toLocaleDateString(LOCALE_TAG, opts);
 }
 
 export function fmtDateTime(ts: number): string {
-  return new Date(ts).toLocaleString('cs-CZ', {
+  return new Date(ts).toLocaleString(LOCALE_TAG, {
     weekday: 'short',
     day: 'numeric',
     month: 'short',
@@ -75,16 +76,13 @@ export function relativeDay(ts: number, now = Date.now()): string {
   const d0 = new Date(now);
   d0.setHours(0, 0, 0, 0);
   const diff = Math.floor((d0.getTime() - new Date(ts).setHours(0, 0, 0, 0)) / day);
-  if (diff <= 0) return 'Dnes';
-  if (diff === 1) return 'Včera';
-  if (diff < 5) return `Před ${diff} dny`;
+  if (diff <= 0) return t('Today');
+  if (diff === 1) return t('Yesterday');
+  if (diff < 7) return tn(diff, '{n} day ago', '{n} days ago');
   return fmtDate(ts, { day: 'numeric', month: 'short' });
 }
 
-/** Czech plural helper: plural(3, ['trénink','tréninky','tréninků']). */
-export function plural(n: number, forms: [string, string, string]): string {
-  const abs = Math.abs(n);
-  if (abs === 1) return forms[0];
-  if (abs >= 2 && abs <= 4) return forms[1];
-  return forms[2];
+/** Plural-aware label: plural(3, 'workout', 'workouts') → 'workouts'. */
+export function plural(n: number, one: string, other: string): string {
+  return tn(n, one, other);
 }

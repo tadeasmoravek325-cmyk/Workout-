@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { create } from 'zustand';
+import { t } from '../i18n';
 
 export function Sheet({
   title,
@@ -29,7 +30,7 @@ export function Sheet({
     <div className="overlay" onClick={onClose}>
       <div className={`sheet ${full ? 'full' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="sheet-head">
-          <button className="icon-btn" onClick={onClose} aria-label="Zavřít">
+          <button className="icon-btn" onClick={onClose} aria-label={t('Close')}>
             <X size={18} />
           </button>
           <h2 className="grow center ellipsis">{title}</h2>
@@ -167,25 +168,25 @@ export function toast(text: ReactNode, kind: Toast['kind'] = 'info', ms = 2600, 
 
 /** Toast with an "Undo" button, shown long enough to react. */
 export function undoToast(text: ReactNode, undo: () => void) {
-  toast(text, 'info', 6000, { label: 'Vrátit', run: undo });
+  toast(text, 'info', 6000, { label: t('Undo'), run: undo });
 }
 
 export function Toasts() {
   const items = useToasts((s) => s.items);
   return (
     <div className="toast-wrap" role="status" aria-live="polite">
-      {items.map((t) => (
-        <div key={t.id} className={`toast ${t.kind ?? ''} ${t.action ? 'has-action' : ''}`}>
-          <span className="grow">{t.text}</span>
-          {t.action && (
+      {items.map((item) => (
+        <div key={item.id} className={`toast ${item.kind ?? ''} ${item.action ? 'has-action' : ''}`}>
+          <span className="grow">{item.text}</span>
+          {item.action && (
             <button
               className="toast-action"
               onClick={() => {
-                t.action!.run();
-                dismiss(t.id);
+                item.action!.run();
+                dismiss(item.id);
               }}
             >
-              {t.action.label}
+              {item.action.label}
             </button>
           )}
         </div>
@@ -250,9 +251,9 @@ export function ask<T>(title: string, message: ReactNode, actions: DialogAction<
 }
 
 /** Yes/no confirmation. */
-export async function confirmDialog(title: string, message?: ReactNode, confirmLabel = 'Potvrdit', danger = true): Promise<boolean> {
+export async function confirmDialog(title: string, message?: ReactNode, confirmLabel = t('Confirm'), danger = true): Promise<boolean> {
   const r = await ask(title, message, [
-    { label: 'Zpět', value: false, kind: 'plain' },
+    { label: t('Cancel'), value: false, kind: 'plain' },
     { label: confirmLabel, value: true, kind: danger ? 'danger' : 'primary' },
   ]);
   return r === true;

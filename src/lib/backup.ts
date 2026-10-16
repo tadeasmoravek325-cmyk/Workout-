@@ -2,6 +2,7 @@ import { exportBackup, useExerciseMap, useStore } from '../store/store';
 import { exportCsv } from './csv';
 import { makeBackupFile, saveFile } from './safety';
 import { toast } from '../components/ui';
+import { t } from '../i18n';
 
 function today() {
   const d = new Date();
@@ -10,16 +11,16 @@ function today() {
 
 /** Saves a full backup file and remembers when it happened. */
 export async function saveBackupFile(): Promise<boolean> {
-  const result = await saveFile(`gym-zaloha-${today()}.json`, makeBackupFile(exportBackup()), 'application/json');
+  const result = await saveFile(`gym-backup-${today()}.json`, makeBackupFile(exportBackup()), 'application/json');
   if (result === 'cancelled') return false;
   useStore.getState().updateSettings({ lastBackupAt: Date.now(), backupSnoozeUntil: undefined });
-  toast(result === 'shared' ? 'Záloha připravena ke sdílení' : 'Záloha uložena do Stažených souborů');
+  toast(result === 'shared' ? t('Backup ready to share') : t('Backup saved to Downloads'));
   return true;
 }
 
 export async function saveCsvFile(exMap: ReturnType<typeof useExerciseMap>) {
-  const result = await saveFile(`gym-treninky-${today()}.csv`, exportCsv(useStore.getState().workouts, exMap), 'text/csv');
-  if (result !== 'cancelled') toast('Export tréninků uložen');
+  const result = await saveFile(`gym-workouts-${today()}.csv`, exportCsv(useStore.getState().workouts, exMap), 'text/csv');
+  if (result !== 'cancelled') toast(t('Workout export saved'));
 }
 
 const DAY = 86_400_000;
