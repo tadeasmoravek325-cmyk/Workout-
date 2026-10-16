@@ -83,15 +83,17 @@ export function mix(a: string, b: string, t: number): string {
   return `rgb(${ch(16)}, ${ch(8)}, ${ch(0)})`;
 }
 
+export const RECOVERY_COLORS = { tired: '#b3200f', recovering: '#ff7a1a', ready: '#ffd29a' };
+
 export function volumeColor(sets: number): string {
-  if (!sets) return '#3a4150';
-  if (sets < 10) return mix('#5a3a2a', '#ff6b35', Math.min(1, sets / 10));
-  if (sets <= 20) return '#2ecc71';
-  return '#a77bff';
+  if (!sets) return '#3a3a3a';
+  if (sets < 10) return mix('#4a2410', '#ff7a1a', Math.min(1, sets / 10));
+  if (sets <= 20) return '#ffa030';
+  return '#ff4433';
 }
 
 export function recoveryColor(v: number | undefined): string {
-  if (v === undefined) return '#3a4150';
-  if (v < 0.5) return mix('#ff4d5e', '#f1c40f', v * 2);
-  return mix('#f1c40f', '#2ecc71', (v - 0.5) * 2);
+  if (v === undefined) return '#3a3a3a';
+  if (v < 0.5) return mix(RECOVERY_COLORS.tired, RECOVERY_COLORS.recovering, v * 2);
+  return mix(RECOVERY_COLORS.recovering, RECOVERY_COLORS.ready, (v - 0.5) * 2);
 }

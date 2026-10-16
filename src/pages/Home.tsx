@@ -4,7 +4,7 @@ import { Check, ChevronRight, ClipboardList, Flame, Plus, Snowflake, Sparkles, T
 import { useExerciseMap, useStore } from '../store/store';
 import { muscleRecovery, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, plural, relativeDay } from '../lib/format';
-import { BodyMap, recoveryColor } from '../components/BodyMap';
+import { BodyMap, RECOVERY_COLORS, recoveryColor } from '../components/BodyMap';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { GeneratorSheet } from '../components/GeneratorSheet';
 import { MUSCLE_LABELS } from '../data/exercises';
@@ -192,13 +192,13 @@ export default function Home() {
                 <div className="small bold">Prázdný</div>
               </button>
               <button className="card tap center" style={{ padding: 14 }} onClick={() => setGenerator(true)}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', display: 'grid', placeItems: 'center', color: '#fff' }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', border: '1px solid rgba(255,122,26,0.45)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <Sparkles size={21} />
                 </div>
                 <div className="small bold">Vygenerovat</div>
               </button>
               <Link to="/train" className="card tap center" style={{ padding: 14 }}>
-                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-ok)', display: 'grid', placeItems: 'center', color: '#04261a' }}>
+                <div style={{ margin: '0 auto 8px', width: 42, height: 42, borderRadius: 14, background: 'var(--grad-cool)', border: '1px solid rgba(255,122,26,0.45)', display: 'grid', placeItems: 'center', color: 'var(--accent)' }}>
                   <ClipboardList size={21} />
                 </div>
                 <div className="small bold">Rutiny</div>
@@ -251,13 +251,13 @@ export default function Home() {
             <BodyMap color={(m) => recoveryColor(recovery[m])} height={210} />
             <div className="row small bold" style={{ justifyContent: 'center', gap: 14 }}>
               <span>
-                <span style={{ color: '#ff4d5e' }}>●</span> unavené
+                <span style={{ color: RECOVERY_COLORS.tired }}>●</span> unavené
               </span>
               <span>
-                <span style={{ color: '#f1c40f' }}>●</span> regenerují
+                <span style={{ color: RECOVERY_COLORS.recovering }}>●</span> regenerují
               </span>
               <span>
-                <span style={{ color: '#2ecc71' }}>●</span> připravené
+                <span style={{ color: RECOVERY_COLORS.ready }}>●</span> připravené
               </span>
             </div>
             {ready.length > 0 && (
@@ -285,7 +285,7 @@ export default function Home() {
           <div className="list">
             {recentPRs.map((p, i) => (
               <Link key={i} to={`/exercises/${p.exerciseId}`} className="list-item">
-                <div className="avatar" style={{ background: 'var(--grad-gold)', color: '#3b2300' }}>
+                <div className="avatar" style={{ background: 'var(--grad-gold)', color: '#2a1400' }}>
                   <Trophy size={20} />
                 </div>
                 <div className="grow">

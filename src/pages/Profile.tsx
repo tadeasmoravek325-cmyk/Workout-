@@ -62,7 +62,7 @@ export default function Profile() {
   const unlocked = ACHIEVEMENTS.filter((a) => a.progress(achStats) >= 1);
 
   const heatColor = (v: number) =>
-    v === 0 ? 'var(--card-2)' : `color-mix(in srgb, #ff5a6e ${Math.round(35 + v * 65)}%, var(--card-2))`;
+    v === 0 ? 'var(--card-2)' : `color-mix(in srgb, #ff7a1a ${Math.round(35 + v * 65)}%, var(--card-2))`;
 
   const diff = (a: number, b: number) => (b ? Math.round(((a - b) / b) * 100) : null);
 

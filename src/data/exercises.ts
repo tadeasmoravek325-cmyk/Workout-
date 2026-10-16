@@ -193,14 +193,14 @@ export const MUSCLE_LABELS: Record<Muscle, string> = {
 export const ALL_MUSCLES = Object.keys(MUSCLE_LABELS) as Muscle[];
 
 export const BODY_PART_COLORS: Record<BodyPart, string> = {
-  chest: '#ff6b6b',
-  back: '#4dabf7',
-  legs: '#51cf66',
-  shoulders: '#fcc419',
-  arms: '#cc5de8',
-  core: '#ff922b',
-  cardio: '#22b8cf',
-  fullbody: '#845ef7',
+  chest: '#ff4a1a',
+  back: '#ff7a1a',
+  legs: '#ffa030',
+  shoulders: '#ffc65c',
+  arms: '#ff5e2a',
+  core: '#ff8f3a',
+  cardio: '#ffb347',
+  fullbody: '#ff6a1f',
 };
 
 export const BODY_PART_EMOJI: Record<BodyPart, string> = {

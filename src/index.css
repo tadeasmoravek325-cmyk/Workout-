@@ -1,30 +1,31 @@
 @import '@fontsource-variable/nunito';
 
 :root {
-  --bg: #0c0e14;
-  --bg-2: #12151d;
-  --card: #181b25;
-  --card-2: #222634;
-  --line: #2a2f3e;
-  --text: #f1f3f9;
-  --muted: #8d95a8;
-  --accent: #ff6b3d;
-  --accent-2: #ff4f8b;
-  --grad: linear-gradient(135deg, #ff8a3d 0%, #ff4f8b 100%);
-  --grad-cool: linear-gradient(135deg, #7c5cff 0%, #3dc7ff 100%);
-  --grad-ok: linear-gradient(135deg, #22d3a6 0%, #3ddc84 100%);
-  --grad-gold: linear-gradient(135deg, #ffd25e 0%, #ff9f43 100%);
-  --accent-soft: rgba(255, 107, 61, 0.14);
-  --ok: #2fd88f;
-  --ok-soft: rgba(47, 216, 143, 0.16);
-  --warn: #fbbf24;
-  --danger: #ff5470;
-  --blue: #3dc7ff;
-  --purple: #8b6cff;
+  /* Brand: black + orange from the logo */
+  --bg: #0a0a0a;
+  --bg-2: #111111;
+  --card: #171717;
+  --card-2: #242424;
+  --line: #2c2c2c;
+  --text: #f5f5f5;
+  --muted: #9a9a9a;
+  --accent: #ff7a1a;
+  --accent-2: #ff4a1a;
+  --grad: linear-gradient(135deg, #ffa030 0%, #ff4a1a 100%);
+  --grad-cool: linear-gradient(135deg, #2c2c2c 0%, #161616 100%);
+  --grad-ok: linear-gradient(135deg, #ffb347 0%, #ff7a1a 100%);
+  --grad-gold: linear-gradient(135deg, #ffc65c 0%, #ff8a1f 100%);
+  --accent-soft: rgba(255, 122, 26, 0.15);
+  --ok: #ff9a3d;
+  --ok-soft: rgba(255, 122, 26, 0.16);
+  --warn: #ffc04d;
+  --danger: #ff4433;
+  --blue: #ffb347;
+  --purple: #ffb347;
   --radius: 20px;
   --radius-s: 14px;
-  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
-  --glow: 0 8px 24px rgba(255, 92, 90, 0.35);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.35);
+  --glow: 0 8px 24px rgba(255, 98, 26, 0.35);
   --nav-h: 68px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-t: env(safe-area-inset-top, 0px);
@@ -32,17 +33,20 @@
 }
 
 :root[data-theme='light'] {
-  --bg: #f5f4fb;
-  --bg-2: #ecebf5;
+  --bg: #f4f4f4;
+  --bg-2: #ebebeb;
   --card: #ffffff;
-  --card-2: #f0eff7;
-  --line: #e6e4f0;
-  --text: #1b1a2e;
-  --muted: #6e6b85;
-  --accent-soft: rgba(255, 107, 61, 0.12);
-  --ok-soft: rgba(47, 216, 143, 0.18);
-  --shadow: 0 1px 2px rgba(30, 20, 80, 0.04), 0 8px 24px rgba(30, 20, 80, 0.07);
-  --glow: 0 8px 22px rgba(255, 92, 90, 0.3);
+  --card-2: #f0f0f0;
+  --line: #e2e2e2;
+  --text: #111111;
+  --muted: #6b6b6b;
+  --accent: #f26a0f;
+  --accent-soft: rgba(255, 122, 26, 0.12);
+  --ok: #e8700f;
+  --ok-soft: rgba(255, 122, 26, 0.14);
+  --grad-cool: linear-gradient(135deg, #2c2c2c 0%, #111111 100%);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 8px 24px rgba(0, 0, 0, 0.07);
+  --glow: 0 8px 22px rgba(255, 98, 26, 0.3);
   color-scheme: light;
 }
 
@@ -311,7 +315,12 @@ svg.lucide {
 
 .hero.cool {
   background: var(--grad-cool);
-  box-shadow: 0 8px 24px rgba(92, 120, 255, 0.35);
+  border: 1px solid rgba(255, 122, 26, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.hero.cool svg.lucide {
+  color: var(--accent);
 }
 
 .hero::before,
@@ -460,14 +469,14 @@ a.list-item:active {
 
 .btn.cool {
   background: var(--grad-cool);
-  color: #fff;
-  box-shadow: 0 8px 20px rgba(92, 120, 255, 0.3);
+  color: #ff8a2a;
+  border: 1px solid rgba(255, 122, 26, 0.45);
 }
 
 .btn.ok {
-  background: var(--grad-ok);
-  color: #04261a;
-  box-shadow: 0 6px 18px rgba(47, 216, 143, 0.3);
+  background: var(--grad);
+  color: #fff;
+  box-shadow: var(--glow);
 }
 
 .btn.danger {
@@ -488,7 +497,7 @@ a.list-item:active {
 
 .btn.white {
   background: #fff;
-  color: #ff5a4f;
+  color: #ff5a1a;
 }
 
 .btn.glass {
@@ -590,8 +599,8 @@ a.list-item:active {
 }
 
 .badge.purple {
-  background: rgba(139, 108, 255, 0.16);
-  color: var(--purple);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .badge.white {
@@ -787,8 +796,8 @@ a.list-item:active {
   margin: 10px 2px 4px;
   padding: 10px 12px;
   border-radius: 14px;
-  background: linear-gradient(135deg, rgba(124, 92, 255, 0.14), rgba(61, 199, 255, 0.1));
-  border: 1px solid rgba(124, 92, 255, 0.35);
+  background: linear-gradient(135deg, rgba(255, 122, 26, 0.14), rgba(255, 74, 26, 0.06));
+  border: 1px solid rgba(255, 122, 26, 0.4);
   font-size: 13px;
   display: flex;
   gap: 10px;
@@ -855,7 +864,7 @@ a.list-item:active {
 
 @keyframes row-flash {
   0% {
-    background: rgba(47, 216, 143, 0.45);
+    background: rgba(255, 122, 26, 0.45);
   }
 }
 
@@ -936,8 +945,8 @@ a.list-item:active {
 }
 
 .check.on {
-  background: var(--grad-ok);
-  color: #04261a;
+  background: var(--grad);
+  color: #fff;
   animation: pop 0.35s cubic-bezier(0.3, 1.6, 0.5, 1);
 }
 
@@ -992,7 +1001,7 @@ a.list-item:active {
   left: 0;
   top: 0;
   bottom: 0;
-  background: linear-gradient(90deg, rgba(124, 92, 255, 0.22), rgba(61, 199, 255, 0.18));
+  background: linear-gradient(90deg, rgba(255, 160, 48, 0.22), rgba(255, 74, 26, 0.2));
   transition: width 0.25s linear;
 }
 
@@ -1123,7 +1132,7 @@ a.list-item:active {
 .toast.pr {
   border: 0;
   background: var(--grad-gold);
-  color: #3b2300;
+  color: #2a1400;
 }
 
 @keyframes drop {
@@ -1174,7 +1183,7 @@ a.list-item:active {
   right: -6px;
   bottom: -6px;
   background: #fff;
-  color: #ff5a4f;
+  color: #ff5a1a;
   font-size: 11px;
   font-weight: 900;
   border-radius: 999px;
@@ -1541,7 +1550,7 @@ a.list-item:active {
   position: absolute;
   top: 0;
   bottom: 0;
-  background: rgba(47, 216, 143, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .muscle-bar .track .fill {
@@ -1578,7 +1587,7 @@ a.list-item:active {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  box-shadow: 0 6px 16px rgba(255, 159, 67, 0.3);
+  box-shadow: 0 6px 16px rgba(255, 122, 26, 0.3);
 }
 
 .ach.locked .ico {

@@ -41,18 +41,21 @@ export async function renderShareCard(
   const font = (weight: number, size: number) => `${weight} ${size}px "Nunito Variable", Nunito, system-ui, sans-serif`;
 
   const bg = ctx.createLinearGradient(0, 0, W, H);
-  bg.addColorStop(0, '#ff8a3d');
-  bg.addColorStop(0.55, '#ff4f8b');
-  bg.addColorStop(1, '#7c5cff');
+  bg.addColorStop(0, '#1c1c1c');
+  bg.addColorStop(0.6, '#0d0d0d');
+  bg.addColorStop(1, '#050505');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = 'rgba(255,255,255,0.10)';
-  ctx.beginPath();
-  ctx.arc(W - 80, 120, 300, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(120, H - 60, 220, 0, Math.PI * 2);
-  ctx.fill();
+  const glow = ctx.createRadialGradient(W - 80, 120, 0, W - 80, 120, 420);
+  glow.addColorStop(0, 'rgba(255,122,26,0.45)');
+  glow.addColorStop(1, 'rgba(255,122,26,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+  const glow2 = ctx.createRadialGradient(120, H - 60, 0, 120, H - 60, 320);
+  glow2.addColorStop(0, 'rgba(255,74,26,0.35)');
+  glow2.addColorStop(1, 'rgba(255,74,26,0)');
+  ctx.fillStyle = glow2;
+  ctx.fillRect(0, 0, W, H);
 
   try {
     const logo = new Image();
@@ -86,7 +89,7 @@ export async function renderShareCard(
   const boxW = (W - 140 - 3 * 24) / 4;
   stats.forEach(([label, value], i) => {
     const x = 70 + i * (boxW + 24);
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillStyle = 'rgba(255,122,26,0.16)';
     roundRect(ctx, x, 320, boxW, 150, 32);
     ctx.fill();
     ctx.fillStyle = '#fff';
@@ -98,7 +101,7 @@ export async function renderShareCard(
     ctx.globalAlpha = 1;
   });
 
-  ctx.fillStyle = 'rgba(15,12,30,0.35)';
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
   roundRect(ctx, 70, 510, W - 140, 660, 40);
   ctx.fill();
   let y = 590;

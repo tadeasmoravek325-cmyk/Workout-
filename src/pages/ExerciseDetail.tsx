@@ -323,7 +323,7 @@ export default function ExerciseDetail() {
             <div className="card">
               <BodyMap
                 height={200}
-                color={(m) => (ex.primary.includes(m) ? '#ff6b35' : ex.secondary.includes(m) ? '#8a4a2f' : '#3a4150')}
+                color={(m) => (ex.primary.includes(m) ? '#ff7a1a' : ex.secondary.includes(m) ? '#7a3a12' : '#3a3a3a')}
               />
               <div className="small">
                 <span className="accent bold">Hlavní:</span> {ex.primary.map((m) => MUSCLE_LABELS[m]).join(', ')}
