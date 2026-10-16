@@ -1,4 +1,5 @@
 import type { Exercise, Settings, Workout } from '../types';
+import logoUrl from '../assets/logo.png';
 import { doneSetCount, e1rm, isWorkingSet, workoutDurationMs, workoutVolume } from './calc';
 import { fmtDate, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from './format';
 
@@ -53,12 +54,24 @@ export async function renderShareCard(
   ctx.arc(120, H - 60, 220, 0, Math.PI * 2);
   ctx.fill();
 
+  try {
+    const logo = new Image();
+    logo.src = logoUrl;
+    await logo.decode();
+    ctx.save();
+    roundRect(ctx, 70, 50, 84, 84, 20);
+    ctx.clip();
+    ctx.drawImage(logo, 70, 50, 84, 84);
+    ctx.restore();
+  } catch {
+    /* logo is optional */
+  }
   ctx.fillStyle = '#fff';
   ctx.font = font(900, 40);
-  ctx.fillText('💪 GYM', 70, 110);
+  ctx.fillText('GYM', 172, 108);
   ctx.font = font(700, 32);
   ctx.globalAlpha = 0.85;
-  ctx.fillText(fmtDate(w.startedAt, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), 70, 160);
+  ctx.fillText(fmtDate(w.startedAt, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }), 70, 180);
   ctx.globalAlpha = 1;
   ctx.font = font(900, 84);
   ctx.fillText(fit(ctx, w.name, W - 140), 70, 270);
