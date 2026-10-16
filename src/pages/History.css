@@ -1,0 +1,110 @@
+/* History: workouts grouped by week */
+
+.hist-all {
+  margin-bottom: 16px;
+}
+
+.hist-week + .hist-week {
+  margin-top: 26px;
+}
+
+.hist-week-head {
+  padding: 0 4px 12px;
+}
+
+.hist-week-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.hist-week-top h2 {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.05;
+}
+
+.hist-goal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px 0 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hist-week-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.hist-week-sum b {
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hist-week-sum b.of {
+  color: var(--muted);
+}
+
+.hist-pips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.hist-pips i {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  background: var(--card-2);
+}
+
+.hist-pips i.on {
+  background: var(--accent);
+}
+
+.hist-pips i.extra {
+  background: var(--grad-gold);
+}
+
+:root[data-theme='light'] .hist-pips i:not(.on) {
+  background: var(--muscle-idle);
+}
+
+/* Staggered entrance */
+.hist-in {
+  animation: hist-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hist-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hist-in {
+    animation: none;
+  }
+}

@@ -1,0 +1,180 @@
+/* Workout tile: Home "Recent workouts" and History */
+
+.wcard {
+  display: block;
+  position: relative;
+  padding: 14px 14px 14px 14px;
+}
+
+.wcard-head {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.wcard-date {
+  width: 58px;
+  height: 66px;
+  border-radius: 14px;
+  background: var(--card-2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.wcard-date .wd {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.wcard-date .dn {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 1px 0 0;
+}
+
+.wcard-date .mo {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wcard-title {
+  min-width: 0;
+}
+
+.wcard-title h3 {
+  margin: 0 0 2px;
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* PR count: the one loud thing on the tile */
+.wcard-pr {
+  align-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  background: var(--grad-gold);
+  color: #0a0a0a;
+  font-family: var(--font-display);
+  line-height: 1;
+  animation: wcard-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: 0.15s;
+}
+
+.wcard-pr b {
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.wcard-pr span {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.wcard-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.wcard-main {
+  min-width: 0;
+}
+
+.wcard-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  align-items: baseline;
+}
+
+.wcard-stats > div {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  white-space: nowrap;
+}
+
+.wcard-stats b {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.wcard-stats span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.wcard-ex {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.wcard-ex .n {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.wcard-ex .more {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.wcard-map {
+  width: 72px;
+  height: 106px;
+  border-radius: 14px;
+  background: var(--bg-2);
+  display: grid;
+  place-items: center;
+}
+
+.wcard-map .body-map {
+  gap: 0;
+}
+
+.wcard-map .body-map .muscle path {
+  stroke: var(--bg-2);
+  stroke-width: 1;
+}
+
+@keyframes wcard-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wcard-pr {
+    animation: none;
+  }
+}
