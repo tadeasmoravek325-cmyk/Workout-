@@ -21,6 +21,8 @@ import More from './pages/More';
 import Stats from './pages/Stats';
 import MuscleDetail from './pages/MuscleDetail';
 import { GameWatcher } from './components/GameWatcher';
+import Privacy from './pages/Privacy';
+import { startCloud } from './lib/cloud';
 import Measure from './pages/Measure';
 import Achievements from './pages/Achievements';
 import Planner from './pages/Planner';
@@ -113,6 +115,7 @@ function Shell() {
         <Route path="/more" element={<More />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/muscles/:id" element={<MuscleDetail />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/measure" element={<Measure />} />
         <Route path="/tools" element={<Navigate to="/" replace />} />
         <Route path="/achievements" element={<Achievements />} />
@@ -137,6 +140,10 @@ export default function App() {
   const onboarded = useStore((s) => s.settings.onboarded);
   const loadError = useSafety((s) => s.loadError);
   useTheme();
+  useEffect(() => {
+    // Never sync on top of data that failed to load: the recovery screen comes first.
+    if (hydrated && !loadError) void startCloud();
+  }, [hydrated, loadError]);
   if (!hydrated) return <div className="splash">{t('Loading…')}</div>;
   if (loadError) return <DataRecovery />;
   if (!onboarded)

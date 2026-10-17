@@ -15,6 +15,7 @@ import { ACHIEVEMENTS, achievementProgressLabel, achievementStats } from '../lib
 import { Medal } from '../components/Medal';
 import { useGame } from '../lib/useGame';
 import { backupDue, saveBackupFile } from '../lib/backup';
+import { useCloud } from '../lib/cloud';
 import type { Muscle } from '../types';
 
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -33,6 +34,8 @@ export default function Home() {
   const exMap = useExerciseMap();
   const navigate = useNavigate();
   const game = useGame();
+  // Signed-in users are backed up continuously, so the manual backup reminder is not needed.
+  const cloudUser = useCloud((s) => s.user);
   const [generator, setGenerator] = useState(false);
 
   const weekStart = startOfWeek(Date.now());
@@ -194,7 +197,7 @@ export default function Home() {
         </div>
       </div>
 
-      {backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
+      {!cloudUser && backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
         <div className="card backup-nudge mt">
           <div className="bold">{t('Back up your workouts')}</div>
           <div className="small muted" style={{ marginTop: 4 }}>

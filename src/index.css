@@ -2187,3 +2187,58 @@ button.league-card {
     --safe-t: env(safe-area-inset-top, 0px);
   }
 }
+
+/* Account */
+.account-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.account-icon.on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.account-icon.bad {
+  background: var(--danger);
+  color: #fff;
+}
+.btn.auth-apple {
+  background: #f5f5f5;
+  color: #0a0a0a;
+}
+:root[data-theme='light'] .btn.auth-apple {
+  background: #0a0a0a;
+  color: #f5f5f5;
+}
+.btn.auth-google {
+  background: var(--card-2);
+  color: var(--text);
+}
+.auth-or {
+  text-align: center;
+  margin: 4px 0;
+}
+.code-input {
+  font-family: var(--font-display);
+  font-size: 28px;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation: none;
+  }
+}

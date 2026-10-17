@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Database, DatabaseBackup, FileDown, FileSpreadsheet, FileUp, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore, type BackupData } from '../store/store';
+import { AccountCard } from '../components/Account';
 import { StrongImportSheet } from '../components/StrongImportSheet';
 import { fmtClock, fmtDate, fmtDateTime, fmtNum, relativeDay } from '../lib/format';
 import { listSnapshots, parseBackup, readSnapshot, SNAPSHOT_REASON_LABELS, useSafety, type SnapshotMeta } from '../lib/safety';
@@ -81,6 +82,10 @@ export default function SettingsPage() {
         </button>
       </div>
       <h1 style={{ marginBottom: 16 }}>{t('Settings')}</h1>
+
+      <div style={{ marginBottom: 20 }}>
+        <AccountCard />
+      </div>
 
       <div className="section-title">
         <h2>{t('Profile')}</h2>

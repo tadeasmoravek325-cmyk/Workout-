@@ -80,6 +80,8 @@ interface State extends BackupData {
    */
   importWorkouts: (workouts: Workout[], exercises: Exercise[], replace?: boolean) => number;
   resetAll: () => void;
+  /** Replaces synced data with a merged copy from the cloud. Keeps the active workout and timers. */
+  applyRemote: (data: BackupData) => void;
 }
 
 function blankSet(type: WorkoutSet['type'] = 'normal'): WorkoutSet {
@@ -432,6 +434,20 @@ export const useStore = create<State>()(
         });
         return fresh.length;
       },
+
+      applyRemote: (data) =>
+        setState({
+          workouts: [...data.workouts].sort((a, b) => b.startedAt - a.startedAt),
+          routines: data.routines,
+          customExercises: data.customExercises,
+          measurements: [...data.measurements].sort((a, b) => a.date - b.date),
+          settings: { ...defaultSettings(), ...data.settings },
+          schedule: data.schedule,
+          scheduleUpdatedAt: data.scheduleUpdatedAt,
+          exerciseNotes: data.exerciseNotes,
+          notesUpdatedAt: data.notesUpdatedAt,
+          deleted: data.deleted,
+        }),
 
       resetAll: () => {
         void createSnapshot('before-reset', exportBackup());

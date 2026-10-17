@@ -13,6 +13,7 @@
   "dependencies": {
     "@fontsource/barlow": "^5.2.5",
     "@fontsource/barlow-condensed": "^5.2.5",
+    "@supabase/supabase-js": "2.117.1",
     "canvas-confetti": "^1.9.3",
     "idb-keyval": "^6.2.1",
     "lucide-react": "^0.468.0",
