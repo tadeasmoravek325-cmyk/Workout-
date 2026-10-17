@@ -27,6 +27,7 @@ export function Celebration({
   const before = levelInfo(Math.max(0, totalXp - xp));
   const after = levelInfo(totalXp);
   const levelUp = after.level > before.level;
+  const rankUp = after.rank > before.rank;
   const [shown, setShown] = useState(0);
   const [bar, setBar] = useState(before.progress);
 
@@ -63,7 +64,9 @@ export function Celebration({
         <div className="big-emoji">
           <Icon name={levelUp ? after.icon : prs ? 'trophy' : 'flag'} size={44} />
         </div>
-        <h1 style={{ color: '#f5f5f5', marginTop: 16 }}>{levelUp ? tr('Level up!') : tr('Workout complete!')}</h1>
+        <h1 style={{ color: '#f5f5f5', marginTop: 16 }}>
+          {rankUp ? tr('New rank: {title}!', { title: after.title }) : levelUp ? tr('Level up!') : tr('Workout complete!')}
+        </h1>
         <div style={{ color: '#bdbdbd', marginTop: 6, fontWeight: 600 }}>
           {levelUp
             ? tr("You're now level {level} · {title}", { level: after.level, title: after.title })

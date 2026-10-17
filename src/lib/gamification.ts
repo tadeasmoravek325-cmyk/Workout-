@@ -209,10 +209,39 @@ export function xpForLevel(level: number): number {
   return Math.round(150 * Math.pow(level - 1, 1.6));
 }
 
+export interface Rank {
+  /** Level at which the rank is reached. */
+  level: number;
+  title: string;
+  meaning: string;
+  icon: IconName;
+}
+
+/**
+ * Eleven ranks over the long run. With regular training (~700 XP a week) Gymrat takes about two
+ * months, Jacked half a year, Elite over a year, Veteran about three years and Legend about five.
+ */
+export const RANKS: Rank[] = [
+  { level: 1, title: 'Rookie', meaning: 'Just getting started', icon: 'sprout' },
+  { level: 3, title: 'Freshman', meaning: 'Gaining the first experience', icon: 'graduation-cap' },
+  { level: 6, title: 'Lifter', meaning: 'Training regularly', icon: 'dumbbell' },
+  { level: 10, title: 'Gymrat', meaning: 'The gym is a way of life', icon: 'calendar-check' },
+  { level: 15, title: 'Grinder', meaning: 'Discipline and hard work', icon: 'bricks' },
+  { level: 20, title: 'Jacked', meaning: 'A built physique', icon: 'biceps' },
+  { level: 27, title: 'Beast', meaning: 'Strength and intensity', icon: 'flame' },
+  { level: 35, title: 'Elite', meaning: 'The elite level', icon: 'shield' },
+  { level: 45, title: 'Prime', meaning: 'Peak form', icon: 'zap' },
+  { level: 60, title: 'Veteran', meaning: 'Experience and long-term dedication', icon: 'mountain' },
+  { level: 80, title: 'Legend', meaning: 'The highest status', icon: 'crown' },
+];
+
 export interface LevelInfo {
   level: number;
   title: string;
   icon: IconName;
+  /** 1-based position in RANKS. */
+  rank: number;
+  nextRank?: Rank;
   /** XP inside the current level. */
   current: number;
   /** XP the current level spans. */
@@ -220,27 +249,24 @@ export interface LevelInfo {
   progress: number;
 }
 
-const TITLES: [number, string, IconName][] = [
-  [1, 'Fresh meat', 'sprout'],
-  [5, 'Gym rookie', 'graduation-cap'],
-  [10, 'Regular', 'calendar-check'],
-  [15, 'Iron warrior', 'swords'],
-  [20, 'Strongman', 'biceps'],
-  [30, 'Titan', 'mountain'],
-  [40, 'Beast mode', 'flame'],
-  [50, 'Gym legend', 'crown'],
-];
+export function rankForLevel(level: number): number {
+  let i = 0;
+  while (i + 1 < RANKS.length && RANKS[i + 1].level <= level) i++;
+  return i;
+}
 
 export function levelInfo(totalXp: number): LevelInfo {
   let level = 1;
   while (xpForLevel(level + 1) <= totalXp) level++;
   const base = xpForLevel(level);
   const next = xpForLevel(level + 1);
-  const [, title, icon] = [...TITLES].reverse().find(([l]) => level >= l)!;
+  const r = rankForLevel(level);
   return {
     level,
-    title: t(title),
-    icon,
+    title: t(RANKS[r].title),
+    icon: RANKS[r].icon,
+    rank: r + 1,
+    nextRank: RANKS[r + 1],
     current: totalXp - base,
     needed: next - base,
     progress: (totalXp - base) / (next - base),

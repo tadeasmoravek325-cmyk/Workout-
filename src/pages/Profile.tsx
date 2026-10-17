@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Clock, Dumbbell, Flame, Medal, Settings as Cog, Snowflake, Trophy, Weight } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { useGame } from '../lib/useGame';
+import { RANKS } from '../lib/gamification';
+import { Sheet } from '../components/ui';
 import { ageFromBirthYear, STANDARDS_SOURCE, strengthRanks, TIERS } from '../lib/strength';
 import { startOfDay, startOfWeek, workoutDurationMs, workoutVolume, setsPerMuscle } from '../lib/calc';
 import { fmtDate, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
@@ -24,6 +26,7 @@ export default function Profile() {
   const exMap = useExerciseMap();
   const navigate = useNavigate();
   const game = useGame();
+  const [ranksOpen, setRanksOpen] = useState(false);
   const unit = settings.unit;
   const bodyweight = [...measurements].reverse().find((m) => m.type === 'bodyweight')?.value;
   const ranks = useMemo(
@@ -93,9 +96,14 @@ export default function Profile() {
           </div>
           <div className="grow">
             <h1 style={{ fontSize: 26 }}>{settings.name || t('My profile')}</h1>
-            <div className="bold muted">
-              {game.level.title}
-            </div>
+            <button type="button" className="rank-line" onClick={() => setRanksOpen(true)}>
+              <span className="bold accent">{game.level.title}</span>
+              <span className="small muted">
+                {' · '}
+                {t('rank {n} of {total}', { n: game.level.rank, total: RANKS.length })}
+                {game.level.nextRank && ` · ${t('{title} at level {level}', { title: t(game.level.nextRank.title), level: game.level.nextRank.level })}`}
+              </span>
+            </button>
           </div>
         </div>
         <div className="row between small bold" style={{ marginTop: 16, marginBottom: 6 }}>
@@ -331,6 +339,33 @@ export default function Profile() {
           )}
         </div>
       </div>
+      {ranksOpen && (
+        <Sheet title={t('Ranks')} onClose={() => setRanksOpen(false)}>
+          <p className="small muted" style={{ marginTop: 0 }}>
+            {t('Your rank grows with your level and never drops. Every workout, set, PR and quest earns XP.')}
+          </p>
+          <div className="list">
+            {RANKS.map((r, i) => {
+              const reached = game.level.level >= r.level;
+              const here = game.level.rank === i + 1;
+              return (
+                <div key={r.title} className={`list-item ladder-row ${here ? 'here' : ''}`}>
+                  <span className={`rank-icon ${reached ? 'on' : ''}`}>
+                    <Icon name={r.icon} size={18} />
+                  </span>
+                  <div className="grow">
+                    <div className="bold">
+                      {t(r.title)} {here && <span className="badge accent">{t('You')}</span>}
+                    </div>
+                    <div className="small muted">{t(r.meaning)}</div>
+                  </div>
+                  <span className="small bold muted">{t('Level {n}', { n: r.level })}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Sheet>
+      )}
     </div>
   );
 }

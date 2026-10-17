@@ -37,7 +37,12 @@ describe('levels', () => {
     expect(levelInfo(0).level).toBe(1);
     expect(levelInfo(xpForLevel(5)).level).toBe(5);
     expect(levelInfo(xpForLevel(5) - 1).level).toBe(4);
-    expect(levelInfo(xpForLevel(50)).title).toBe('Gym legend');
+    expect(levelInfo(xpForLevel(50)).title).toBe('Prime');
+    expect(levelInfo(0).title).toBe('Rookie');
+    expect(levelInfo(xpForLevel(80)).title).toBe('Legend');
+    expect(levelInfo(xpForLevel(80)).rank).toBe(11);
+    expect(levelInfo(xpForLevel(80)).nextRank).toBeUndefined();
+    expect(levelInfo(xpForLevel(14)).nextRank?.title).toBe('Grinder');
   });
   it('reports progress inside the level', () => {
     const l = levelInfo(xpForLevel(3) + 10);
