@@ -17,6 +17,8 @@ in sync. Without the two environment variables below, the account UI is hidden.
 - **Email code (works everywhere, start here):** Authentication → Providers → Email: enabled.
   Authentication → Email Templates → *Magic Link*: put the code in the email, for example
   `<p>Your Gym code: <strong>{{ .Token }}</strong></p>`. The app asks for this 6-digit code.
+- **Google and Apple are hidden in the app** until you list them in `VITE_AUTH_PROVIDERS`
+  (e.g. `google,apple`) after configuring them here.
 - **Google:** create an OAuth client (Web) in Google Cloud Console, add
   `https://<project>.supabase.co/auth/v1/callback` as redirect URI, paste the client ID and
   secret into Authentication → Providers → Google.

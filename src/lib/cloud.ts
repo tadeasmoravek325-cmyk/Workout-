@@ -20,6 +20,15 @@ const KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 export const cloudConfigured = Boolean(URL && KEY);
 
+/**
+ * Social sign-in shown in the app, e.g. "google,apple". Off by default: email codes need no
+ * extra setup, Google and Apple only work once they are configured in Supabase.
+ */
+export const oauthProviders = String(import.meta.env.VITE_AUTH_PROVIDERS ?? '')
+  .split(',')
+  .map((p) => p.trim())
+  .filter((p): p is 'google' | 'apple' => p === 'google' || p === 'apple');
+
 export type CloudStatus = 'off' | 'signed-out' | 'syncing' | 'synced' | 'offline' | 'error';
 
 interface CloudState {
