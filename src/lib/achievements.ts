@@ -488,7 +488,7 @@ export function achievementStats(workouts: Workout[], exMap: Map<string, Exercis
   return value;
 }
 
-function computeStats(workouts: Workout[], exMap: Map<string, Exercise>, measurements: Measurement[]): AchievementStats {
+function computeStats(workouts: Workout[], exMap: Map<string, Exercise>, measurements: Measurement[], cache = true): AchievementStats {
   const bodyweight = [...measurements].sort((a, b) => a.date - b.date).reverse().find((m) => m.type === 'bodyweight')?.value ?? 0;
   const maxW = (id: string) => computeRecords(exerciseHistory(workouts, id)).maxWeight;
   const maxReps = (ids: string[]) => Math.max(0, ...ids.map((id) => computeRecords(exerciseHistory(workouts, id)).maxReps));
@@ -520,7 +520,7 @@ function computeStats(workouts: Workout[], exMap: Map<string, Exercise>, measure
     earlyCount,
     nightCount,
     longCount,
-    prCount: workouts.length ? computeProgress(workouts, exMap, 3).totalPrs : 0,
+    prCount: workouts.length ? computeProgress(workouts, exMap, 3, Date.now(), cache).totalPrs : 0,
     squatMax,
     deadliftMax,
     benchMax,
@@ -552,6 +552,7 @@ export function tierDates(
         workouts.filter((w) => w.startedAt <= times[i]),
         exMap,
         measurements.filter((m) => m.date <= times[i]),
+        false,
       ),
     );
   const memo = new Map<number, number>();

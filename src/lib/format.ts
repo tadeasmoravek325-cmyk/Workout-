@@ -86,3 +86,9 @@ export function relativeDay(ts: number, now = Date.now()): string {
 export function plural(n: number, one: string, other: string): string {
   return tn(n, one, other);
 }
+
+/** Splits "12.4 t" into a big number and a small unit. */
+export function splitUnit(s: string): [string, string] {
+  const i = s.indexOf(' ');
+  return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i + 1)];
+}

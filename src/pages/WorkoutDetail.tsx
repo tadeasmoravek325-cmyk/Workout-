@@ -14,7 +14,7 @@ import {
   workoutVolume,
   type PrHit,
 } from '../lib/calc';
-import { goalForWeek } from '../lib/gamification';
+import { goalForWeek, isGoalWorkout } from '../lib/gamification';
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements';
 import { describeSet } from '../components/WorkoutEditor';
@@ -56,12 +56,11 @@ export default function WorkoutDetail() {
   const wp = game.progress.perWorkout.get(id);
   const weekBonus = useMemo(() => {
     // The weekly goal bonus belongs to the workout that reached the goal.
-    if (!w || !wp?.xp) return 0;
+    // Counted the same way as the goal itself, so an XP-capped workout can still complete it.
+    if (!w || !isGoalWorkout(w)) return 0;
     const week = startOfWeek(w.startedAt);
     if (!game.progress.goalWeeks.has(week)) return 0;
-    const inWeek = workouts
-      .filter((x) => startOfWeek(x.startedAt) === week && (game.progress.perWorkout.get(x.id)?.xp ?? 0) > 0)
-      .sort((a, b) => a.startedAt - b.startedAt);
+    const inWeek = workouts.filter((x) => startOfWeek(x.startedAt) === week && isGoalWorkout(x)).sort((a, b) => a.startedAt - b.startedAt);
     const goal = goalForWeek({ current: settings.weeklyGoal, log: settings.goalLog }, week);
     if (inWeek[goal - 1]?.id !== w.id) return 0;
     return (game.progress.weekXp.get(week) ?? 0) - inWeek.reduce((a, x) => a + (game.progress.perWorkout.get(x.id)?.xp ?? 0), 0);

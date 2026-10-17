@@ -9,9 +9,9 @@ import { ExerciseAvatar } from '../components/ExercisePicker';
 import { Empty } from '../components/ui';
 import { t, tn } from '../i18n';
 import { useGame } from '../lib/useGame';
+import { prevWeek } from '../lib/gamification';
 import type { Muscle } from '../types';
 
-const WEEK = 7 * 86_400_000;
 const WEEKS = 8;
 
 export default function MuscleDetail() {
@@ -25,7 +25,9 @@ export default function MuscleDetail() {
   const valid = !!id && id in MUSCLE_LABELS;
 
   const { weekly, last, used } = useMemo(() => {
-    const weekly = Array.from({ length: WEEKS }, (_, i) => ({ week: startOfWeek(Date.now()) - (WEEKS - 1 - i) * WEEK, sets: 0 }));
+    // Step with prevWeek, not a fixed 7 days, so weeks still line up across DST changes.
+    const weekly: { week: number; sets: number }[] = [];
+    for (let wk = startOfWeek(Date.now()), i = 0; i < WEEKS; i++, wk = prevWeek(wk)) weekly.unshift({ week: wk, sets: 0 });
     let last: number | undefined;
     const used = new Map<string, number>();
     for (const w of workouts) {

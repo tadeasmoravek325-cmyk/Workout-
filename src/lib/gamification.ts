@@ -87,17 +87,28 @@ export function countsForXp(s: WorkoutSet): boolean {
   return s.done && isWorkingSet(s) && ((s.reps ?? 0) > 0 || (s.durationSec ?? 0) > 0 || (s.distance ?? 0) > 0);
 }
 
+/** A workout that counts towards the weekly goal and streak: at least one real working set. */
+export function isGoalWorkout(w: Workout): boolean {
+  return w.exercises.some((e) => e.sets.some(countsForXp));
+}
+
 // A few entries: the game hook and badge stats ask with different goals for the same history.
-const progressCache: { key: Workout[]; goal: string; now: number; value: Progress }[] = [];
+const progressCache: { key: Workout[]; ex: Map<string, Exercise>; goal: string; now: number; value: Progress }[] = [];
 
 /**
  * XP for every workout plus weekly bonuses, computed from history alone so it never drifts.
  * A record only counts once an exercise has a baseline session.
  */
-export function computeProgress(workouts: Workout[], exMap: Map<string, Exercise>, goal: GoalInput, now = Date.now()): Progress {
+export function computeProgress(
+  workouts: Workout[],
+  exMap: Map<string, Exercise>,
+  goal: GoalInput,
+  now = Date.now(),
+  cache = true,
+): Progress {
   const gk = goalKey(goal);
   const nowWeek = startOfWeek(now);
-  const hit = progressCache.find((c) => c.key === workouts && c.goal === gk && c.now === nowWeek);
+  const hit = cache && progressCache.find((c) => c.key === workouts && c.ex === exMap && c.goal === gk && c.now === nowWeek);
   if (hit) return hit.value;
   const best = new Map<string, Best>();
   const perWorkout = new Map<string, WorkoutProgress>();
@@ -181,8 +192,10 @@ export function computeProgress(workouts: Workout[], exMap: Map<string, Exercise
   }
 
   const value = { totalXp, totalPrs, perWorkout, weekXp, goalWeeks };
-  progressCache.unshift({ key: workouts, goal: gk, now: nowWeek, value });
-  progressCache.length = Math.min(progressCache.length, 4);
+  if (cache) {
+    progressCache.unshift({ key: workouts, ex: exMap, goal: gk, now: nowWeek, value });
+    progressCache.length = Math.min(progressCache.length, 4);
+  }
   return value;
 }
 
@@ -264,10 +277,12 @@ export function streakInfo(workouts: Workout[], goal: GoalInput, now = Date.now(
   const counts = new Map<number, number>();
   let first = Infinity;
   for (const w of workouts) {
+    if (!isGoalWorkout(w)) continue;
     const k = startOfWeek(w.startedAt);
     counts.set(k, (counts.get(k) ?? 0) + 1);
     first = Math.min(first, k);
   }
+  if (!counts.size) return { streak: 0, freezes: 0, frozenWeeks: [], best: 0 };
   const current = startOfWeek(now);
   let streak = 0;
   let best = 0;
@@ -323,6 +338,7 @@ interface QuestCtx {
   goal: number;
   measurements: Measurement[];
   weekStart: number;
+  weekEnd: number;
   prsThisWeek: number;
 }
 
@@ -361,7 +377,7 @@ const QUESTS: QuestTemplate[] = [
     icon: 'scale',
     title: t('Log your bodyweight'),
     target: 1,
-    value: c.measurements.filter((m) => m.type === 'bodyweight' && m.date >= c.weekStart).length,
+    value: c.measurements.filter((m) => m.type === 'bodyweight' && m.date >= c.weekStart && m.date < c.weekEnd).length,
     xp: 40,
   }),
   (c) => ({ id: 'back', icon: 'shield', title: t('Give your back {n} sets', { n: 12 }), target: 12, value: setsFor(c, ['lats', 'upperBack']), xp: 70 }),
@@ -412,10 +428,10 @@ export function weeklyQuests(
   const weekStart = startOfWeek(now);
   const weekEnd = nextWeek(weekStart);
   const goal = goalForWeek(goalInput, weekStart);
-  const week = workouts.filter((w) => w.startedAt >= weekStart && w.startedAt < weekEnd && w.exercises.some((e) => e.sets.some(countsForXp)));
+  const week = workouts.filter((w) => w.startedAt >= weekStart && w.startedAt < weekEnd && isGoalWorkout(w));
   const progress = computeProgress(workouts, exMap, goalInput);
   const prsThisWeek = week.reduce((a, w) => a + (progress.perWorkout.get(w.id)?.prExercises.length ?? 0), 0);
-  const ctx: QuestCtx = { week, all: workouts, exMap, goal, measurements, weekStart, prsThisWeek };
+  const ctx: QuestCtx = { week, all: workouts, exMap, goal, measurements, weekStart, weekEnd, prsThisWeek };
   const seed = Math.floor(weekStart / (7 * DAY)) + 7919;
   const main: Omit<Quest, 'done'> = {
     id: 'goal',
@@ -432,12 +448,12 @@ export function weeklyQuests(
   }));
 }
 
-let questCache: { w: Workout[]; m: Measurement[]; goal: string; value: Map<number, number> } | null = null;
+let questCache: { w: Workout[]; ex: Map<string, Exercise>; m: Measurement[]; goal: string; value: Map<number, number> } | null = null;
 
 /** XP from completed side quests per week (the weekly-goal quest is already part of computeProgress). */
 export function questXpByWeek(workouts: Workout[], exMap: Map<string, Exercise>, goal: GoalInput, measurements: Measurement[]): Map<number, number> {
   const gk = goalKey(goal);
-  if (questCache && questCache.w === workouts && questCache.m === measurements && questCache.goal === gk) return questCache.value;
+  if (questCache && questCache.w === workouts && questCache.ex === exMap && questCache.m === measurements && questCache.goal === gk) return questCache.value;
   const weeks = new Set(workouts.map((w) => startOfWeek(w.startedAt)));
   const value = new Map<number, number>();
   for (const week of weeks) {
@@ -445,7 +461,7 @@ export function questXpByWeek(workouts: Workout[], exMap: Map<string, Exercise>,
     for (const q of weeklyQuests(workouts, exMap, goal, measurements, week + 2 * DAY)) if (q.id !== 'goal' && q.done) xp += q.xp;
     if (xp) value.set(week, xp);
   }
-  questCache = { w: workouts, m: measurements, goal: gk, value };
+  questCache = { w: workouts, ex: exMap, m: measurements, goal: gk, value };
   return value;
 }
 

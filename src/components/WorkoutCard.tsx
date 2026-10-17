@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import type { Exercise, Muscle, Workout } from '../types';
 import { useExerciseMap, useStore } from '../store/store';
-import { doneSetCount, isWorkingSet, workoutDurationMs, workoutVolume } from '../lib/calc';
-import { fmtVolume, relativeDay } from '../lib/format';
-import { muscleLoad } from '../data/exercises';
+import { doneSetCount, setsPerMuscle, workoutDurationMs, workoutVolume } from '../lib/calc';
+import { fmtVolume, relativeDay, splitUnit } from '../lib/format';
+
 import { ANATOMY } from '../data/anatomy';
 import { BodyMap, IDLE, loadColor } from './BodyMap';
 import { LOCALE_TAG, t, tn } from '../i18n';
@@ -21,17 +21,7 @@ const SIDE_MUSCLES = {
 
 /** Fractional working sets per muscle for one workout. */
 export function workoutMuscleSets(w: Workout, exMap: Map<string, Exercise>): Load {
-  const out: Load = {};
-  for (const we of w.exercises) {
-    const ex = exMap.get(we.exerciseId);
-    if (!ex) continue;
-    const n = we.sets.filter((s) => s.done && isWorkingSet(s)).length;
-    if (!n) continue;
-    for (const [m, f] of Object.entries(muscleLoad(ex)) as [Muscle, number][]) {
-      out[m] = (out[m] ?? 0) + f * n;
-    }
-  }
-  return out;
+  return setsPerMuscle([w], exMap, 0);
 }
 
 /** The side of the body that carries more of the workout's load. */
@@ -43,12 +33,6 @@ export function busierSide(load: Load): 'front' | 'back' {
     if (SIDE_MUSCLES.back.has(m)) back += v;
   }
   return back > front ? 'back' : 'front';
-}
-
-/** Splits "12.4 t" into a big number and a small unit. */
-function splitUnit(s: string): [string, string] {
-  const i = s.indexOf(' ');
-  return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i + 1)];
 }
 
 function durationParts(ms: number): [string, string] {

@@ -83,6 +83,23 @@ describe('computeProgress', () => {
   });
 });
 
+describe('bodyweight quest', () => {
+  it('only counts weigh-ins inside that week', () => {
+    const now = new Date(2026, 9, 15, 12).getTime();
+    const weighIn = [{ id: 'm', type: 'bodyweight' as const, value: 80, date: now }];
+    // Find a past week whose seeded quests include the weigh-in quest.
+    let checked = 0;
+    for (let i = 1; i < 60 && !checked; i++) {
+      const q = weeklyQuests([], exMap, 3, weighIn, startOfWeek(now) - i * 7 * DAY + DAY).find((x) => x.id === 'weigh');
+      if (q) {
+        expect(q.done).toBe(false);
+        checked++;
+      }
+    }
+    expect(checked).toBe(1);
+  });
+});
+
 describe('weekly goal history', () => {
   it('judges past weeks by the goal they had', () => {
     const now = new Date(2026, 9, 15, 12).getTime();
@@ -165,6 +182,12 @@ describe('streakInfo', () => {
     expect(s.streak).toBe(6);
     expect(s.frozenWeeks).toHaveLength(1);
     expect(s.freezes).toBe(0);
+  });
+
+  it('ignores workouts without a real working set', () => {
+    const empty = wk(week(1), 'bench-press', [{ id: 'e', type: 'warmup', weight: 40, reps: 10, done: true }]);
+    expect(streakInfo([empty], 1, now).streak).toBe(0);
+    expect(streakInfo([empty, wk(week(1))], 2, now).streak).toBe(0);
   });
 
   it('breaks without a freeze', () => {

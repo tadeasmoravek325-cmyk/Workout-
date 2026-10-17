@@ -26,6 +26,7 @@ import { BodyMap, volumeColor } from '../components/BodyMap';
 import { Empty, Segmented, Sheet } from '../components/ui';
 import type { Exercise, Workout } from '../types';
 import { t, tn } from '../i18n';
+import { CountUp } from '../components/CountUp';
 import './Stats.css';
 
 const STORE_KEY = 'stats-period';
@@ -127,32 +128,6 @@ function Delta({ cur, prev, hero }: { cur: number; prev: number; hero?: boolean 
       <span aria-hidden="true">{up ? '▲' : '▼'}</span> {fmtNum(Math.abs(pct), 0)}%
     </span>
   );
-}
-
-/** Counts up to `value` when it changes. Instant with reduced motion. */
-function useCountUp(value: number): number {
-  const [shown, setShown] = useState(value);
-  const from = useRef(value);
-  useEffect(() => {
-    const start = from.current;
-    from.current = value;
-    const reduce = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce || start === value) {
-      setShown(value);
-      return;
-    }
-    let raf = 0;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const k = Math.min(1, (now - t0) / 450);
-      const eased = 1 - (1 - k) ** 3;
-      setShown(Math.round(start + (value - start) * eased));
-      if (k < 1) raf = requestAnimationFrame(step);
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-  return shown;
 }
 
 function toInput(ts: number): string {
@@ -272,7 +247,6 @@ export default function Stats() {
   const total = big3.reduce((a, b) => a + b.e1rm, 0);
   const bw = [...measurements].reverse().find((m) => m.type === 'bodyweight')?.value;
 
-  const shownCount = useCountUp(sNow.count);
 
   // Bring a remembered chip that sits off-screen (Year, Custom) into view, without moving the page.
   const chipsRef = useRef<HTMLDivElement>(null);
@@ -352,7 +326,9 @@ export default function Stats() {
           <span className="st-hero-kicker">{headline(sel.preset)}</span>
           <Delta cur={sNow.count} prev={sPrev.count} hero />
         </div>
-        <div className="st-hero-num">{shownCount}</div>
+        <div className="st-hero-num">
+          <CountUp value={sNow.count} duration={450} />
+        </div>
         <div className="st-hero-label">{tn(sNow.count, 'workout', 'workouts')}</div>
         <div className="st-hero-foot">
           {averaged && <span>{t('{n} a week', { n: fmtNum(perWeekCount, 1) })}</span>}

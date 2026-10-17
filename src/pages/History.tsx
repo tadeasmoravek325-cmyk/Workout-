@@ -5,8 +5,8 @@ import { useExerciseMap, useStore } from '../store/store';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { Empty } from '../components/ui';
 import { doneSetCount, startOfWeek, workoutVolume } from '../lib/calc';
-import { computeProgress, goalForWeek, type GoalPlan } from '../lib/gamification';
-import { fmtDate, fmtVolume } from '../lib/format';
+import { computeProgress, goalForWeek, isGoalWorkout, type GoalPlan } from '../lib/gamification';
+import { fmtDate, fmtVolume, splitUnit } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
 import './History.css';
 
@@ -26,12 +26,6 @@ function weekLabel(week: number, now = Date.now()): string {
   return t('Week of {date}', {
     date: fmtDate(week, sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' }),
   });
-}
-
-/** Splits "12.4 t" into a big number and a small unit. */
-function splitUnit(s: string): [string, string] {
-  const i = s.indexOf(' ');
-  return i < 0 ? [s, ''] : [s.slice(0, i), s.slice(i + 1)];
 }
 
 export default function History() {
@@ -62,7 +56,7 @@ export default function History() {
     for (const w of workouts) {
       const wk = startOfWeek(w.startedAt);
       const s = map.get(wk) ?? { count: 0, volume: 0, sets: 0 };
-      s.count++;
+      if (isGoalWorkout(w)) s.count++;
       s.volume += workoutVolume(w, exMap);
       s.sets += doneSetCount(w);
       map.set(wk, s);

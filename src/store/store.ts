@@ -307,7 +307,9 @@ export const useStore = create<State>()(
       updateSettings: (patch) =>
         setState((s) => {
           const next = { ...s.settings, ...patch };
-          if (patch.weeklyGoal !== undefined && patch.weeklyGoal !== s.settings.weeklyGoal) {
+          // With no history yet (e.g. onboarding) there is nothing to protect, and pinning the default
+          // would later judge imported weeks by a goal the user never chose.
+          if (patch.weeklyGoal !== undefined && patch.weeklyGoal !== s.settings.weeklyGoal && s.workouts.length) {
             next.goalLog = logGoalChange(s.settings.goalLog, s.settings.weeklyGoal, patch.weeklyGoal);
           }
           return { settings: next };
