@@ -41,7 +41,9 @@
   --glow: none;
   --nav-h: 68px;
   --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-t: env(safe-area-inset-top, 0px);
+  /* Top inset only when installed full screen: in a browser tab or an embedded preview the host
+     already keeps content below the status bar, and adding it again pushes everything down. */
+  --safe-t: 0px;
   color-scheme: dark;
 }
 
@@ -2178,4 +2180,10 @@ button.league-card {
 .rank-icon.on {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
 }
