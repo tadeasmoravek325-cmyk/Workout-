@@ -22,12 +22,19 @@ export function normalize(s: string): string {
 
 export function filterExercises(all: Exercise[], query: string, part: BodyPart | 'all', equipment: Equipment | 'all') {
   const q = normalize(query.trim());
-  return all.filter(
+  const hits = all.filter(
     (e) =>
       (part === 'all' || e.bodyPart === part) &&
       (equipment === 'all' || e.equipment === equipment) &&
       (!q || normalize(e.name).includes(q) || e.primary.some((m) => normalize(MUSCLE_LABELS[m]).includes(q))),
   );
+  if (!q) return hits;
+  // Exact names first, then names starting with the query, then the rest (stable, so A–Z stays).
+  const rank = (e: Exercise) => {
+    const n = normalize(e.name);
+    return n === q ? 0 : n.startsWith(q) ? 1 : n.includes(q) ? 2 : 3;
+  };
+  return [...hits].sort((a, b) => rank(a) - rank(b));
 }
 
 export function ExerciseFilters({

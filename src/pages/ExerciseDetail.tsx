@@ -6,7 +6,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { useAllExercises, useExerciseMap, useStore } from '../store/store';
 import { computeRecords, e1rm, exerciseHistory, isWorkingSet, weightForReps, type Session } from '../lib/calc';
 import { fmtClock, fmtDate, fmtNum, toDisplayWeight } from '../lib/format';
-import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS, muscleLoad } from '../data/exercises';
+import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS, muscleLoad, youtubeSearchUrl } from '../data/exercises';
 import { BodyMap, loadColor } from '../components/BodyMap';
 import { OneRmCalculator, PlateCalculator } from '../components/ExerciseTools';
 import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
@@ -352,6 +352,9 @@ export default function ExerciseDetail() {
         const load = muscleLoad(ex);
         return (
         <div className="mt-l stack">
+          <a className="btn primary block" href={youtubeSearchUrl(ex)} target="_blank" rel="noreferrer">
+            <PlayCircle size={18} /> {t('Watch how to do it')}
+          </a>
           {ex.primary.length > 0 && (
             <div className="card">
               <BodyMap height={240} value={(m) => load[m] ?? 0} color={(m) => loadColor(load[m])} onPick={(m) => navigate(`/muscles/${m}`)} />
@@ -375,14 +378,6 @@ export default function ExerciseDetail() {
               </div>
             )}
           </div>
-          <a
-            className="btn cool block"
-            href={`https://www.youtube.com/results?search_query=${encodeURIComponent(ex.name + ' proper form')}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <PlayCircle size={18} /> {t('Video guide on YouTube')}
-          </a>
           {ex.instructions?.length ? (
             <div className="card">
               <h3>{t('How to')}</h3>

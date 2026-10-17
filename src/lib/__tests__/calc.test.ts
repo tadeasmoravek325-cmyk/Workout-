@@ -13,7 +13,7 @@ import {
   warmupSets,
   weekStreak,
 } from '../calc';
-import { BUILTIN_EXERCISES } from '../../data/exercises';
+import { BUILTIN_EXERCISES, youtubeSearchUrl } from '../../data/exercises';
 import type { Workout, WorkoutSet } from '../../types';
 
 const exMap = new Map(BUILTIN_EXERCISES.map((e) => [e.id, e]));
@@ -196,5 +196,14 @@ describe('nextRoutine', () => {
   it('falls back to the first routine', () => {
     expect(nextRoutine([r('a'), r('b')], [])?.id).toBe('a');
     expect(nextRoutine([], [])).toBeUndefined();
+  });
+});
+
+describe('youtubeSearchUrl', () => {
+  it('puts the equipment first and asks for form videos', () => {
+    const q = (name: string) => decodeURIComponent(youtubeSearchUrl({ name }).split('search_query=')[1]);
+    expect(q('Bench Press (Barbell)')).toBe('barbell bench press proper form');
+    expect(q('Bench Press - Close Grip (Barbell)')).toBe('barbell bench press close grip proper form');
+    expect(q('Pull Up')).toBe('pull up proper form');
   });
 });

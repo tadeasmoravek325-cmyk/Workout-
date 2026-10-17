@@ -245,3 +245,14 @@ export const BODY_PART_COLORS: Record<BodyPart, string> = {
   cardio: '#ffb347',
   fullbody: '#ff6a1f',
 };
+
+/**
+ * YouTube search for a form video. "Bench Press (Barbell)" becomes "barbell bench press proper form",
+ * which finds technique videos far more reliably than the Strong-style name.
+ */
+export function youtubeSearchUrl(ex: Pick<Exercise, 'name'>): string {
+  const m = ex.name.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+  const base = m ? `${m[2]} ${m[1]}` : ex.name;
+  const q = `${base.replace(/\s+-\s+/g, ' ').toLowerCase()} proper form`;
+  return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+}

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
+import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, PlayCircle, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
@@ -24,7 +24,7 @@ import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, popXp, Sheet, toast, undoToast } from './ui';
 import { countsForXp, XP } from '../lib/gamification';
-import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
+import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS, youtubeSearchUrl } from '../data/exercises';
 import { t, tn } from '../i18n';
 
 type Mutate = (fn: (w: Workout) => void) => void;
@@ -358,6 +358,9 @@ function ExerciseCard({
           <button onClick={() => setSheet('rest')}>
             <Timer size={17} /> {t('Set rest time')}
           </button>
+          <a href={youtubeSearchUrl(ex)} target="_blank" rel="noreferrer">
+            <PlayCircle size={17} /> {t('How to do it (video)')}
+          </a>
           <button onClick={() => setSheet('substitute')}>
             <Replace size={17} /> {t('Replace exercise')}
           </button>

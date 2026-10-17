@@ -1612,7 +1612,8 @@ body:not(:has(.bottom-nav)) .toast-wrap {
   }
 }
 
-.menu button {
+.menu button,
+.menu a {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1624,7 +1625,8 @@ body:not(:has(.bottom-nav)) .toast-wrap {
   font-weight: 500;
 }
 
-.menu button:active {
+.menu button:active,
+.menu a:active {
   background: var(--card-2);
 }
 
@@ -1694,7 +1696,8 @@ body:not(:has(.bottom-nav)) .toast-wrap {
   color: var(--on-accent);
 }
 
-.menu button svg.lucide {
+.menu button svg.lucide,
+.menu a svg.lucide {
   color: var(--muted);
 }
 
@@ -1819,7 +1822,8 @@ textarea:focus-visible {
 button.list-item:active,
 a.list-item:active,
 .card.tap:active,
-.menu button:active {
+.menu button:active,
+.menu a:active {
   background: var(--card-2);
 }
 
