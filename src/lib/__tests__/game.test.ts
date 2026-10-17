@@ -8,6 +8,7 @@ import {
   muscleForms,
   promoteXp,
   streakInfo,
+  streakRisk,
   weeklyQuests,
   xpForLevel,
   XP,
@@ -80,6 +81,28 @@ describe('computeProgress', () => {
     expect(p.weekXp.get(startOfWeek(w1.startedAt))).toBe(p.perWorkout.get(w1.id)!.xp + 100 + 10);
     expect(p.weekXp.get(startOfWeek(w2.startedAt))).toBe(p.perWorkout.get(w2.id)!.xp + 100 + 20);
     expect(p.goalWeeks.size).toBe(2);
+  });
+});
+
+describe('streakRisk', () => {
+  // Saturday noon: Saturday and Sunday are left.
+  const sat = new Date(2026, 9, 17, 12).getTime();
+  const lastWeek = wk(startOfWeek(sat) - 5 * DAY);
+  const s = (freezes = 0) => ({ streak: 3, freezes, frozenWeeks: [], best: 3 });
+
+  it('warns when the remaining days barely cover the goal', () => {
+    expect(streakRisk([lastWeek], 2, s(), sat)).toEqual({ level: 'warn', needed: 2, daysLeft: 2 });
+    expect(streakRisk([lastWeek, wk(startOfWeek(sat) + DAY)], 2, s(), sat)?.level).toBe('warn');
+  });
+  it('says whether a freeze will save the week or the streak resets', () => {
+    expect(streakRisk([lastWeek], 3, s(1), sat)?.level).toBe('freeze');
+    expect(streakRisk([lastWeek], 3, s(0), sat)?.level).toBe('lost');
+  });
+  it('stays quiet early in the week, when the goal is met or without a streak', () => {
+    const mon = startOfWeek(sat) + 10 * 3_600_000;
+    expect(streakRisk([lastWeek], 2, s(), mon)).toBeNull();
+    expect(streakRisk([wk(startOfWeek(sat) + DAY), wk(startOfWeek(sat) + 2 * DAY)], 2, s(), sat)).toBeNull();
+    expect(streakRisk([], 2, { streak: 0, freezes: 0, frozenWeeks: [], best: 0 }, sat)).toBeNull();
   });
 });
 

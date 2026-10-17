@@ -2104,3 +2104,37 @@ a.list-item:active,
     animation: none;
   }
 }
+
+/* Streak at risk */
+.streak-risk {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.streak-risk.warn {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.streak-risk.warn .btn {
+  background: var(--on-accent);
+  color: var(--accent);
+}
+.streak-risk.warn svg {
+  animation: flicker 1.6s ease-in-out infinite;
+}
+.streak-risk.freeze svg {
+  color: #7cb6ff;
+}
+.streak-risk.lost svg {
+  color: var(--danger);
+}
+@keyframes flicker {
+  50% {
+    transform: scale(1.12) rotate(-4deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .streak-risk.warn svg {
+    animation: none;
+  }
+}

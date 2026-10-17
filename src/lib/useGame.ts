@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useExerciseMap, useStore } from '../store/store';
-import { computeProgress, leagueInfo, levelInfo, muscleForms, questXpByWeek, streakInfo, weeklyQuests, type GoalPlan } from './gamification';
+import { computeProgress, leagueInfo, levelInfo, muscleForms, questXpByWeek, streakInfo, streakRisk, weeklyQuests, type GoalPlan } from './gamification';
 import { startOfWeek } from './calc';
 import type { Exercise, Measurement, Workout } from '../types';
 
@@ -17,12 +17,14 @@ function compute(workouts: Workout[], measurements: Measurement[], current: numb
     questTotal += xp;
   }
   const totalXp = progress.totalXp + questTotal;
+  const streak = streakInfo(workouts, goal);
   return {
     progress,
     totalXp,
     level: levelInfo(totalXp),
     league: leagueInfo(weekXp, goal),
-    streak: streakInfo(workouts, goal),
+    streak,
+    risk: streakRisk(workouts, goal, streak),
     quests: weeklyQuests(workouts, exMap, goal, measurements),
     muscles: muscleForms(workouts, exMap),
   };

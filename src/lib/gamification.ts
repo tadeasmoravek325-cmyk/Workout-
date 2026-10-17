@@ -317,6 +317,31 @@ export function streakInfo(workouts: Workout[], goal: GoalInput, now = Date.now(
 
 export { prevWeek };
 
+export interface StreakRisk {
+  /** warn: still doable but tight; freeze: can't make it, a freeze will save it; lost: the streak will reset. */
+  level: 'warn' | 'freeze' | 'lost';
+  needed: number;
+  daysLeft: number;
+}
+
+/**
+ * Whether this week's goal is in danger near the end of the week. Only shown when there is a streak
+ * to lose, and only when the user can still act on it (or should know a freeze will be used).
+ */
+export function streakRisk(workouts: Workout[], goal: GoalInput, streak: StreakInfo, now = Date.now()): StreakRisk | null {
+  if (streak.streak <= 0) return null;
+  const week = startOfWeek(now);
+  const end = nextWeek(week);
+  const done = workouts.filter((w) => w.startedAt >= week && w.startedAt < end && isGoalWorkout(w)).length;
+  const needed = goalForWeek(goal, week) - done;
+  if (needed <= 0) return null;
+  // Days left including today; one workout a day is the realistic maximum.
+  const daysLeft = Math.max(1, Math.ceil((end - now) / DAY));
+  if (needed > daysLeft) return { level: streak.freezes > 0 ? 'freeze' : 'lost', needed, daysLeft };
+  if (daysLeft - needed <= 1) return { level: 'warn', needed, daysLeft };
+  return null;
+}
+
 /* ------------------------------------------------------------------ */
 /* Weekly quests                                                       */
 /* ------------------------------------------------------------------ */

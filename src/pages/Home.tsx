@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, ChevronRight, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
+import { Check, ChevronRight, Flame, Plus, Snowflake, Sparkles, Trophy, User } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { muscleRecovery, nextRoutine, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, relativeDay } from '../lib/format';
@@ -129,6 +129,36 @@ export default function Home() {
           <span>{t('to level {level}', { level: game.level.level + 1 })}</span>
         </div>
       </Link>
+
+      {/* Streak at risk */}
+      {game.risk && !active && (
+        <div className={`card mt streak-risk ${game.risk.level}`} role="status">
+          <Flame size={26} aria-hidden="true" />
+          <div className="grow">
+            <div className="bold">
+              {game.risk.level === 'warn'
+                ? t('Your {n}-week streak is at risk', { n: game.streak.streak })
+                : game.risk.level === 'freeze'
+                  ? t('A streak freeze will save this week')
+                  : t('Your {n}-week streak ends this week', { n: game.streak.streak })}
+            </div>
+            <div className="small">
+              {game.risk.level === 'warn'
+                ? tn(game.risk.daysLeft, '{workouts} to go and {n} day left.', '{workouts} to go and {n} days left.', {
+                    workouts: tn(game.risk.needed, '{n} workout', '{n} workouts'),
+                  })
+                : game.risk.level === 'freeze'
+                  ? t('Not enough days left for your goal. Train anyway: every workout still earns league XP.')
+                  : t('Not enough days left for your goal. Train anyway to stay in your league.')}
+            </div>
+          </div>
+          {game.risk.level === 'warn' && (
+            <button className="btn sm" onClick={() => start(upNext?.id)}>
+              {t('Train now')}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* League */}
       <div className="mt">
