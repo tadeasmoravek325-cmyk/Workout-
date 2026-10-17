@@ -169,6 +169,16 @@ describe('leagueInfo', () => {
     expect(leagueInfo(new Map([[week(2), 5000], [week(1), 5000]]), 3, now).division).toBe(2);
   });
 
+  it('has ten divisions with a rising bar', () => {
+    expect(promoteXp(0, 3)).toBe(400);
+    expect(promoteXp(8, 3)).toBe(1040);
+    expect(keepXp(9, 3)).toBeGreaterThan(keepXp(1, 3) * 3);
+    // Nine perfect weeks are the fastest way to the top.
+    const weeks = new Map(Array.from({ length: 9 }, (_, i) => [week(9 - i), 5000]));
+    expect(leagueInfo(weeks, 3, now).division).toBe(9);
+    expect(leagueInfo(new Map([...weeks].slice(1)), 3, now).division).toBe(8);
+  });
+
   it('scales the lines with the weekly goal', () => {
     expect(promoteXp(0, 5)).toBeGreaterThan(promoteXp(0, 2));
     expect(keepXp(0, 3)).toBe(0);

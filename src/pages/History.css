@@ -89,7 +89,7 @@
 
 /* Staggered entrance */
 .hist-in {
-  animation: hist-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: hist-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes hist-in {

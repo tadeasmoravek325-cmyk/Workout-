@@ -2060,10 +2060,10 @@ a.list-item:active,
   margin: 0 auto 14px;
 }
 .empty-art .plate-l {
-  animation: plate-in-l 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation: plate-in-l 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.25) backwards;
 }
 .empty-art .plate-r {
-  animation: plate-in-r 0.6s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation: plate-in-r 0.6s 0.12s cubic-bezier(0.2, 0.9, 0.3, 1.25) backwards;
 }
 @keyframes plate-in-l {
   from {
@@ -2078,10 +2078,10 @@ a.list-item:active,
   }
 }
 
-/* Page sections rise in one after another. Only in-flow blocks: overlays (sheets, celebrations)
-   are also children of .page and must never get a transform. */
+/* Page sections rise in one after another. Fill mode is backwards on purpose: a transform that
+   keeps filling after the animation would trap fixed overlays (sheets) opened inside the block. */
 .page > :is(.section, .card, .hero, .grid-2, .grid-3, .list, .mt, h1, .page-header) {
-  animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: rise 0.36s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 .page > :nth-child(2) { animation-delay: 0.03s; }
 .page > :nth-child(3) { animation-delay: 0.06s; }
@@ -2137,4 +2137,16 @@ a.list-item:active,
   .streak-risk.warn svg {
     animation: none;
   }
+}
+
+button.league-card {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  border: 0;
+}
+.ladder-row.here {
+  background: var(--accent-soft);
 }

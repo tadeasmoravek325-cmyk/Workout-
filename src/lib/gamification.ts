@@ -504,25 +504,39 @@ export interface Division {
   id: string;
   name: string;
   color: string;
+  /** Colour for the emblem drawn on the badge, readable on `color`. */
+  ink: string;
+  kind: 'metal' | 'gem' | 'crown';
 }
 
+/**
+ * Ten divisions: five metals, four gems, then Champion. Reaching the top takes at least nine strong
+ * weeks in a row, and every step up raises both the promotion and the keep line.
+ */
 export const DIVISIONS: Division[] = [
-  { id: 'bronze', name: 'Bronze', color: '#c8814a' },
-  { id: 'silver', name: 'Silver', color: '#b9c3cc' },
-  { id: 'gold', name: 'Gold', color: '#ffc23d' },
-  { id: 'platinum', name: 'Platinum', color: '#62d6c8' },
-  { id: 'diamond', name: 'Diamond', color: '#7cb6ff' },
-  { id: 'champion', name: 'Champion', color: '#ff5a1f' },
+  { id: 'iron', name: 'Iron', color: '#8a8f96', ink: '#1a1a1a', kind: 'metal' },
+  { id: 'bronze', name: 'Bronze', color: '#c8814a', ink: '#ffffff', kind: 'metal' },
+  { id: 'silver', name: 'Silver', color: '#b9c3cc', ink: '#1a1a1a', kind: 'metal' },
+  { id: 'gold', name: 'Gold', color: '#ffc23d', ink: '#1a1a1a', kind: 'metal' },
+  { id: 'platinum', name: 'Platinum', color: '#62d6c8', ink: '#1a1a1a', kind: 'metal' },
+  { id: 'emerald', name: 'Emerald', color: '#2fbf71', ink: '#ffffff', kind: 'gem' },
+  { id: 'ruby', name: 'Ruby', color: '#e5374a', ink: '#ffffff', kind: 'gem' },
+  { id: 'sapphire', name: 'Sapphire', color: '#3d7bff', ink: '#ffffff', kind: 'gem' },
+  { id: 'diamond', name: 'Diamond', color: '#a9e6ff', ink: '#1a1a1a', kind: 'gem' },
+  { id: 'champion', name: 'Champion', color: '#ff5a1f', ink: '#ffffff', kind: 'crown' },
 ];
 
-/** Weekly XP needed to move up from `division`. Scales with the goal so every plan is fair. */
+/**
+ * Weekly XP needed to move up from `division`. Scales with the weekly goal so every plan is fair:
+ * at 3 workouts a week that is 400 XP in Iron rising to 1,040 XP to reach Champion.
+ */
 export function promoteXp(division: number, goal: number): number {
-  return Math.round(((goal * 100 + 100) * (1 + 0.25 * division)) / 10) * 10;
+  return Math.round(((goal * 100 + 100) * (1 + 0.2 * division)) / 10) * 10;
 }
 
-/** Weekly XP needed to stay in `division`. Anything less drops you one division. */
+/** Weekly XP needed to stay in `division`; the share grows from 34 % to 66 % of the promotion line. */
 export function keepXp(division: number, goal: number): number {
-  return division === 0 ? 0 : Math.round((promoteXp(division, goal) * 0.4) / 10) * 10;
+  return division === 0 ? 0 : Math.round((promoteXp(division, goal) * (0.3 + 0.04 * division)) / 10) * 10;
 }
 
 export interface LeagueWeek {

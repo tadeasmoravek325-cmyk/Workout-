@@ -25,11 +25,11 @@
 }
 
 .medal--pop .medal-body {
-  animation: medal-pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+  animation: medal-pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1) backwards;
 }
 
 .medal--pop .medal-ribbon {
-  animation: medal-drop 0.35s ease-out both;
+  animation: medal-drop 0.35s ease-out backwards;
 }
 
 @keyframes medal-pop {
