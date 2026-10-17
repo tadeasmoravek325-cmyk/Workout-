@@ -16,6 +16,7 @@ import { defaultSettings, startOfWeek, uid } from '../lib/calc';
 import { BUILTIN_EXERCISES, normalizeMuscles } from '../data/exercises';
 import { LOCALE_TAG, t } from '../i18n';
 import { PROGRAMS } from '../data/programs';
+import { mergeBackup, pruneTombstones, stamp, stampNow, withoutTombstone, withTombstones, type Collection } from '../lib/sync';
 
 /** Monday = 0 … Sunday = 6 → routine id. */
 export type Schedule = Record<number, string | undefined>;
@@ -29,6 +30,10 @@ export interface BackupData {
   schedule: Schedule;
   /** Pinned per-exercise notes shown every time the exercise is performed. */
   exerciseNotes?: Record<string, string>;
+  scheduleUpdatedAt?: number;
+  notesUpdatedAt?: number;
+  /** Tombstones "collection:id" → deletion time, so merges never bring deleted records back. */
+  deleted?: Record<string, number>;
 }
 
 interface State extends BackupData {
@@ -146,7 +151,22 @@ const initialData = (): BackupData => ({
   settings: defaultSettings(),
   schedule: {},
   exerciseNotes: {},
+  deleted: {},
 });
+
+/** Tombstones for every record, so a reset also wins over older copies when merging. */
+function tombstonesForAll(s: BackupData): Record<string, number> {
+  const at = stampNow();
+  let d = s.deleted ?? {};
+  const all: [Collection, { id: string }[]][] = [
+    ['workouts', s.workouts],
+    ['routines', s.routines],
+    ['customExercises', s.customExercises],
+    ['measurements', s.measurements],
+  ];
+  for (const [c, items] of all) d = withTombstones(d, c, items.map((x) => x.id), at);
+  return d;
+}
 
 export const useStore = create<State>()(
   persist(
@@ -179,6 +199,7 @@ export const useStore = create<State>()(
         if (!a) return null;
         const w = structuredClone(a);
         w.finishedAt = Date.now();
+        w.updatedAt = stampNow();
         w.exercises = w.exercises
           .map((we) => ({ ...we, sets: we.sets.filter((s) => s.done) }))
           .filter((we) => we.sets.length > 0);
@@ -201,16 +222,19 @@ export const useStore = create<State>()(
               if (w.id !== id) return w;
               const copy = structuredClone(w);
               fn(copy);
+              copy.updatedAt = stampNow();
               return copy;
             })
             .sort((a, b) => b.startedAt - a.startedAt),
         })),
 
-      deleteWorkout: (id) => setState((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
+      deleteWorkout: (id) =>
+        setState((s) => ({ workouts: s.workouts.filter((w) => w.id !== id), deleted: withTombstones(s.deleted, 'workouts', [id]) })),
 
       restoreWorkout: (w) =>
         setState((s) => ({
-          workouts: [w, ...s.workouts.filter((x) => x.id !== w.id)].sort((a, b) => b.startedAt - a.startedAt),
+          workouts: [stamp(w), ...s.workouts.filter((x) => x.id !== w.id)].sort((a, b) => b.startedAt - a.startedAt),
+          deleted: withoutTombstone(s.deleted, 'workouts', w.id),
         })),
 
       restoreActive: (w) => {
@@ -220,14 +244,28 @@ export const useStore = create<State>()(
       saveRoutine: (r) =>
         setState((s) => {
           const exists = s.routines.some((x) => x.id === r.id);
-          return { routines: exists ? s.routines.map((x) => (x.id === r.id ? r : x)) : [...s.routines, r] };
+          const saved = stamp(r);
+          return {
+            routines: exists ? s.routines.map((x) => (x.id === r.id ? saved : x)) : [...s.routines, saved],
+            deleted: withoutTombstone(s.deleted, 'routines', r.id),
+          };
         }),
 
       deleteRoutine: (id) =>
         setState((s) => {
           const schedule = { ...s.schedule };
-          for (const k of Object.keys(schedule)) if (schedule[+k] === id) delete schedule[+k];
-          return { routines: s.routines.filter((r) => r.id !== id), schedule };
+          let changed = false;
+          for (const k of Object.keys(schedule))
+            if (schedule[+k] === id) {
+              delete schedule[+k];
+              changed = true;
+            }
+          return {
+            routines: s.routines.filter((r) => r.id !== id),
+            schedule,
+            ...(changed ? { scheduleUpdatedAt: stampNow() } : {}),
+            deleted: withTombstones(s.deleted, 'routines', [id]),
+          };
         }),
 
       routineFromWorkout: (workoutId, name) => {
@@ -260,7 +298,9 @@ export const useStore = create<State>()(
         const p = PROGRAMS.find((x) => x.id === programId);
         if (!p) return 0;
         const all = [...BUILTIN_EXERCISES, ...getState().customExercises];
+        const at = stampNow();
         const routines: Routine[] = p.days.map((d) => ({
+          updatedAt: at,
           id: uid(),
           name: d.name,
           folder: p.name,
@@ -288,25 +328,37 @@ export const useStore = create<State>()(
       saveExercise: (e) =>
         setState((s) => {
           const exists = s.customExercises.some((x) => x.id === e.id);
-          const custom = { ...e, custom: true };
+          const custom = stamp({ ...e, custom: true });
           return {
             customExercises: exists ? s.customExercises.map((x) => (x.id === e.id ? custom : x)) : [...s.customExercises, custom],
+            deleted: withoutTombstone(s.deleted, 'customExercises', e.id),
           };
         }),
 
-      deleteExercise: (id) => setState((s) => ({ customExercises: s.customExercises.filter((e) => e.id !== id) })),
+      deleteExercise: (id) =>
+        setState((s) => ({
+          customExercises: s.customExercises.filter((e) => e.id !== id),
+          deleted: withTombstones(s.deleted, 'customExercises', [id]),
+        })),
 
       addMeasurement: (m) =>
-        setState((s) => ({ measurements: [...s.measurements, { ...m, id: uid() }].sort((a, b) => a.date - b.date) })),
+        setState((s) => ({ measurements: [...s.measurements, stamp({ ...m, id: uid() })].sort((a, b) => a.date - b.date) })),
 
-      deleteMeasurement: (id) => setState((s) => ({ measurements: s.measurements.filter((m) => m.id !== id) })),
+      deleteMeasurement: (id) =>
+        setState((s) => ({
+          measurements: s.measurements.filter((m) => m.id !== id),
+          deleted: withTombstones(s.deleted, 'measurements', [id]),
+        })),
 
       restoreMeasurement: (m) =>
-        setState((s) => ({ measurements: [...s.measurements.filter((x) => x.id !== m.id), m].sort((a, b) => a.date - b.date) })),
+        setState((s) => ({
+          measurements: [...s.measurements.filter((x) => x.id !== m.id), stamp(m)].sort((a, b) => a.date - b.date),
+          deleted: withoutTombstone(s.deleted, 'measurements', m.id),
+        })),
 
       updateSettings: (patch) =>
         setState((s) => {
-          const next = { ...s.settings, ...patch };
+          const next = { ...s.settings, ...patch, updatedAt: stampNow() };
           // With no history yet (e.g. onboarding) there is nothing to protect, and pinning the default
           // would later judge imported weeks by a goal the user never chose.
           if (patch.weeklyGoal !== undefined && patch.weeklyGoal !== s.settings.weeklyGoal && s.workouts.length) {
@@ -315,14 +367,14 @@ export const useStore = create<State>()(
           return { settings: next };
         }),
 
-      setSchedule: (day, routineId) => setState((s) => ({ schedule: { ...s.schedule, [day]: routineId } })),
+      setSchedule: (day, routineId) => setState((s) => ({ schedule: { ...s.schedule, [day]: routineId }, scheduleUpdatedAt: stampNow() })),
 
       setExerciseNote: (exerciseId, note) =>
         setState((s) => {
           const notes = { ...(s.exerciseNotes ?? {}) };
           if (note.trim()) notes[exerciseId] = note;
           else delete notes[exerciseId];
-          return { exerciseNotes: notes };
+          return { exerciseNotes: notes, notesUpdatedAt: stampNow() };
         }),
 
       startRest: (sec) => {
@@ -343,7 +395,7 @@ export const useStore = create<State>()(
 
       importBackup: (data, mode) => {
         void createSnapshot('before-import', exportBackup());
-        setState((s) => {
+        setState(() => {
           if (mode === 'replace') {
             return {
               ...initialData(),
@@ -351,17 +403,14 @@ export const useStore = create<State>()(
               settings: { ...defaultSettings(), ...(data.settings ?? {}) },
             };
           }
-          const byId = <T extends { id: string }>(a: T[], b: T[] = []) => {
-            const map = new Map(a.map((x) => [x.id, x]));
-            for (const x of b) map.set(x.id, x);
-            return [...map.values()];
-          };
+          // Merge by record so nothing is duplicated and newer edits win. Records deleted here
+          // after the backup was made come back: restoring a backup means wanting that data.
+          const merged = mergeBackup(exportBackup(), data);
           return {
-            workouts: byId(s.workouts, data.workouts).sort((a, b) => b.startedAt - a.startedAt),
-            routines: byId(s.routines, data.routines),
-            customExercises: byId(s.customExercises, data.customExercises),
-            measurements: byId(s.measurements, data.measurements).sort((a, b) => a.date - b.date),
-            exerciseNotes: { ...(s.exerciseNotes ?? {}), ...(data.exerciseNotes ?? {}) },
+            ...merged,
+            workouts: [...merged.workouts].sort((a, b) => b.startedAt - a.startedAt),
+            measurements: [...merged.measurements].sort((a, b) => a.date - b.date),
+            settings: { ...defaultSettings(), ...merged.settings },
           };
         });
       },
@@ -371,19 +420,23 @@ export const useStore = create<State>()(
         const s = getState();
         const incoming = new Set(workouts.map((w) => w.startedAt));
         const kept = replace ? s.workouts.filter((w) => !incoming.has(w.startedAt)) : s.workouts;
+        const removed = s.workouts.filter((w) => !kept.includes(w)).map((w) => w.id);
         const existing = new Set(kept.map((w) => w.startedAt));
-        const fresh = workouts.filter((w) => !existing.has(w.startedAt));
+        const at = stampNow();
+        const fresh = workouts.filter((w) => !existing.has(w.startedAt)).map((w) => stamp(w, at));
         const knownEx = new Set(s.customExercises.map((e) => e.id));
         setState({
           workouts: [...kept, ...fresh].sort((a, b) => b.startedAt - a.startedAt),
-          customExercises: [...s.customExercises, ...exercises.filter((e) => !knownEx.has(e.id))],
+          customExercises: [...s.customExercises, ...exercises.filter((e) => !knownEx.has(e.id)).map((e) => stamp(e, at))],
+          deleted: removed.length ? withTombstones(s.deleted, 'workouts', removed, at) : s.deleted,
         });
         return fresh.length;
       },
 
       resetAll: () => {
         void createSnapshot('before-reset', exportBackup());
-        setState({ ...initialData(), active: null, rest: null });
+        const deleted = tombstonesForAll(exportBackup());
+        setState({ ...initialData(), deleted, active: null, rest: null });
       },
     }),
     {
@@ -401,6 +454,9 @@ export const useStore = create<State>()(
         settings: s.settings,
         schedule: s.schedule,
         exerciseNotes: s.exerciseNotes,
+        scheduleUpdatedAt: s.scheduleUpdatedAt,
+        notesUpdatedAt: s.notesUpdatedAt,
+        deleted: s.deleted,
         active: s.active,
         rest: s.rest,
       }),
@@ -409,7 +465,7 @@ export const useStore = create<State>()(
         const settings = { ...defaultSettings(), ...(p.settings ?? {}) };
         // Existing users who already have history skip onboarding.
         if (!p.settings?.onboarded && (p.workouts?.length ?? 0) > 0) settings.onboarded = true;
-        return { ...current, ...p, settings };
+        return { ...current, ...p, settings, deleted: pruneTombstones(p.deleted) };
       },
       onRehydrateStorage: () => (_state, error) => {
         finishLoad(error);
@@ -477,6 +533,9 @@ export function exportBackup(): BackupData {
     settings: s.settings,
     schedule: s.schedule,
     exerciseNotes: s.exerciseNotes,
+    scheduleUpdatedAt: s.scheduleUpdatedAt,
+    notesUpdatedAt: s.notesUpdatedAt,
+    deleted: s.deleted,
   };
 }
 

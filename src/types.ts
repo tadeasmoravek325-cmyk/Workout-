@@ -43,6 +43,8 @@ export type Muscle =
 export type MuscleLoad = Partial<Record<Muscle, number>>;
 
 export interface Exercise {
+  /** Last change, for merging copies of the data (sync, backups). */
+  updatedAt?: number;
   id: string;
   name: string;
   equipment: Equipment;
@@ -82,6 +84,8 @@ export interface WorkoutExercise {
 }
 
 export interface Workout {
+  /** Last change, for merging copies of the data (sync, backups). */
+  updatedAt?: number;
   id: string;
   name: string;
   startedAt: number;
@@ -109,6 +113,8 @@ export interface RoutineExercise {
 }
 
 export interface Routine {
+  /** Last change, for merging copies of the data (sync, backups). */
+  updatedAt?: number;
   id: string;
   name: string;
   folder?: string;
@@ -133,6 +139,8 @@ export type MeasurementType =
   | 'calf';
 
 export interface Measurement {
+  /** Last change, for merging copies of the data (sync, backups). */
+  updatedAt?: number;
   id: string;
   type: MeasurementType;
   /** kg for bodyweight, % for bodyfat, cm for the rest. */
@@ -147,6 +155,8 @@ export type Experience = 'beginner' | 'intermediate' | 'advanced';
 export type Sex = 'm' | 'f';
 
 export interface Settings {
+  /** Last change, for merging copies of the data (sync, backups). */
+  updatedAt?: number;
   name: string;
   sex?: Sex;
   /** Used for age-adjusted strength standards. */
