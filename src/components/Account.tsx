@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Cloud, CloudOff, LogOut, Mail, RefreshCw, Trash2, TriangleAlert } from 'lucide-react';
-import { deleteAccount, oauthProviders, sendEmailCode, signInWith, signOut, syncNow, useCloud, verifyEmailCode } from '../lib/cloud';
+import { deleteAccount, oauthProviders, signInWith, signInWithPassword, signOut, signUpWithPassword, syncNow, useCloud } from '../lib/cloud';
 import { relativeDay } from '../lib/format';
-import { confirmDialog, Sheet, toast } from './ui';
+import { confirmDialog, Segmented, Sheet, toast } from './ui';
 import { t } from '../i18n';
 
 function statusText(s: ReturnType<typeof useCloud.getState>): string {
@@ -101,11 +101,11 @@ export function AccountCard() {
   );
 }
 
-/** Apple, Google or a one-time code sent by email. The code works everywhere, including previews. */
+/** Email and password (works without email setup), plus Apple and Google when enabled. */
 export function SignInSheet({ onClose }: { onClose: () => void }) {
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [sent, setSent] = useState(false);
+  const [password, setPassword] = useState('');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [busy, setBusy] = useState(false);
 
   const run = async (fn: () => Promise<void>) => {
@@ -144,59 +144,47 @@ export function SignInSheet({ onClose }: { onClose: () => void }) {
 
         {oauthProviders.length > 0 && <div className="auth-or small muted">{t('or with email')}</div>}
 
-        {!sent && oauthProviders.length === 0 && (
-          <p className="small muted" style={{ margin: 0 }}>
-            {t('Enter your email and we send you a 6-digit code. No password needed.')}
-          </p>
-        )}
-        {!sent ? (
-          <form
-            className="stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void run(async () => {
-                await sendEmailCode(email.trim());
-                setSent(true);
-                toast(t('Code sent. Check your inbox.'));
-              });
-            }}
-          >
-            <input type="email" inputMode="email" autoComplete="email" required placeholder={t('you@example.com')} value={email} onChange={(e) => setEmail(e.target.value)} />
-            <button className="btn primary block" disabled={busy || !email.includes('@')}>
-              <Mail size={18} /> {t('Send me a code')}
-            </button>
-          </form>
-        ) : (
-          <form
-            className="stack"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void run(async () => {
-                await verifyEmailCode(email.trim(), code.trim());
+        <Segmented
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: 'signin', label: t('Sign in') },
+            { value: 'signup', label: t('Create account') },
+          ]}
+        />
+        <form
+          className="stack"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void run(async () => {
+              if (mode === 'signin') {
+                await signInWithPassword(email.trim(), password);
                 toast(t('Signed in. Syncing your data…'));
                 onClose();
-              });
-            }}
-          >
-            <div className="small muted">{t('Enter the code we sent to {email}.', { email })}</div>
-            <input
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]*"
-              maxLength={8}
-              placeholder="123456"
-              className="code-input"
-              value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-            />
-            <button className="btn primary block" disabled={busy || code.length < 6}>
-              {t('Sign in')}
-            </button>
-            <button type="button" className="btn ghost block" onClick={() => setSent(false)}>
-              {t('Use a different email')}
-            </button>
-          </form>
-        )}
+              } else if (await signUpWithPassword(email.trim(), password)) {
+                toast(t('Account created. Syncing your data…'));
+                onClose();
+              } else {
+                toast(t('Check your inbox and confirm your email, then sign in.'), 'info', 6000);
+                setMode('signin');
+              }
+            });
+          }}
+        >
+          <input type="email" inputMode="email" autoComplete="email" required placeholder={t('you@example.com')} value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input
+            type="password"
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+            required
+            minLength={8}
+            placeholder={mode === 'signin' ? t('Password') : t('Password (at least 8 characters)')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button className="btn primary block" disabled={busy || !email.includes('@') || password.length < 8}>
+            <Mail size={18} /> {mode === 'signin' ? t('Sign in') : t('Create account')}
+          </button>
+        </form>
 
         <p className="tiny muted center" style={{ margin: 0 }}>
           {t('Your workouts on this phone are kept and merged with your account.')}{' '}

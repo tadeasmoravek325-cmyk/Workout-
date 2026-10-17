@@ -14,7 +14,10 @@ in sync. Without the two environment variables below, the account UI is hidden.
 
 ## 2. Sign-in methods
 
-- **Email code (works everywhere, start here):** Authentication → Providers → Email: enabled.
+- **Email and password (current default, no email setup needed):** Authentication → Sign In /
+  Providers → Email: enabled, and turn **Confirm email** off while there is no custom SMTP (the
+  built-in mailer is heavily rate limited and its templates can't be edited).
+- **Email code (later, needs custom SMTP to edit templates):** Authentication → Providers → Email: enabled.
   Authentication → Email Templates → *Magic Link*: put the code in the email, for example
   `<p>Your Gym code: <strong>{{ .Token }}</strong></p>`. The app asks for this 6-digit code.
 - **Google and Apple are hidden in the app** until you list them in `VITE_AUTH_PROVIDERS`

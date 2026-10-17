@@ -195,6 +195,20 @@ export async function startCloud() {
 
 /* ---------------- account actions ---------------- */
 
+/** Creates an account. Returns false when Supabase still wants the email confirmed first. */
+export async function signUpWithPassword(email: string, password: string): Promise<boolean> {
+  const sb = await client();
+  const { data, error } = await sb.auth.signUp({ email, password });
+  if (error) throw error;
+  return Boolean(data.session);
+}
+
+export async function signInWithPassword(email: string, password: string) {
+  const sb = await client();
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+}
+
 export async function sendEmailCode(email: string) {
   const sb = await client();
   const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
