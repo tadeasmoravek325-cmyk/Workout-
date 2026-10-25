@@ -17,7 +17,6 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
   const settingsUnit = useStore((s) => s.settings.unit);
   const importWorkouts = useStore((s) => s.importWorkouts);
   const [unit, setUnit] = useState<Unit>(settingsUnit);
-  const [replace, setReplace] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
 
   const analysis = useMemo<StrongAnalysis | { error: string }>(() => {
@@ -33,6 +32,17 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
   const [mapping, setMapping] = useState<Record<string, string | null>>(() =>
     'error' in analysis ? {} : Object.fromEntries(analysis.exercises.map((e) => [e.key, e.suggested])),
   );
+
+  // Workouts from this file that are already in the app, usually from an earlier import. Skipping
+  // them would keep whatever mapping that import used, so they are replaced by default.
+  const existing = useStore((s) => s.workouts);
+  const overlap = useMemo(() => {
+    if ('error' in analysis) return 0;
+    const starts = new Set(existing.map((w) => w.startedAt));
+    return buildStrongImport(analysis, {}, settingsUnit, all).workouts.filter((w) => starts.has(w.startedAt)).length;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [analysis]);
+  const [replace, setReplace] = useState(overlap > 0);
 
   if ('error' in analysis) {
     return (
@@ -53,7 +63,14 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
   const run = () => {
     const result = buildStrongImport(analysis, mapping, unit, all);
     const n = importWorkouts(result.workouts, result.newExercises, replace);
-    toast(tn(n, 'Imported {n} workout', 'Imported {n} workouts'));
+    const skipped = result.workouts.length - n;
+    toast(
+      skipped > 0
+        ? t('Imported {n}, skipped {skipped} already in Gym', { n, skipped })
+        : tn(n, 'Imported {n} workout', 'Imported {n} workouts'),
+      'info',
+      4000,
+    );
     onClose();
   };
 
@@ -116,11 +133,17 @@ export function StrongImportSheet({ text, onClose }: { text: string; onClose: ()
         })}
       </div>
 
-      <div className="card mt-l row between">
+      <div className={`card mt-l row between ${overlap ? 'import-overlap' : ''}`}>
         <div className="grow">
           <div className="bold">{t('Replace earlier Strong import')}</div>
           <div className="small muted">
-            {t('Removes workouts that start at the same time as ones in this file, then imports them again.')}
+            {overlap
+              ? tn(
+                  overlap,
+                  '{n} workout from this file is already in Gym. Replacing it applies the exercise matches above, so nothing stays merged by mistake.',
+                  '{n} workouts from this file are already in Gym. Replacing them applies the exercise matches above, so nothing stays merged by mistake.',
+                )
+              : t('Removes workouts that start at the same time as ones in this file, then imports them again.')}
           </div>
         </div>
         <Switch on={replace} onChange={setReplace} label={t('Replace earlier import')} />
