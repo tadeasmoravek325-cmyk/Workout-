@@ -240,6 +240,26 @@ svg.lucide {
   gap: 12px;
 }
 
+.grid-2 > *,
+.grid-3 > * {
+  min-width: 0;
+}
+
+.field input[type='datetime-local'] {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  text-align: left;
+}
+
+.field input[type='datetime-local']::-webkit-date-and-time-value {
+  text-align: left;
+  min-width: 0;
+}
+
 .grid-3 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2245,4 +2265,39 @@ button.league-card {
 
 .import-overlap {
   background: var(--accent-soft);
+}
+
+.ex-card .ex-name.grab {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.reorder {
+  position: relative;
+  margin-top: 12px;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.reorder-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  background: var(--card);
+  border-radius: var(--radius);
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.reorder-row.lifted {
+  transition: none;
+  z-index: 2;
+  background: var(--card-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transform-origin: center;
 }

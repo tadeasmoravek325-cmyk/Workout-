@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, NotebookPen, Pin, PlayCircle, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, ListPlus, NotebookPen, Pin, PlayCircle, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
@@ -102,6 +102,7 @@ export function WorkoutEditor({
   const allWorkouts = useStore((s) => s.workouts);
   const settings = useStore((s) => s.settings);
   const [picker, setPicker] = useState(false);
+  const [reorder, setReorder] = useState<{ id: string; y: number } | null>(null);
 
   // History without this workout and without anything later than it (when editing an old workout).
   const history = useMemo(
@@ -128,7 +129,24 @@ export function WorkoutEditor({
           <div style={{ marginTop: 8 }}>{t('Add your first exercise.')}</div>
         </div>
       )}
-      {workout.exercises.map((we, i) => {
+      {reorder && (
+        <ReorderList
+          workout={workout}
+          exMap={exMap}
+          startId={reorder.id}
+          startY={reorder.y}
+          onDone={(ids) => {
+            setReorder(null);
+            if (ids)
+              mutate((w) => {
+                const byId = new Map(w.exercises.map((x) => [x.id, x]));
+                const next = ids.map((id) => byId.get(id)).filter((x): x is WorkoutExercise => !!x);
+                if (next.length === w.exercises.length) w.exercises = next;
+              });
+          }}
+        />
+      )}
+      {!reorder && workout.exercises.map((we, i) => {
         const ex = exMap.get(we.exerciseId);
         if (!ex) return null;
         return (
@@ -142,6 +160,7 @@ export function WorkoutEditor({
             mutate={mutate}
             live={live}
             settings={settings}
+            onGrab={(y) => setReorder({ id: we.id, y })}
           />
         );
       })}
@@ -178,6 +197,7 @@ function ExerciseCard({
   mutate,
   live,
   settings,
+  onGrab,
 }: {
   we: WorkoutExercise;
   ex: Exercise;
@@ -187,11 +207,14 @@ function ExerciseCard({
   mutate: Mutate;
   live: boolean;
   settings: Settings;
+  onGrab: (y: number) => void;
 }) {
   const startRest = useStore((s) => s.startRest);
   const allEx = useAllExercises();
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<null | 'rest' | 'substitute' | 'warmup' | 'pin' | 'plates'>(null);
+  const [swapAny, setSwapAny] = useState(false);
+  const grab = useGrab(onGrab);
   const [justDone, setJustDone] = useState<string | null>(null);
   const [setIdx, setSetIdx] = useState<number | null>(null);
   const pinned = useStore((s) => s.exerciseNotes?.[ex.id]);
@@ -311,6 +334,16 @@ function ExerciseCard({
     hasReps(ex) && settings.showRpe && 'RPE',
   ].filter(Boolean) as string[];
 
+  const replaceWith = (alt: Exercise) => {
+    upd((x) => {
+      x.exerciseId = alt.id;
+      for (const s of x.sets) if (!s.done) delete s.weight;
+    });
+    setSheet(null);
+    setSwapAny(false);
+    toast(t('Replaced with {exercise}', { exercise: alt.name }));
+  };
+
   let normalNo = 0;
   const allDone = we.sets.length > 0 && we.sets.every((s) => s.done);
 
@@ -318,7 +351,7 @@ function ExerciseCard({
     <div className={`ex-card ${we.supersetId ? 'superset' : ''} ${allDone ? 'complete' : ''}`}>
       <div className="row between">
         <span className="bp-dot" style={{ background: BODY_PART_COLORS[ex.bodyPart] }} />
-        <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis">
+        <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis grab" {...grab}>
           {ex.name}
         </Link>
         {allDone && <span className="badge ok">{t('Done')}</span>}
@@ -805,20 +838,12 @@ function ExerciseCard({
           <p className="small muted" style={{ marginTop: 0 }}>
             {t('Machine taken? These exercises work the same muscles.')}
           </p>
-          <div className="list">
+          <button className="btn block" onClick={() => setSwapAny(true)}>
+            <ListPlus size={18} /> {t('Choose any exercise')}
+          </button>
+          <div className="list mt">
             {findSubstitutes(ex, allEx).map((alt) => (
-              <button
-                key={alt.id}
-                className="list-item"
-                onClick={() => {
-                  upd((x) => {
-                    x.exerciseId = alt.id;
-                    for (const s of x.sets) if (!s.done) delete s.weight;
-                  });
-                  setSheet(null);
-                  toast(t('Replaced with {exercise}', { exercise: alt.name }));
-                }}
-              >
+              <button key={alt.id} className="list-item" onClick={() => replaceWith(alt)}>
                 <ExerciseAvatar ex={alt} />
                 <div className="grow">
                   <div className="bold">{alt.name}</div>
@@ -830,6 +855,18 @@ function ExerciseCard({
             ))}
           </div>
         </Sheet>
+      )}
+
+      {swapAny && (
+        <ExercisePicker
+          multi={false}
+          title={t('Replace {exercise}', { exercise: ex.name })}
+          onClose={() => setSwapAny(false)}
+          onPick={([id]) => {
+            const alt = allEx.find((x) => x.id === id);
+            if (alt) replaceWith(alt);
+          }}
+        />
       )}
     </div>
   );
@@ -876,5 +913,118 @@ function WarmupSheet({
         {t('Add warm-up')}
       </button>
     </Sheet>
+  );
+}
+
+const ROW_H = 56;
+const HOLD_MS = 280;
+
+/** Press and hold an exercise name to pick the card up; moving first means the user is scrolling. */
+function useGrab(onGrab: (y: number) => void) {
+  const st = useRef<{ timer?: number; x: number; y: number; grabbed: boolean }>({ x: 0, y: 0, grabbed: false });
+  const clear = () => {
+    window.clearTimeout(st.current.timer);
+    st.current.timer = undefined;
+  };
+  useEffect(() => clear, []);
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      clear();
+      const y = e.clientY;
+      st.current.x = e.clientX;
+      st.current.y = y;
+      st.current.grabbed = false;
+      st.current.timer = window.setTimeout(() => {
+        st.current.grabbed = true;
+        haptic(15);
+        onGrab(y);
+      }, HOLD_MS);
+    },
+    onPointerMove: (e: React.PointerEvent) => {
+      if (st.current.timer && Math.hypot(e.clientX - st.current.x, e.clientY - st.current.y) > 8) clear();
+    },
+    onPointerUp: clear,
+    onPointerCancel: clear,
+    onClick: (e: React.MouseEvent) => {
+      if (st.current.grabbed) e.preventDefault();
+    },
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  };
+}
+
+/** Collapsed list of exercise names; the grabbed row follows the finger and the others slide out of the way. */
+function ReorderList({
+  workout,
+  exMap,
+  startId,
+  startY,
+  onDone,
+}: {
+  workout: Workout;
+  exMap: Map<string, Exercise>;
+  startId: string;
+  startY: number;
+  onDone: (ids: string[] | null) => void;
+}) {
+  const box = useRef<HTMLDivElement>(null);
+  const baseIds = useMemo(() => workout.exercises.map((x) => x.id), [workout.exercises]);
+  const [pointerY, setPointerY] = useState(startY);
+  const [top, setTop] = useState(0);
+  const idsRef = useRef(baseIds);
+  const doneRef = useRef(onDone);
+  doneRef.current = onDone;
+
+  useLayoutEffect(() => {
+    box.current?.scrollIntoView({ block: 'center' });
+    setTop(box.current?.getBoundingClientRect().top ?? 0);
+  }, []);
+
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      setPointerY(e.clientY);
+      setTop(box.current?.getBoundingClientRect().top ?? 0);
+    };
+    const end = (cancel: boolean) => () =>
+      doneRef.current(cancel || idsRef.current.join() === baseIds.join() ? null : idsRef.current);
+    const up = end(false);
+    const cancel = end(true);
+    const block = (e: TouchEvent) => e.preventDefault();
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    window.addEventListener('touchmove', block, { passive: false });
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('touchmove', block);
+    };
+  }, [baseIds]);
+
+  const n = baseIds.length;
+  const dragTop = Math.min(Math.max(pointerY - top - ROW_H / 2, 0), (n - 1) * ROW_H);
+  const target = Math.min(n - 1, Math.max(0, Math.round(dragTop / ROW_H)));
+  const order = baseIds.filter((id) => id !== startId);
+  order.splice(target, 0, startId);
+  idsRef.current = order;
+
+  return (
+    <div ref={box} className="reorder" style={{ height: n * ROW_H }}>
+      {workout.exercises.map((we) => {
+        const ex = exMap.get(we.exerciseId);
+        const dragging = we.id === startId;
+        return (
+          <div
+            key={we.id}
+            className={`reorder-row ${dragging ? 'lifted' : ''}`}
+            style={{ height: ROW_H - 8, transform: `translateY(${dragging ? dragTop : order.indexOf(we.id) * ROW_H}px)` }}
+          >
+            <span className="bp-dot" style={{ background: ex ? BODY_PART_COLORS[ex.bodyPart] : undefined }} />
+            <span className="ex-name grow ellipsis">{ex?.name ?? ''}</span>
+            <span className="muted small">{we.sets.length}×</span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
