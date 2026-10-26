@@ -6,6 +6,8 @@ import type { Experience, Goal, Sex, Unit } from '../types';
 import { NumInput, Segmented } from '../components/ui';
 import { fromDisplayWeight } from '../lib/format';
 import { bigConfetti } from '../lib/celebrate';
+import { cloudConfigured, useCloud } from '../lib/cloud';
+import { SignInSheet } from '../components/Account';
 import { t, tn } from '../i18n';
 
 const GOALS: { value: Goal; icon: typeof Dumbbell; title: string; desc: string }[] = [
@@ -44,6 +46,8 @@ export default function Onboarding() {
   const importProgram = useStore((s) => s.importProgram);
   const setSchedule = useStore((s) => s.setSchedule);
   const [step, setStep] = useState(0);
+  const [signIn, setSignIn] = useState(false);
+  const cloudUser = useCloud((s) => s.user);
   const [name, setName] = useState('');
   const [goal, setGoal] = useState<Goal>('muscle');
   const [exp, setExp] = useState<Experience>('beginner');
@@ -193,7 +197,7 @@ export default function Onboarding() {
           <p className="muted">{t('This helps work out your strength ranks. Everything is optional and stays on your phone.')}</p>
           <div className="stack mt-l">
             <div className="field">
-              <label>{t('Sex')}</label>
+              <label>{t('Gender')}</label>
               <Segmented
                 value={sex}
                 onChange={setSex}
@@ -264,12 +268,18 @@ export default function Onboarding() {
             </button>
           </>
         )}
+        {step === 0 && cloudConfigured && !cloudUser && (
+          <button className="btn block" onClick={() => setSignIn(true)}>
+            {t('I already have an account')}
+          </button>
+        )}
         {step === 0 && (
           <button className="btn ghost block" onClick={() => update({ onboarded: true })}>
             {t('Skip (I have Strong data or a backup)')}
           </button>
         )}
       </div>
+      {signIn && <SignInSheet onClose={() => setSignIn(false)} />}
     </div>
   );
 }

@@ -308,7 +308,7 @@ export default function Profile() {
         </div>
         <div className="tiny muted mt">
           {t(STANDARDS_SOURCE)}
-          {!settings.sex && ` ${t('Set your sex in Settings for the right standards.')}`}
+          {!settings.sex && ` ${t('Set your gender in Settings for the right standards.')}`}
           {!settings.birthYear && ` ${t('Add your birth year in Settings to adjust for age.')}`}
         </div>
       </div>

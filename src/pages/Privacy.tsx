@@ -10,7 +10,7 @@ export default function Privacy() {
   const sections: [string, string][] = [
     [
       t('What we store'),
-      t('Your workouts, routines, custom exercises, measurements, settings and notes. If you add them: name, sex, birth year and bodyweight, used only for strength ranks.'),
+      t('Your workouts, routines, custom exercises, measurements, settings and notes. If you add them: name, gender, birth year and bodyweight, used only for strength ranks.'),
     ],
     [
       t('Where'),
