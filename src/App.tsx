@@ -99,7 +99,9 @@ function BottomNav() {
 function Shell() {
   const { pathname } = useLocation();
   const fullscreen = pathname === '/workout' || /^\/history\/[^/]+\/edit$/.test(pathname) || pathname.startsWith('/routines/');
-  useEffect(() => window.scrollTo(0, 0), [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return (
     <>
       <Routes>
