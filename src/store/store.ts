@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY } from '../lib/safety';
+import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY, whileQuiet } from '../lib/safety';
 import type {
   Exercise,
   Measurement,
@@ -557,5 +557,5 @@ export function exportBackup(): BackupData {
 
 // Another tab saved newer data: re-read it so this tab never writes stale state over it.
 onOtherTabSaved(() => {
-  void useStore.persist.rehydrate();
+  void whileQuiet(() => useStore.persist.rehydrate() as Promise<unknown>);
 });

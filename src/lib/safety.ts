@@ -44,6 +44,16 @@ export const useSafety = create<SafetyState>(() => ({
 const tabId = Math.random().toString(36).slice(2);
 const channel: BroadcastChannel | null = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('gym-sync') : null;
 let onRemoteChange: (() => void) | null = null;
+/** True while this tab re-reads data another tab saved. Persist writes the result back, which must not be announced again. */
+let quiet = false;
+export async function whileQuiet(fn: () => Promise<unknown>) {
+  quiet = true;
+  try {
+    await fn();
+  } finally {
+    quiet = false;
+  }
+}
 
 channel?.addEventListener('message', (e: MessageEvent<{ type: string; from: string }>) => {
   if (e.data?.type === 'saved' && e.data.from !== tabId) onRemoteChange?.();
@@ -85,7 +95,7 @@ export const safeStorage: StateStorage = {
     try {
       await set(name, value);
       useSafety.setState({ saveError: null, lastSavedAt: Date.now() });
-      channel?.postMessage({ type: 'saved', from: tabId });
+      if (!quiet) channel?.postMessage({ type: 'saved', from: tabId });
     } catch (e) {
       const err = e as Error;
       const quota = err?.name === 'QuotaExceededError' || /quota/i.test(err?.message ?? '');
