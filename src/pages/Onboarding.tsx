@@ -5,7 +5,6 @@ import { PROGRAMS } from '../data/programs';
 import type { Experience, Goal, Sex, Unit } from '../types';
 import { NumInput, Segmented } from '../components/ui';
 import { fromDisplayWeight } from '../lib/format';
-import { bigConfetti } from '../lib/celebrate';
 import { cloudConfigured, useCloud } from '../lib/cloud';
 import { SignInSheet } from '../components/Account';
 import { t, tn } from '../i18n';
@@ -70,7 +69,6 @@ export default function Onboarding() {
       const routines = useStore.getState().routines.slice(-n);
       DAY_PATTERNS[days].forEach((day, i) => setSchedule(day, routines[i % routines.length].id));
     }
-    bigConfetti();
   };
 
   const next = () => setStep((s) => Math.min(STEPS, s + 1));
@@ -100,14 +98,14 @@ export default function Onboarding() {
               {t('Welcome to')} <span className="grad-text">Gym</span>
             </h1>
             <p className="muted" style={{ fontSize: 17, marginTop: 8 }}>
-              {t('Your gym buddy. Log workouts, earn XP and watch yourself get stronger.')}
+              {t('Your gym buddy. Log workouts and watch yourself get stronger.')}
             </p>
           </div>
           <div className="stack" style={{ marginTop: 28 }}>
             {[
               [NotebookPen, 'Fast logging', 'Sets, weights and rest in a few taps'],
               [TrendingUp, 'Smart coach', 'Suggests what to lift today'],
-              [Trophy, 'PRs, levels and quests', 'See yourself get stronger, workout by workout'],
+              [Trophy, 'PRs and progress', 'See yourself get stronger, workout by workout'],
             ].map(([I, title, desc]) => (
               <div key={title as string} className="row card" style={{ padding: 14 }}>
                 <span className="ce">{(() => { const C = I as typeof Trophy; return <C size={22} />; })()}</span>
@@ -194,7 +192,7 @@ export default function Onboarding() {
       {step === 4 && (
         <div className="grow">
           <h1>{t('A bit about you')}</h1>
-          <p className="muted">{t('This helps work out your strength ranks. Everything is optional and stays on your phone.')}</p>
+          <p className="muted">{t('Everything is optional and stays on your phone.')}</p>
           <div className="stack mt-l">
             <div className="field">
               <label>{t('Gender')}</label>

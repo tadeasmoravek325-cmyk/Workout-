@@ -1,6 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Icon } from '../components/Icon';
-import { ImageDown, Pencil, RefreshCw, Repeat2, Save, Share2, Trash2 } from 'lucide-react';
+import { useMemo } from 'react';
+import { Pencil, RefreshCw, Repeat2, Save, Share2, Trash2 } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import {
@@ -8,21 +7,15 @@ import {
   doneSetCount,
   e1rm,
   isWorkingSet,
-  startOfWeek,
   uid,
   workoutDurationMs,
   workoutVolume,
   type PrHit,
 } from '../lib/calc';
-import { goalForWeek, isGoalWorkout } from '../lib/gamification';
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
-import { ACHIEVEMENTS, achievementStats, unlockedIds } from '../lib/achievements';
 import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, toast, undoToast } from '../components/ui';
 import type { Routine } from '../types';
-import { useGame } from '../lib/useGame';
-import { Celebration } from '../components/Celebration';
-import { renderShareCard } from '../lib/shareCard';
 import { t, tn } from '../i18n';
 
 const PR_LABEL: Record<PrHit['kind'], string> = {
@@ -41,7 +34,6 @@ export default function WorkoutDetail() {
   const workouts = useStore((s) => s.workouts);
   const routines = useStore((s) => s.routines);
   const settings = useStore((s) => s.settings);
-  const measurements = useStore((s) => s.measurements);
   const active = useStore((s) => s.active);
   const deleteWorkout = useStore((s) => s.deleteWorkout);
   const startWorkout = useStore((s) => s.startWorkout);
@@ -51,39 +43,8 @@ export default function WorkoutDetail() {
   const navigate = useNavigate();
   const w = workouts.find((x) => x.id === id);
   const unit = settings.unit;
-  const game = useGame();
-  const [celebrating, setCelebrating] = useState(isSummary);
-  const wp = game.progress.perWorkout.get(id);
-  const weekBonus = useMemo(() => {
-    // The weekly goal bonus belongs to the workout that reached the goal.
-    // Counted the same way as the goal itself, so an XP-capped workout can still complete it.
-    if (!w || !isGoalWorkout(w)) return 0;
-    const week = startOfWeek(w.startedAt);
-    if (!game.progress.goalWeeks.has(week)) return 0;
-    const inWeek = workouts.filter((x) => startOfWeek(x.startedAt) === week && isGoalWorkout(x)).sort((a, b) => a.startedAt - b.startedAt);
-    const goal = goalForWeek({ current: settings.weeklyGoal, log: settings.goalLog }, week);
-    if (inWeek[goal - 1]?.id !== w.id) return 0;
-    return (game.progress.weekXp.get(week) ?? 0) - inWeek.reduce((a, x) => a + (game.progress.perWorkout.get(x.id)?.xp ?? 0), 0);
-  }, [w, wp, workouts, game.progress, settings.weeklyGoal, settings.goalLog]);
-  const xp = (wp?.xp ?? 0) + weekBonus;
-  const xpLines = wp
-    ? [
-        { label: t('Workout'), xp: wp.breakdown.workout },
-        { label: t('Working sets'), xp: wp.breakdown.sets },
-        { label: tn(wp.prExercises.length, '{n} PR', '{n} PRs'), xp: wp.breakdown.prs },
-        { label: t('Weekly goal reached'), xp: weekBonus },
-      ].filter((l) => l.xp > 0)
-    : [];
-
   const older = useMemo(() => (w ? workouts.filter((x) => x.startedAt < w.startedAt) : []), [workouts, w]);
   const prs = useMemo(() => (w ? detectPRs(w, older, exMap) : []), [w, older, exMap]);
-  const newAchievements = useMemo(() => {
-    if (!w || !isSummary) return [];
-    const before = unlockedIds(achievementStats(older, exMap, measurements));
-    const after = unlockedIds(achievementStats([w, ...older], exMap, measurements));
-    return ACHIEVEMENTS.filter((a) => after.has(a.id) && !before.has(a.id));
-  }, [w, older, exMap, measurements, isSummary]);
-
   if (!w) return <Navigate to="/history" replace />;
 
   const volume = workoutVolume(w, exMap);
@@ -123,30 +84,6 @@ export default function WorkoutDetail() {
     return lines.join('\n');
   };
 
-  const shareImage = async () => {
-    try {
-      const blob = await renderShareCard(w, exMap, settings, {
-        prs: prs.filter((p) => p.kind !== 'volume').length,
-        level: game.level.level,
-        levelTitle: game.level.title,
-        streak: game.streak.streak,
-      });
-      const file = new File([blob], 'gym-workout.png', { type: 'image/png' });
-      if (navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: w.name });
-      else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'gym-workout.png';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toast(t('Image downloaded'));
-      }
-    } catch {
-      /* cancelled */
-    }
-  };
-
   const share = async () => {
     const text = shareText();
     try {
@@ -174,9 +111,6 @@ export default function WorkoutDetail() {
       {isSummary && (
         <div className="hero center" style={{ marginBottom: 16 }}>
           <h1 style={{ fontSize: 24 }}>{t('Great work!')}</h1>
-          <div className="badge white" style={{ marginTop: 8 }}>
-            +{xp} XP
-          </div>
           <div className="muted small" style={{ marginTop: 8 }}>
             {t('Workout #{n}', { n: older.length + 1 })}
             {diff !== null && (
@@ -235,27 +169,6 @@ export default function WorkoutDetail() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {newAchievements.length > 0 && (
-        <div className="section">
-          <div className="section-title">
-            <h2>{t('New badges')}</h2>
-          </div>
-          <div className="stack">
-            {newAchievements.map((a) => (
-              <div key={a.id} className="card ach">
-                <div className="ico">
-                  <Icon name={a.icon} size={22} />
-                </div>
-                <div>
-                  <div className="bold">{a.title}</div>
-                  <div className="small muted">{a.description}</div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -334,10 +247,7 @@ export default function WorkoutDetail() {
         })}
       </div>
 
-      <button className="btn primary block section" onClick={shareImage}>
-        <ImageDown size={18} /> {t('Share workout image')}
-      </button>
-      <div className="grid-3 mt">
+      <div className="grid-3 section">
         <button className="btn sm" onClick={repeat}>
           <Repeat2 size={16} /> {t('Repeat')}
         </button>
@@ -358,17 +268,6 @@ export default function WorkoutDetail() {
           <Trash2 size={16} /> {t('Delete')}
         </button>
       </div>
-      {celebrating && (
-        <Celebration
-          xp={xp}
-          lines={xpLines}
-          league={game.league}
-          totalXp={game.totalXp}
-          prs={prs.filter((p) => p.kind !== 'volume').length}
-          achievements={newAchievements.map((a) => a.title)}
-          onClose={() => setCelebrating(false)}
-        />
-      )}
       {!isSummary && !routine && (
         <button
           className="btn block mt"

@@ -1,21 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import {
-  computeProgress,
-  goalForWeek,
-  keepXp,
-  leagueInfo,
-  levelInfo,
-  muscleForms,
-  promoteXp,
-  streakInfo,
-  streakRisk,
-  weeklyQuests,
-  xpForLevel,
-  XP,
-} from '../gamification';
+import { computeProgress, goalForWeek, streakInfo, XP } from '../gamification';
 import { logGoalChange } from '../../store/store';
-import { ageFactor, standardsFor, strengthRank } from '../strength';
-import { generateWorkout } from '../generator';
 import { startOfWeek } from '../calc';
 import { BUILTIN_EXERCISES } from '../../data/exercises';
 import type { Workout, WorkoutSet } from '../../types';
@@ -30,26 +15,6 @@ const wk = (startedAt: number, exerciseId = 'bench-press', sets = [set(80, 8)]):
   startedAt,
   finishedAt: startedAt + 3_600_000,
   exercises: [{ id: `e${n}`, exerciseId, sets }],
-});
-
-describe('levels', () => {
-  it('starts at level 1 and grows with XP', () => {
-    expect(levelInfo(0).level).toBe(1);
-    expect(levelInfo(xpForLevel(5)).level).toBe(5);
-    expect(levelInfo(xpForLevel(5) - 1).level).toBe(4);
-    expect(levelInfo(xpForLevel(50)).title).toBe('Prime');
-    expect(levelInfo(0).title).toBe('Rookie');
-    expect(levelInfo(xpForLevel(80)).title).toBe('Legend');
-    expect(levelInfo(xpForLevel(80)).rank).toBe(11);
-    expect(levelInfo(xpForLevel(80)).nextRank).toBeUndefined();
-    expect(levelInfo(xpForLevel(14)).nextRank?.title).toBe('Grinder');
-  });
-  it('reports progress inside the level', () => {
-    const l = levelInfo(xpForLevel(3) + 10);
-    expect(l.current).toBe(10);
-    expect(l.progress).toBeGreaterThan(0);
-    expect(l.progress).toBeLessThan(1);
-  });
 });
 
 describe('computeProgress', () => {
@@ -89,45 +54,6 @@ describe('computeProgress', () => {
   });
 });
 
-describe('streakRisk', () => {
-  // Saturday noon: Saturday and Sunday are left.
-  const sat = new Date(2026, 9, 17, 12).getTime();
-  const lastWeek = wk(startOfWeek(sat) - 5 * DAY);
-  const s = (freezes = 0) => ({ streak: 3, freezes, frozenWeeks: [], best: 3 });
-
-  it('warns when the remaining days barely cover the goal', () => {
-    expect(streakRisk([lastWeek], 2, s(), sat)).toEqual({ level: 'warn', needed: 2, daysLeft: 2 });
-    expect(streakRisk([lastWeek, wk(startOfWeek(sat) + DAY)], 2, s(), sat)?.level).toBe('warn');
-  });
-  it('says whether a freeze will save the week or the streak resets', () => {
-    expect(streakRisk([lastWeek], 3, s(1), sat)?.level).toBe('freeze');
-    expect(streakRisk([lastWeek], 3, s(0), sat)?.level).toBe('lost');
-  });
-  it('stays quiet early in the week, when the goal is met or without a streak', () => {
-    const mon = startOfWeek(sat) + 10 * 3_600_000;
-    expect(streakRisk([lastWeek], 2, s(), mon)).toBeNull();
-    expect(streakRisk([wk(startOfWeek(sat) + DAY), wk(startOfWeek(sat) + 2 * DAY)], 2, s(), sat)).toBeNull();
-    expect(streakRisk([], 2, { streak: 0, freezes: 0, frozenWeeks: [], best: 0 }, sat)).toBeNull();
-  });
-});
-
-describe('bodyweight quest', () => {
-  it('only counts weigh-ins inside that week', () => {
-    const now = new Date(2026, 9, 15, 12).getTime();
-    const weighIn = [{ id: 'm', type: 'bodyweight' as const, value: 80, date: now }];
-    // Find a past week whose seeded quests include the weigh-in quest.
-    let checked = 0;
-    for (let i = 1; i < 60 && !checked; i++) {
-      const q = weeklyQuests([], exMap, 3, weighIn, startOfWeek(now) - i * 7 * DAY + DAY).find((x) => x.id === 'weigh');
-      if (q) {
-        expect(q.done).toBe(false);
-        checked++;
-      }
-    }
-    expect(checked).toBe(1);
-  });
-});
-
 describe('weekly goal history', () => {
   it('judges past weeks by the goal they had', () => {
     const now = new Date(2026, 9, 15, 12).getTime();
@@ -146,61 +72,6 @@ describe('weekly goal history', () => {
     const before = computeProgress([last], exMap, 1, now).totalXp;
     const after = computeProgress([last], exMap, { current: 5, log: logGoalChange(undefined, 1, 5, now) }, now).totalXp;
     expect(after).toBe(before);
-  });
-});
-
-describe('leagueInfo', () => {
-  const now = new Date(2026, 9, 15, 12).getTime();
-  const week = (ago: number) => startOfWeek(now) - ago * 7 * DAY;
-
-  it('promotes above the line and demotes below the keep line', () => {
-    const goal = 3;
-    const xp = new Map([
-      [week(3), promoteXp(0, goal)],
-      [week(2), promoteXp(1, goal)],
-      [week(1), keepXp(2, goal) - 10],
-    ]);
-    const l = leagueInfo(xp, goal, now);
-    expect(l.history.map((h) => h.to)).toEqual([1, 2, 1]);
-    expect(l.division).toBe(1);
-  });
-
-  it('drops one division per inactive week, never below bronze', () => {
-    const xp = new Map([
-      [week(6), 5000],
-      [week(5), 5000],
-    ]);
-    expect(leagueInfo(xp, 3, now).division).toBe(0);
-    expect(leagueInfo(new Map([[week(2), 5000], [week(1), 5000]]), 3, now).division).toBe(2);
-  });
-
-  it('has ten divisions with a rising bar', () => {
-    expect(promoteXp(0, 3)).toBe(400);
-    expect(promoteXp(8, 3)).toBe(1040);
-    expect(keepXp(9, 3)).toBeGreaterThan(keepXp(1, 3) * 3);
-    // Nine perfect weeks are the fastest way to the top.
-    const weeks = new Map(Array.from({ length: 9 }, (_, i) => [week(9 - i), 5000]));
-    expect(leagueInfo(weeks, 3, now).division).toBe(9);
-    expect(leagueInfo(new Map([...weeks].slice(1)), 3, now).division).toBe(8);
-  });
-
-  it('scales the lines with the weekly goal', () => {
-    expect(promoteXp(0, 5)).toBeGreaterThan(promoteXp(0, 2));
-    expect(keepXp(0, 3)).toBe(0);
-  });
-});
-
-describe('muscleForms', () => {
-  it('levels up with lifetime sets and fades when not trained', () => {
-    const now = Date.now();
-    const sets = Array.from({ length: 12 }, () => set(100, 5));
-    const fresh = muscleForms([wk(now - DAY, 'squat', sets)], exMap, now);
-    const old = muscleForms([wk(now - 60 * DAY, 'squat', sets)], exMap, now);
-    expect(fresh.quads.level).toBe(2);
-    expect(old.quads.level).toBe(2);
-    expect(old.quads.form).toBeLessThan(fresh.quads.form / 10);
-    expect(fresh.glutes.lifetime).toBe(9);
-    expect(fresh.chest.level).toBe(0);
   });
 });
 
@@ -231,76 +102,5 @@ describe('streakInfo', () => {
   it('breaks without a freeze', () => {
     const ws = [5, 4, 2, 1].map((a) => wk(week(a)));
     expect(streakInfo(ws, 1, now).streak).toBe(2);
-  });
-});
-
-describe('weeklyQuests', () => {
-  it('is deterministic for a week and always includes the weekly goal', () => {
-    const now = new Date(2026, 9, 15, 12).getTime();
-    const a = weeklyQuests([], exMap, 3, [], now);
-    const b = weeklyQuests([], exMap, 3, [], now + DAY);
-    expect(a.map((q) => q.id)).toEqual(b.map((q) => q.id));
-    expect(a[0].id).toBe('goal');
-    expect(a).toHaveLength(4);
-  });
-  it('tracks progress of the goal quest', () => {
-    const now = new Date(2026, 9, 15, 12).getTime();
-    const ws = [wk(startOfWeek(now) + DAY), wk(startOfWeek(now) + 2 * DAY)];
-    const q = weeklyQuests(ws, exMap, 2, [], now)[0];
-    expect(q.value).toBe(2);
-    expect(q.done).toBe(true);
-  });
-});
-
-describe('strengthRank', () => {
-  it('ranks a 1.0× bodyweight bench as gold for men', () => {
-    expect(strengthRank('bench-press', 80, 80, 'm')!.tier.id).toBe('gold');
-  });
-  it('uses lower thresholds for women', () => {
-    expect(strengthRank('bench-press', 50, 60, 'f')!.tier.id).toBe('gold');
-  });
-  it('ranks pull-ups by reps', () => {
-    expect(strengthRank('pull-up', 12, 80, 'm')!.tier.id).toBe('gold');
-  });
-  it('names the level and scales with bodyweight below proportional', () => {
-    expect(strengthRank('bench-press', 80, 80, 'm')!.level).toBe('Intermediate');
-    const light = standardsFor('squat', 60, 'm')![2];
-    const heavy = standardsFor('squat', 120, 'm')![2];
-    expect(heavy).toBeGreaterThan(light);
-    expect(heavy / 120).toBeLessThan(light / 60);
-  });
-  it('lowers the bar for masters and teens', () => {
-    expect(ageFactor(30)).toBe(1);
-    expect(ageFactor(60)).toBeCloseTo(0.8);
-    expect(ageFactor(17)).toBeLessThan(1);
-    expect(standardsFor('deadlift', 80, 'm', 60)![2]).toBeLessThan(standardsFor('deadlift', 80, 'm', 30)![2]);
-  });
-});
-
-describe('generateWorkout', () => {
-  it('respects focus, duration and equipment', () => {
-    const g = generateWorkout(
-      { focus: 'push', minutes: 45, equipment: ['dumbbell', 'bodyweight'], goal: 'muscle', seed: 42 },
-      BUILTIN_EXERCISES,
-      [],
-      exMap,
-    );
-    expect(g.routine.exercises.length).toBeGreaterThanOrEqual(3);
-    const exs = g.routine.exercises.map((e) => exMap.get(e.exerciseId)!);
-    expect(exs.every((e) => ['dumbbell', 'bodyweight'].includes(e.equipment))).toBe(true);
-    expect(new Set(exs.map((e) => e.id)).size).toBe(exs.length);
-    expect(exs.some((e) => e.primary.includes('chest'))).toBe(true);
-  });
-
-  it('auto focus avoids freshly trained muscles', () => {
-    const now = Date.now();
-    const legDay = wk(now - 3_600_000, 'squat', [set(100, 5), set(100, 5), set(100, 5), set(100, 5)]);
-    const g = generateWorkout(
-      { focus: 'auto', minutes: 60, equipment: BUILTIN_EXERCISES.map((e) => e.equipment), goal: 'strength', seed: 1 },
-      BUILTIN_EXERCISES,
-      [legDay],
-      exMap,
-    );
-    expect(g.focus).not.toBe('legs');
   });
 });

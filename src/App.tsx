@@ -20,14 +20,10 @@ import ExerciseDetail from './pages/ExerciseDetail';
 import More from './pages/More';
 import Stats from './pages/Stats';
 import MuscleDetail from './pages/MuscleDetail';
-import { GameWatcher } from './components/GameWatcher';
 import Privacy from './pages/Privacy';
 import { startCloud } from './lib/cloud';
 import Measure from './pages/Measure';
-import Achievements from './pages/Achievements';
-import Planner from './pages/Planner';
 import SettingsPage from './pages/Settings';
-import Profile from './pages/Profile';
 import Onboarding from './pages/Onboarding';
 
 function useTheme() {
@@ -119,17 +115,16 @@ function Shell() {
         <Route path="/muscles/:id" element={<MuscleDetail />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/measure" element={<Measure />} />
+        <Route path="/achievements" element={<Navigate to="/" replace />} />
+        <Route path="/planner" element={<Navigate to="/settings" replace />} />
+        <Route path="/profile" element={<Navigate to="/stats" replace />} />
         <Route path="/tools" element={<Navigate to="/" replace />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/planner" element={<Planner />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/profile" element={<Profile />} />
         <Route path="*" element={<Home />} />
       </Routes>
       {!fullscreen && <ActiveBar />}
       {!fullscreen && <BottomNav />}
       <RestTimerBar aboveNav={!fullscreen} />
-      <GameWatcher />
       <Toasts />
       <Dialogs />
       <SaveErrorBanner />

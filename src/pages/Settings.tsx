@@ -94,14 +94,14 @@ export default function SettingsPage() {
         <Row title={t('Name')}>
           <input style={{ width: 160 }} value={settings.name} placeholder={t('Your name')} onChange={(e) => update({ name: e.target.value })} />
         </Row>
-        <Row title={t('Gender')} desc={t('For strength ranks')}>
+        <Row title={t('Gender')} desc={t('Used for the body map')}>
           <select style={{ width: 130 }} value={settings.sex ?? ''} onChange={(e) => update({ sex: (e.target.value || undefined) as Sex | undefined })}>
             <option value="">{t('Rather not say')}</option>
             <option value="m">{t('Male')}</option>
             <option value="f">{t('Female')}</option>
           </select>
         </Row>
-        <Row title={t('Birth year')} desc={t('Adjusts strength ranks for age')}>
+        <Row title={t('Birth year')} desc={t('Optional')}>
           <select
             style={{ width: 130 }}
             value={settings.birthYear ?? ''}

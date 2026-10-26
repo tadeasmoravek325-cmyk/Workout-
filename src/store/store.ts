@@ -42,6 +42,8 @@ interface State extends BackupData {
   rest: RestTimer | null;
 
   startWorkout: (routine?: Routine) => void;
+  /** Starts a new workout with the same exercises and sets as a finished one, ready to fill in. */
+  repeatWorkout: (workoutId: string) => void;
   mutateActive: (fn: (w: Workout) => void) => void;
   discardWorkout: () => void;
   /** Removes unfinished sets and empty exercises, stores the workout and returns its id. */
@@ -184,6 +186,27 @@ export const useStore = create<State>()(
           ? workoutFromRoutine(routine)
           : { id: uid(), name: defaultWorkoutName(), startedAt: Date.now(), exercises: [], notes: '' };
         setState({ active: w });
+      },
+
+      repeatWorkout: (workoutId) => {
+        const s = getState();
+        const src = s.workouts.find((x) => x.id === workoutId);
+        if (s.active || !src) return;
+        setState({
+          active: {
+            id: uid(),
+            name: src.name,
+            startedAt: Date.now(),
+            notes: '',
+            exercises: src.exercises.map((e) => ({
+              id: uid(),
+              exerciseId: e.exerciseId,
+              restSec: e.restSec,
+              supersetId: e.supersetId,
+              sets: e.sets.map((x) => ({ id: uid(), type: x.type, weight: x.weight, reps: x.reps, durationSec: x.durationSec, distance: x.distance, done: false })),
+            })),
+          },
+        });
       },
 
       mutateActive: (fn) => {

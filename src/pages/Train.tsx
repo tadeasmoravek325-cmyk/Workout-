@@ -4,8 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { PROGRAMS, type Program } from '../data/programs';
 import { confirmDialog, Sheet, toast, undoToast } from '../components/ui';
-import { GeneratorSheet } from '../components/GeneratorSheet';
-import { Sparkles } from 'lucide-react';
 import { exerciseHistory } from '../lib/calc';
 import { relativeDay } from '../lib/format';
 import { t, tn } from '../i18n';
@@ -24,7 +22,6 @@ export default function Train() {
   const navigate = useNavigate();
   const [program, setProgram] = useState<Program | null>(null);
   const [preview, setPreview] = useState<Routine | null>(null);
-  const [generator, setGenerator] = useState(false);
 
   const start = (r?: Routine) => {
     if (active) {
@@ -53,12 +50,6 @@ export default function Train() {
       <button className="btn primary block" onClick={() => start()}>
         {active ? `▶ ${t('Resume workout')}` : `+ ${t('Start empty workout')}`}
       </button>
-      {!active && (
-        <button className="btn cool block mt" onClick={() => setGenerator(true)}>
-          <Sparkles size={18} /> {t('Generate a custom workout')}
-        </button>
-      )}
-
       <div className="section">
         <div className="section-title">
           <h2>{t('Routines')}</h2>
@@ -113,7 +104,6 @@ export default function Train() {
         </div>
       </div>
 
-      {generator && <GeneratorSheet onClose={() => setGenerator(false)} />}
 
       {program && (
         <Sheet title={program.name} onClose={() => setProgram(null)}>
