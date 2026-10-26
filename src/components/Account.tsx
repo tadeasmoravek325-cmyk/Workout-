@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Cloud, CloudOff, LogOut, Mail, RefreshCw, Trash2, TriangleAlert } from 'lucide-react';
 import { deleteAccount, oauthProviders, signInWith, signInWithPassword, signOut, signUpWithPassword, syncNow, useCloud } from '../lib/cloud';
 import { relativeDay } from '../lib/format';
@@ -188,9 +187,10 @@ export function SignInSheet({ onClose }: { onClose: () => void }) {
 
         <p className="tiny muted center" style={{ margin: 0 }}>
           {t('Your workouts on this phone are kept and merged with your account.')}{' '}
-          <Link to="/privacy" className="accent" onClick={onClose}>
+          {/* A plain hash link: this sheet also opens on the welcome screen, which has no router. */}
+          <a href="#/privacy" className="accent" onClick={onClose}>
             {t('Privacy')}
-          </Link>
+          </a>
         </p>
       </div>
     </Sheet>
