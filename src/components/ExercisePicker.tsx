@@ -11,6 +11,7 @@ import {
 } from '../data/exercises';
 import { Sheet, toast } from './ui';
 import { uid } from '../lib/calc';
+import { suggestMuscles } from '../lib/suggestMuscles';
 import { t } from '../i18n';
 
 export function normalize(s: string): string {
@@ -216,6 +217,7 @@ export function ExerciseForm({
   initialName?: string;
 }) {
   const saveExercise = useStore((s) => s.saveExercise);
+  const allExercises = useAllExercises();
   const [name, setName] = useState(initial?.name ?? initialName);
   const [bodyPart, setBodyPart] = useState<BodyPart>(initial?.bodyPart ?? 'chest');
   const [equipment, setEquipment] = useState<Equipment>(initial?.equipment ?? 'barbell');
@@ -223,6 +225,18 @@ export function ExerciseForm({
   const [primary, setPrimary] = useState<Muscle[]>(initial?.primary ?? []);
   const [secondary, setSecondary] = useState<Muscle[]>(initial?.secondary ?? []);
   const [instructions, setInstructions] = useState((initial?.instructions ?? []).join('\n'));
+
+  const [basedOn, setBasedOn] = useState<string[]>([]);
+  const suggest = (auto: boolean) => {
+    const s = suggestMuscles(name, allExercises);
+    if (!s) return auto ? undefined : toast(t('No similar exercise found. Pick the muscles yourself.'));
+    setPrimary(s.primary);
+    setSecondary(s.secondary);
+    setBodyPart(s.bodyPart);
+    setType(s.type);
+    if (s.equipment) setEquipment(s.equipment);
+    setBasedOn(s.basedOn);
+  };
 
   const cycle = (m: Muscle) => {
     if (primary.includes(m)) {
@@ -269,7 +283,13 @@ export function ExerciseForm({
       <div className="stack">
         <div className="field">
           <label>{t('Name')}</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('e.g. Smith machine press')} autoFocus />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={() => !initial && !primary.length && name.trim().length > 2 && suggest(true)}
+            placeholder={t('e.g. Smith machine press')}
+            autoFocus
+          />
         </div>
         <div className="grid-2">
           <div className="field">
@@ -305,6 +325,10 @@ export function ExerciseForm({
         </div>
         <div className="field">
           <label>{t('Muscles (tap once = primary, twice = secondary)')}</label>
+          <button className="btn soft sm" onClick={() => suggest(false)} disabled={name.trim().length < 3}>
+            {t('Suggest muscles from the name')}
+          </button>
+          {basedOn.length > 0 && <div className="tiny muted">{t('Based on: {names}. Adjust if needed.', { names: basedOn.join(', ') })}</div>}
           <div className="row wrap" style={{ gap: 6 }}>
             {ALL_MUSCLES.map((m) => (
               <button
