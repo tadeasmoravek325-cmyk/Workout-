@@ -115,10 +115,10 @@ describe('Strong import – newer export format and similar names', () => {
     expect(strongExerciseId('Reverse Hack Squat')).toBe(strongExerciseId('  reverse   hack squat '));
   });
 
-  it('suggests only exact matches and lets the user override the mapping', () => {
+  it('suggests exact matches and lets the user override the mapping', () => {
     const analysis = analyzeStrongCsv(NEW_FORMAT, BUILTIN_EXERCISES);
     const rev = analysis.exercises.find((e) => e.name === 'Reverse Hack Squat')!;
-    expect(rev.suggested).toBeNull();
+    expect(rev.suggested).toBe('reverse-hack-squat');
     expect(rev.sets).toBe(2);
     expect(analysis.unitFromFile).toBe('kg');
     expect(analysis.workoutCount).toBe(2);

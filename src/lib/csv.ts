@@ -1,6 +1,7 @@
 import type { BodyPart, Equipment, Exercise, ExerciseType, SetType, Unit, Workout, WorkoutExercise } from '../types';
 import { uid } from './calc';
 import { KG_PER_LB } from './format';
+import { withSuggestedMuscles } from './suggestMuscles';
 import { t } from '../i18n';
 
 /** Parses CSV text (RFC 4180 quoting). Detects `,` or `;` delimiter from the header line. */
@@ -365,6 +366,7 @@ export function buildStrongImport(
         secondary: [],
         custom: true,
       };
+      ex = { ...withSuggestedMuscles(ex, knownExercises), equipment: ex.equipment };
       created.set(key, ex);
     }
     return ex.id;

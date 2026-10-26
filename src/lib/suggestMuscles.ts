@@ -67,3 +67,11 @@ export function suggestMuscles(name: string, all: Exercise[]): MuscleSuggestion 
   const equipment = EQUIPMENT_WORDS.find(([re]) => re.test(name))?.[1];
   return { primary, secondary, bodyPart: top[0].bodyPart, equipment, type: top[0].type, basedOn: top.map((e) => e.name) };
 }
+
+/** Fills in body part and muscles of an exercise that has none, from similar library exercises. */
+export function withSuggestedMuscles<E extends Exercise>(e: E, all: Exercise[]): E {
+  if (e.primary.length) return e;
+  const s = suggestMuscles(e.name, all);
+  if (!s) return e;
+  return { ...e, bodyPart: s.bodyPart, primary: s.primary, secondary: s.secondary, type: s.type };
+}

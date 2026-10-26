@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { withSuggestedMuscles } from '../lib/suggestMuscles';
 import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY, whileQuiet } from '../lib/safety';
 import type {
   Exercise,
@@ -60,6 +61,8 @@ interface State extends BackupData {
   updateRoutineFromWorkout: (workoutId: string) => void;
   importProgram: (programId: string) => number;
 
+  /** Adds muscles to custom exercises that have none (e.g. created by a Strong import). Returns how many changed. */
+  fillMissingMuscles: () => number;
   saveExercise: (e: Exercise) => void;
   deleteExercise: (id: string) => void;
 
@@ -350,6 +353,21 @@ export const useStore = create<State>()(
         return routines.length;
       },
 
+      fillMissingMuscles: () => {
+        const s = getState();
+        const at = stampNow();
+        let changed = 0;
+        const customExercises = s.customExercises.map((e) => {
+          if (e.primary.length) return e;
+          const next = withSuggestedMuscles(e, BUILTIN_EXERCISES);
+          if (next === e) return e;
+          changed++;
+          return stamp(next, at);
+        });
+        if (changed) setState({ customExercises });
+        return changed;
+      },
+
       saveExercise: (e) =>
         setState((s) => {
           const exists = s.customExercises.some((x) => x.id === e.id);
@@ -512,6 +530,7 @@ export const useStore = create<State>()(
         if (!error) {
           void requestPersistence();
           void maybeDailySnapshot(exportBackup());
+          useStore.getState().fillMissingMuscles();
         }
       },
     },

@@ -4,6 +4,9 @@ import type { BodyPart, Equipment, Exercise, ExerciseType, Muscle, MuscleLoad } 
  * Muscle involvement uses fractional set counting: the target muscle counts 1.0 per set,
  * strong synergists 0.5–0.75, stabilisers 0.25. Values follow common EMG / volume-study practice
  * (direct sets count fully, indirect sets roughly half).
+ *
+ * Checked against the public-domain free-exercise-db (github.com/yuhonas/free-exercise-db) and
+ * published EMG summaries. Where sources disagree on emphasis the value is a middle estimate.
  */
 function ex(
   id: string,
@@ -44,6 +47,9 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   ex('cable-fly', 'Cable Crossover', 'cable', 'chest', { chest: 1, frontDelts: 0.25 }),
   ex('pec-deck', 'Pec Deck (Machine)', 'machine', 'chest', { chest: 1, frontDelts: 0.25 }),
   ex('chest-press-machine', 'Chest Press (Machine)', 'machine', 'chest', { chest: 1, frontDelts: 0.5, triceps: 0.5 }),
+  ex('smith-bench', 'Bench Press (Smith Machine)', 'machine', 'chest', { chest: 1, frontDelts: 0.5, triceps: 0.5 }),
+  ex('incline-chest-press-machine', 'Incline Chest Press (Machine)', 'machine', 'chest', { chest: 1, frontDelts: 0.75, triceps: 0.5 }),
+  ex('db-pullover', 'Pullover (Dumbbell)', 'dumbbell', 'chest', { chest: 1, lats: 0.75, triceps: 0.25 }),
   ex('push-up', 'Push Up', 'bodyweight', 'chest', { chest: 1, frontDelts: 0.5, triceps: 0.5, abs: 0.25 }, 'reps_only'),
   ex('dips', 'Chest Dip', 'bodyweight', 'chest', { chest: 1, triceps: 0.75, frontDelts: 0.5 }, 'weighted_bodyweight'),
 
@@ -55,8 +61,8 @@ export const BUILTIN_EXERCISES: Exercise[] = [
     'Finish with hips locked out, without leaning back. Lower under control.',
   ]),
   ex('sumo-deadlift', 'Sumo Deadlift (Barbell)', 'barbell', 'back', { glutes: 1, quads: 0.75, adductors: 0.75, hamstrings: 0.5, lowerBack: 0.5, traps: 0.5, forearms: 0.5 }),
-  ex('barbell-row', 'Bent Over Row (Barbell)', 'barbell', 'back', { lats: 1, upperBack: 1, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25, forearms: 0.25 }),
-  ex('pendlay-row', 'Pendlay Row (Barbell)', 'barbell', 'back', { lats: 1, upperBack: 1, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25 }),
+  ex('barbell-row', 'Bent Over Row (Barbell)', 'barbell', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25, forearms: 0.25 }),
+  ex('pendlay-row', 'Pendlay Row (Barbell)', 'barbell', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25 }),
   ex('db-row', 'Bent Over One Arm Row (Dumbbell)', 'dumbbell', 'back', { lats: 1, upperBack: 0.75, rearDelts: 0.5, biceps: 0.5 }),
   ex('pull-up', 'Pull Up', 'bodyweight', 'back', { lats: 1, upperBack: 0.5, biceps: 0.5, forearms: 0.25, abs: 0.25 }, 'weighted_bodyweight', [
     'Grip the bar overhand, slightly wider than your shoulders.',
@@ -67,11 +73,12 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   ex('assisted-pull-up', 'Pull Up (Assisted)', 'machine', 'back', { lats: 1, upperBack: 0.5, biceps: 0.5 }, 'assisted_bodyweight'),
   ex('lat-pulldown', 'Lat Pulldown (Cable)', 'cable', 'back', { lats: 1, upperBack: 0.5, biceps: 0.5, rearDelts: 0.25 }),
   ex('seated-cable-row', 'Seated Row (Cable)', 'cable', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5 }),
-  ex('t-bar-row', 'T Bar Row', 'barbell', 'back', { upperBack: 1, lats: 1, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25 }),
+  ex('t-bar-row', 'T Bar Row', 'barbell', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25 }),
   ex('machine-row', 'Seated Row (Machine)', 'machine', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5 }),
   ex('straight-arm-pulldown', 'Straight Arm Pulldown (Cable)', 'cable', 'back', { lats: 1, triceps: 0.25 }),
   ex('shrug', 'Shrug (Barbell)', 'barbell', 'back', { traps: 1, forearms: 0.25 }),
   ex('db-shrug', 'Shrug (Dumbbell)', 'dumbbell', 'back', { traps: 1, forearms: 0.25 }),
+  ex('db-bent-over-row', 'Bent Over Row (Dumbbell)', 'dumbbell', 'back', { upperBack: 1, lats: 0.75, rearDelts: 0.5, biceps: 0.5, lowerBack: 0.25 }),
   ex('back-extension', 'Back Extension', 'bodyweight', 'back', { lowerBack: 1, glutes: 0.75, hamstrings: 0.5 }, 'weighted_bodyweight'),
 
   // Legs
@@ -83,9 +90,17 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   ]),
   ex('front-squat', 'Front Squat (Barbell)', 'barbell', 'legs', { quads: 1, glutes: 0.5, adductors: 0.5, abs: 0.5, upperBack: 0.25 }),
   ex('goblet-squat', 'Goblet Squat (Dumbbell)', 'dumbbell', 'legs', { quads: 1, glutes: 0.75, adductors: 0.5, abs: 0.25 }),
-  ex('leg-press', 'Leg Press', 'machine', 'legs', { quads: 1, glutes: 0.5, adductors: 0.5 }),
-  ex('hack-squat', 'Hack Squat', 'machine', 'legs', { quads: 1, glutes: 0.5, adductors: 0.25 }),
-  ex('bulgarian-split-squat', 'Bulgarian Split Squat', 'dumbbell', 'legs', { quads: 1, glutes: 1, adductors: 0.5, hamstrings: 0.25 }),
+  ex('leg-press', 'Leg Press', 'machine', 'legs', { quads: 1, glutes: 0.5, adductors: 0.5, hamstrings: 0.25 }),
+  ex('hack-squat', 'Hack Squat', 'machine', 'legs', { quads: 1, glutes: 0.5, adductors: 0.25, hamstrings: 0.25 }),
+  // Facing the pad with the chest on the machine: more glutes and hamstrings than the standard version.
+  ex('reverse-hack-squat', 'Reverse Hack Squat', 'machine', 'legs', { quads: 1, glutes: 0.75, hamstrings: 0.5, adductors: 0.25, calves: 0.25 }),
+  ex('smith-squat', 'Squat (Smith Machine)', 'machine', 'legs', { quads: 1, glutes: 0.75, adductors: 0.25, hamstrings: 0.25, lowerBack: 0.25 }),
+  ex('barbell-lunge', 'Lunge (Barbell)', 'barbell', 'legs', { quads: 1, glutes: 0.75, adductors: 0.5, hamstrings: 0.25 }),
+  ex('good-morning', 'Good Morning (Barbell)', 'barbell', 'legs', { hamstrings: 1, glutes: 0.75, lowerBack: 0.75, adductors: 0.25 }),
+  ex('reverse-hyperextension', 'Reverse Hyperextension', 'machine', 'legs', { hamstrings: 1, glutes: 0.75, lowerBack: 0.5 }),
+  ex('glute-kickback', 'Glute Kickback (Machine)', 'machine', 'legs', { glutes: 1, hamstrings: 0.25 }),
+  ex('seated-leg-press-calf', 'Calf Press on Seated Leg Press', 'machine', 'legs', { calves: 1 }),
+  ex('bulgarian-split-squat', 'Bulgarian Split Squat', 'dumbbell', 'legs', { quads: 1, glutes: 0.75, adductors: 0.5, hamstrings: 0.25 }),
   ex('lunge', 'Lunge (Dumbbell)', 'dumbbell', 'legs', { quads: 1, glutes: 0.75, adductors: 0.5, hamstrings: 0.25 }),
   ex('romanian-deadlift', 'Romanian Deadlift (Barbell)', 'barbell', 'legs', { hamstrings: 1, glutes: 0.75, lowerBack: 0.5, forearms: 0.25, adductors: 0.25 }),
   ex('db-romanian-deadlift', 'Romanian Deadlift (Dumbbell)', 'dumbbell', 'legs', { hamstrings: 1, glutes: 0.75, lowerBack: 0.5, forearms: 0.25 }),
@@ -111,6 +126,8 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   ex('lateral-raise', 'Lateral Raise (Dumbbell)', 'dumbbell', 'shoulders', { sideDelts: 1, traps: 0.25 }),
   ex('cable-lateral-raise', 'Lateral Raise (Cable)', 'cable', 'shoulders', { sideDelts: 1, traps: 0.25 }),
   ex('front-raise', 'Front Raise (Dumbbell)', 'dumbbell', 'shoulders', { frontDelts: 1, chest: 0.25 }),
+  ex('cable-rear-delt-fly', 'Reverse Fly (Cable)', 'cable', 'shoulders', { rearDelts: 1, upperBack: 0.5 }),
+  ex('machine-lateral-raise', 'Lateral Raise (Machine)', 'machine', 'shoulders', { sideDelts: 1, traps: 0.25 }),
   ex('rear-delt-fly', 'Reverse Fly (Dumbbell)', 'dumbbell', 'shoulders', { rearDelts: 1, upperBack: 0.5 }),
   ex('reverse-pec-deck', 'Reverse Fly (Machine)', 'machine', 'shoulders', { rearDelts: 1, upperBack: 0.5 }),
   ex('face-pull', 'Face Pull (Cable)', 'cable', 'shoulders', { rearDelts: 1, upperBack: 0.75, traps: 0.25 }),
@@ -127,17 +144,23 @@ export const BUILTIN_EXERCISES: Exercise[] = [
   ex('triceps-pushdown', 'Triceps Pushdown (Cable)', 'cable', 'arms', { triceps: 1 }),
   ex('overhead-triceps-extension', 'Triceps Extension (Cable)', 'cable', 'arms', { triceps: 1 }),
   ex('skull-crusher', 'Skullcrusher (Barbell)', 'barbell', 'arms', { triceps: 1 }),
-  ex('close-grip-bench', 'Bench Press - Close Grip (Barbell)', 'barbell', 'arms', { triceps: 1, chest: 0.75, frontDelts: 0.5 }),
+  ex('close-grip-bench', 'Bench Press - Close Grip (Barbell)', 'barbell', 'arms', { triceps: 1, chest: 0.5, frontDelts: 0.5 }),
   ex('db-kickback', 'Triceps Kickback (Dumbbell)', 'dumbbell', 'arms', { triceps: 1 }),
+  ex('triceps-dip', 'Triceps Dip', 'bodyweight', 'arms', { triceps: 1, chest: 0.5, frontDelts: 0.5 }, 'weighted_bodyweight'),
+  ex('db-overhead-triceps', 'Triceps Extension (Dumbbell)', 'dumbbell', 'arms', { triceps: 1 }),
+  ex('machine-preacher-curl', 'Preacher Curl (Machine)', 'machine', 'arms', { biceps: 1, forearms: 0.25 }),
   ex('wrist-curl', 'Wrist Curl (Dumbbell)', 'dumbbell', 'arms', { forearms: 1 }),
 
   // Core
   ex('plank', 'Plank', 'bodyweight', 'core', { abs: 1, obliques: 0.5, frontDelts: 0.25 }, 'duration'),
+  ex('sit-up', 'Sit Up', 'bodyweight', 'core', { abs: 1, obliques: 0.25 }, 'reps_only'),
+  ex('hanging-knee-raise', 'Hanging Knee Raise', 'bodyweight', 'core', { abs: 1, obliques: 0.25, forearms: 0.25 }, 'reps_only'),
+  ex('lying-leg-raise', 'Lying Leg Raise', 'bodyweight', 'core', { abs: 1, obliques: 0.25 }, 'reps_only'),
   ex('side-plank', 'Side Plank', 'bodyweight', 'core', { obliques: 1, abs: 0.5 }, 'duration'),
   ex('crunch', 'Crunch', 'bodyweight', 'core', { abs: 1, obliques: 0.25 }, 'reps_only'),
   ex('cable-crunch', 'Cable Crunch', 'cable', 'core', { abs: 1, obliques: 0.25 }),
   ex('hanging-leg-raise', 'Hanging Leg Raise', 'bodyweight', 'core', { abs: 1, obliques: 0.5, forearms: 0.25 }, 'reps_only'),
-  ex('ab-wheel', 'Ab Wheel', 'other', 'core', { abs: 1, lats: 0.25, obliques: 0.25 }, 'reps_only'),
+  ex('ab-wheel', 'Ab Wheel', 'other', 'core', { abs: 1, lats: 0.25, frontDelts: 0.25, obliques: 0.25 }, 'reps_only'),
   ex('russian-twist', 'Russian Twist', 'bodyweight', 'core', { obliques: 1, abs: 0.5 }, 'reps_only'),
   ex('pallof-press', 'Pallof Press (Cable)', 'cable', 'core', { obliques: 1, abs: 0.5 }),
 
