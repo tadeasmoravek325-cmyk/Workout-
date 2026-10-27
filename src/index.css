@@ -41,9 +41,7 @@
   --glow: none;
   --nav-h: 68px;
   --safe-b: env(safe-area-inset-bottom, 0px);
-  /* Top inset only when installed full screen: in a browser tab or an embedded preview the host
-     already keeps content below the status bar, and adding it again pushes everything down. */
-  --safe-t: 0px;
+  --safe-t: env(safe-area-inset-top, 0px);
   color-scheme: dark;
 }
 
@@ -2206,23 +2204,18 @@ button.league-card {
   color: var(--on-accent);
 }
 
-@media (display-mode: standalone), (display-mode: fullscreen) {
-  :root {
-    --safe-t: env(safe-area-inset-top, 0px);
-  }
-
-  /* The status bar is translucent: without this, scrolling content shows through behind the notch. */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: var(--safe-t);
-    background: var(--bg);
-    z-index: 90;
-    pointer-events: none;
-  }
+/* The status bar and notch are translucent over the page, in Safari and when installed. Content must
+   start below them, and scrolling content must not show through behind them. */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-t);
+  background: var(--bg);
+  z-index: 90;
+  pointer-events: none;
 }
 
 /* Account */
