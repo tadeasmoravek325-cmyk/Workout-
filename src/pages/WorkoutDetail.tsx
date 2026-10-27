@@ -158,7 +158,7 @@ export default function WorkoutDetail() {
           <div className="small muted bold" style={{ marginBottom: 6 }}>
             {t('Muscles worked')}
           </div>
-          <BodyMap height={260} color={muscleColor} value={(m) => load[m] ?? 0} onPick={(m) => navigate(`/muscles/${m}`)} />
+          <BodyMap rotatable height={300} color={muscleColor} value={(m) => load[m] ?? 0} />
         </div>
       )}
 

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { Muscle, Sex } from '../types';
 import { MUSCLE_LABELS } from '../data/exercises';
 import { ANATOMY, type AnatomyRegion, type AnatomyView } from '../data/anatomy';
@@ -22,6 +23,8 @@ interface Props {
   side?: 'front' | 'back';
   onPick?: (m: Muscle) => void;
   labels?: boolean;
+  /** One figure that turns around between front and back when tapped. */
+  rotatable?: boolean;
 }
 
 function pick(region: AnatomyRegion, value?: (m: Muscle) => number): Muscle | null {
@@ -59,16 +62,34 @@ function View({ view, color, value, onPick }: { view: AnatomyView } & Pick<Props
  * Anatomical front/back figure, male or female, with muscles coloured by `color(muscle)`.
  * Artwork from react-muscle-highlighter (MIT), see src/data/anatomy.ts.
  */
-export function BodyMap({ color, value, height = 260, sex, side, onPick, labels = true }: Props) {
+export function BodyMap({ color, value, height = 260, sex, side, onPick, labels = true, rotatable = false }: Props) {
+  const [facing, setFacing] = useState<'front' | 'back'>('front');
+  const [turning, setTurning] = useState(false);
   const profileSex = useStore((s) => s.settings.sex);
   const updateSettings = useStore((s) => s.updateSettings);
   const model = ANATOMY[(sex ?? profileSex) === 'f' ? 'female' : 'male'];
-  const sides = side ? [side] : (['front', 'back'] as const);
+  const sides = rotatable ? [facing] : side ? [side] : (['front', 'back'] as const);
   // Only full-size maps ask; thumbnails just use the default body.
   const ask = !sex && !profileSex && labels && !side;
+  const turn = () => {
+    if (turning) return;
+    setTurning(true);
+    setTimeout(() => {
+      setFacing((f) => (f === 'front' ? 'back' : 'front'));
+      setTurning(false);
+    }, 170);
+  };
   return (
     <>
-      <div className={`body-map ${labels ? '' : 'no-labels'}`} style={{ height }} role="img" aria-label={t('Muscle map')}>
+      <div
+        className={`body-map ${labels ? '' : 'no-labels'} ${rotatable ? `rotatable ${turning ? 'turn-out' : 'turn-in'}` : ''}`}
+        style={{ height }}
+        role={rotatable ? 'button' : 'img'}
+        tabIndex={rotatable ? 0 : undefined}
+        aria-label={rotatable ? t('Muscle map. Tap to turn around.') : t('Muscle map')}
+        onClick={rotatable ? turn : undefined}
+        onKeyDown={rotatable ? (e) => (e.key === 'Enter' || e.key === ' ') && turn() : undefined}
+      >
         {sides.map((s) => (
           <figure key={s}>
             <View view={model[s]} color={color} value={value} onPick={onPick} />
@@ -76,6 +97,7 @@ export function BodyMap({ color, value, height = 260, sex, side, onPick, labels 
           </figure>
         ))}
       </div>
+      {rotatable && <div className="tiny muted center">{t('Tap the figure to turn it around')}</div>}
       {ask && (
         <div className="body-sex">
           <span className="small muted">{t('Show body as')}</span>

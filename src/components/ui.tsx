@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { create } from 'zustand';
 import { t } from '../i18n';
@@ -16,6 +16,26 @@ export function Sheet({
   full?: boolean;
   action?: ReactNode;
 }) {
+  const overlay = useRef<HTMLDivElement>(null);
+  // iOS keeps the page at full height under the keyboard: follow the visible area so the list stays in view.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const fit = () => {
+      const el = overlay.current;
+      if (!el) return;
+      el.style.top = `${vv.offsetTop}px`;
+      el.style.height = `${vv.height}px`;
+      el.style.bottom = 'auto';
+    };
+    fit();
+    vv.addEventListener('resize', fit);
+    vv.addEventListener('scroll', fit);
+    return () => {
+      vv.removeEventListener('resize', fit);
+      vv.removeEventListener('scroll', fit);
+    };
+  }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -27,7 +47,7 @@ export function Sheet({
     };
   }, [onClose]);
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay" ref={overlay} onClick={onClose}>
       <div className={`sheet ${full ? 'full' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="sheet-head">
           <button className="icon-btn" onClick={onClose} aria-label={t('Close')}>
