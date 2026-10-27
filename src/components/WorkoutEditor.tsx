@@ -7,6 +7,7 @@ import { newSet, newWorkoutExercise, useAllExercises, useExerciseMap, useStore }
 import {
   computeRecords,
   e1rm,
+  targetSets,
   exerciseHistory,
   isWorkingSet,
   suggestNext,
@@ -17,7 +18,7 @@ import {
 } from '../lib/calc';
 import { fmtClock, fmtNum, fromDisplayWeight, parseClock, toDisplayWeight } from '../lib/format';
 import { findSubstitutes } from '../lib/substitutes';
-import { unlockAudio } from '../lib/feedback';
+import { askNotificationsOnce, unlockAudio } from '../lib/feedback';
 import { haptic } from '../lib/celebrate';
 import { plateCalc } from '../lib/calc';
 import { PlateVisual } from './PlateVisual';
@@ -145,12 +146,12 @@ export function WorkoutEditor({
           }}
         />
       )}
-      {!reorder && workout.exercises.map((we, i) => {
+      {workout.exercises.map((we, i) => {
         const ex = exMap.get(we.exerciseId);
         if (!ex) return null;
         return (
+          <div key={we.id} hidden={!!reorder}>
           <ExerciseCard
-            key={we.id}
             we={we}
             ex={ex}
             index={i}
@@ -161,6 +162,7 @@ export function WorkoutEditor({
             settings={settings}
             onGrab={(y) => setReorder({ id: we.id, y })}
           />
+          </div>
         );
       })}
 
@@ -223,9 +225,16 @@ function ExerciseCard({
   const sessions: Session[] = useMemo(() => exerciseHistory(history, ex.id), [history, ex.id]);
   const prev = sessions[0];
   const records = useMemo(() => computeRecords(sessions), [sessions]);
+  const exMap = useExerciseMap();
+  // Hard sets already done on this exercise's muscles: in the last 3 days, and earlier in this workout.
+  const recentSets = useMemo(
+    () => targetSets(ex, history, exMap, workout.startedAt - 72 * 3_600_000),
+    [ex, history, exMap, workout.startedAt],
+  );
+  const sessionSets = targetSets(ex, [workout], exMap, -Infinity, we.id);
   const suggestion: Suggestion | null = useMemo(
-    () => (live && settings.smartCoach ? suggestNext(ex, sessions) : null),
-    [live, settings.smartCoach, ex, sessions],
+    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets }) : null),
+    [live, settings.smartCoach, ex, sessions, recentSets, sessionSets],
   );
 
   const unit = settings.unit;
@@ -254,6 +263,7 @@ function ExerciseCard({
 
   const completeSet = (setId: string) => {
     unlockAudio();
+    if (live && settings.autoStartRest) askNotificationsOnce();
     const idx = we.sets.findIndex((s) => s.id === setId);
     const s = we.sets[idx];
     if (!s) return;
@@ -531,7 +541,24 @@ function ExerciseCard({
             })();
             const setField = (patch: Partial<WorkoutSet>) =>
               upd((x) => {
-                Object.assign(x.sets[i], patch);
+                const cur = x.sets[i];
+                const before = { weight: cur.weight, reps: cur.reps };
+                Object.assign(cur, patch);
+                // Following sets that still match this one (empty, or equal to its old value) take the new value;
+                // propagation stops at the first set the user has set differently.
+                if (cur.type !== 'normal') return;
+                const follow = (field: 'weight' | 'reps', emptyFollows: boolean) => {
+                  if (!(field in patch)) return;
+                  for (const next of x.sets.slice(i + 1)) {
+                    if (next.done || next.type !== 'normal') continue;
+                    const v = next[field];
+                    const follows = v === undefined ? emptyFollows : v === before[field];
+                    if (!follows) break;
+                    next[field] = patch[field];
+                  }
+                };
+                follow('weight', true);
+                follow('reps', false);
               });
             const isPr =
               s.done &&
@@ -922,6 +949,11 @@ function useGrab(onGrab: (y: number) => void) {
   return {
     onPointerDown: (e: React.PointerEvent) => {
       clear();
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        /* not supported */
+      }
       const y = e.clientY;
       st.current.x = e.clientX;
       st.current.y = y;

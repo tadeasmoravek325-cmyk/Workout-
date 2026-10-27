@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
@@ -14,6 +14,30 @@ export default function ActiveWorkout() {
   const navigate = useNavigate();
   const now = useNow(1000);
   const [confirming, setConfirming] = useState(false);
+
+  // Keep the screen on during a workout: a sleeping phone pauses the rest timer and its alert.
+  useEffect(() => {
+    let lock: WakeLockSentinel | null = null;
+    let cancelled = false;
+    const take = async () => {
+      try {
+        if (document.visibilityState === 'visible' && !lock) {
+          lock = (await navigator.wakeLock?.request('screen')) ?? null;
+          lock?.addEventListener('release', () => (lock = null));
+          if (cancelled) void lock?.release();
+        }
+      } catch {
+        /* not supported or refused */
+      }
+    };
+    void take();
+    document.addEventListener('visibilitychange', take);
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', take);
+      void lock?.release();
+    };
+  }, []);
 
   if (!active) return <Navigate to="/train" replace />;
 

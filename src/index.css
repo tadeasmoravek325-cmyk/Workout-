@@ -181,12 +181,16 @@ svg.lucide {
 }
 
 .page-header .back {
-  font-size: 15px;
+  font-size: 20px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px 0 4px;
+  margin-left: -4px;
   color: var(--accent);
   font-weight: 800;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .section {
@@ -2205,6 +2209,19 @@ button.league-card {
 @media (display-mode: standalone), (display-mode: fullscreen) {
   :root {
     --safe-t: env(safe-area-inset-top, 0px);
+  }
+
+  /* The status bar is translucent: without this, scrolling content shows through behind the notch. */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--safe-t);
+    background: var(--bg);
+    z-index: 90;
+    pointer-events: none;
   }
 }
 

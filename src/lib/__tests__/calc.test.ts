@@ -102,6 +102,15 @@ describe('suggestNext (smart coach)', () => {
     expect(s?.weight).toBe(80);
   });
 
+  it('holds the weight when the muscle already did many hard sets', () => {
+    const hist = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press');
+    expect(suggestNext(bench, hist, { recent: 3, session: 2 })?.kind).toBe('increase');
+    const today = suggestNext(bench, hist, { recent: 3, session: 9 });
+    expect(today?.kind).toBe('repeat');
+    expect(today?.weight).toBe(80);
+    expect(suggestNext(bench, hist, { recent: 15, session: 0 })?.weight).toBe(80);
+  });
+
   it('does not add weight after an RPE 10 set', () => {
     const s = suggestNext(bench, exerciseHistory([workout(2, 'bench-press', [set(80, 8, { rpe: 10 }), set(80, 8)])], 'bench-press'));
     expect(s?.kind).toBe('repeat');

@@ -229,7 +229,54 @@ function weightIncrement(ex: Exercise): number {
  * - reps dropped off → repeat the weight and try to match reps
  * - three sessions in a row without improvement → deload 10 %
  */
-export function suggestNext(ex: Exercise, history: Session[]): Suggestion | null {
+/** Weighted working sets already done on the muscles this exercise trains. */
+export interface Fatigue {
+  /** In the last 72 hours before this workout. */
+  recent: number;
+  /** Earlier today, in this same workout. */
+  session: number;
+}
+
+const FATIGUE_RECENT = 14;
+const FATIGUE_SESSION = 8;
+
+/** Sets on the exercise's main muscles, each counted by how much of the load that muscle takes. */
+export function targetSets(ex: Exercise, workouts: Workout[], exMap: Map<string, Exercise>, from = -Infinity, skipId?: string): number {
+  const mine = muscleLoad(ex);
+  const targets = (Object.keys(mine) as Muscle[]).filter((m) => (mine[m] ?? 0) >= 0.75);
+  if (!targets.length) return 0;
+  let total = 0;
+  for (const w of workouts) {
+    if (w.startedAt < from) continue;
+    for (const we of w.exercises) {
+      if (we.id === skipId) continue;
+      const other = exMap.get(we.exerciseId);
+      if (!other) continue;
+      const load = muscleLoad(other);
+      const share = Math.max(...targets.map((m) => load[m] ?? 0));
+      total += we.sets.filter((s) => s.done && isWorkingSet(s)).length * share;
+    }
+  }
+  return total;
+}
+
+/**
+ * Progression target for the next session. A heavily worked muscle (lots of sets in the last
+ * three days or earlier in this workout) holds its weight instead of adding more.
+ */
+export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue): Suggestion | null {
+  const s = baseSuggestion(ex, history);
+  if (!s || !fatigue || s.kind !== 'increase') return s;
+  if (fatigue.session >= FATIGUE_SESSION) {
+    return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
+  }
+  if (fatigue.recent >= FATIGUE_RECENT) {
+    return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reason: t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }) };
+  }
+  return s;
+}
+
+function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
   const last = history[0];
   if (!last) return null;
   const working = last.sets.filter(isWorkingSet);

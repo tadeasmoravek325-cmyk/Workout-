@@ -14,6 +14,9 @@ import {
 } from '../lib/calc';
 import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import { describeSet } from '../components/WorkoutEditor';
+import { BodyMap, IDLE, loadColor } from '../components/BodyMap';
+import { workoutMuscleSets } from '../components/WorkoutCard';
+import type { Muscle } from '../types';
 import { confirmDialog, toast, undoToast } from '../components/ui';
 import type { Routine } from '../types';
 import { t, tn } from '../i18n';
@@ -45,6 +48,13 @@ export default function WorkoutDetail() {
   const unit = settings.unit;
   const older = useMemo(() => (w ? workouts.filter((x) => x.startedAt < w.startedAt) : []), [workouts, w]);
   const prs = useMemo(() => (w ? detectPRs(w, older, exMap) : []), [w, older, exMap]);
+  const load = useMemo(() => (w ? workoutMuscleSets(w, exMap) : {}), [w, exMap]);
+  const maxLoad = Math.max(0, ...Object.values(load).map((v) => v ?? 0));
+  const muscleColor = (m: Muscle) => {
+    const v = load[m] ?? 0;
+    return v < 0.25 || !maxLoad ? IDLE : loadColor(0.3 + (0.7 * v) / maxLoad);
+  };
+
   if (!w) return <Navigate to="/history" replace />;
 
   const volume = workoutVolume(w, exMap);
@@ -142,6 +152,15 @@ export default function WorkoutDetail() {
           <div className="l">{t('Sets')}</div>
         </div>
       </div>
+
+      {maxLoad > 0 && (
+        <div className="card mt">
+          <div className="small muted bold" style={{ marginBottom: 6 }}>
+            {t('Muscles worked')}
+          </div>
+          <BodyMap height={260} color={muscleColor} value={(m) => load[m] ?? 0} onPick={(m) => navigate(`/muscles/${m}`)} />
+        </div>
+      )}
 
       {prs.length > 0 && (
         <div className="section">

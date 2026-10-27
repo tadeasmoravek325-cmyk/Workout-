@@ -53,3 +53,27 @@ export function download(filename: string, content: string, type = 'text/plain')
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+/** Shows a system notification. Installed iOS apps only allow this through the service worker. */
+export async function notify(title: string, body: string, tag = 'rest') {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    if (reg) await reg.showNotification(title, { body, tag, icon: './icon-192.png', badge: './icon-192.png' });
+    else new Notification(title, { body, tag });
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Asks once, from a tap, so rest-over alerts can reach the user while the app is in the background. */
+export function askNotificationsOnce() {
+  try {
+    if (typeof Notification === 'undefined' || Notification.permission !== 'default') return;
+    if (localStorage.getItem('gym-asked-notifications')) return;
+    localStorage.setItem('gym-asked-notifications', '1');
+    void Notification.requestPermission();
+  } catch {
+    /* ignore */
+  }
+}
