@@ -12,7 +12,7 @@ import {
   workoutVolume,
   type PrHit,
 } from '../lib/calc';
-import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
+import { fmtDateTime, fmtDuration, fmtNum, fmtVolume, splitUnit, toDisplayWeight } from '../lib/format';
 import { describeSet } from '../components/WorkoutEditor';
 import { BodyMap, IDLE, loadColor } from '../components/BodyMap';
 import { workoutMuscleSets } from '../components/WorkoutCard';
@@ -29,6 +29,17 @@ const PR_LABEL: Record<PrHit['kind'], string> = {
   duration: 'Longest time',
   distance: 'Longest distance',
 };
+
+/** "7,968 kg" as a big number with a small unit, so it stays on one line. */
+function statValue(text: string) {
+  const [num, unit] = splitUnit(text);
+  return (
+    <>
+      {num}
+      {unit && <small>{unit}</small>}
+    </>
+  );
+}
 
 export default function WorkoutDetail() {
   const { id = '' } = useParams();
@@ -140,11 +151,11 @@ export default function WorkoutDetail() {
 
       <div className="grid-3 mt">
         <div className="stat">
-          <div className="v">{fmtDuration(workoutDurationMs(w))}</div>
+          <div className="v">{statValue(fmtDuration(workoutDurationMs(w)))}</div>
           <div className="l">{t('Duration')}</div>
         </div>
         <div className="stat">
-          <div className="v">{fmtVolume(volume, unit)}</div>
+          <div className="v">{statValue(fmtVolume(volume, unit))}</div>
           <div className="l">{t('Volume')}</div>
         </div>
         <div className="stat">
