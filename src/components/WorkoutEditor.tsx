@@ -103,6 +103,7 @@ export function WorkoutEditor({
   const settings = useStore((s) => s.settings);
   const [picker, setPicker] = useState(false);
   const [reorder, setReorder] = useState<{ id: string; y: number } | null>(null);
+  useFlip();
 
   // History without this workout and without anything later than it (when editing an old workout).
   const history = useMemo(
@@ -435,7 +436,7 @@ function ExerciseCard({
   const allDone = we.sets.length > 0 && we.sets.every((s) => s.done);
 
   return (
-    <div className={`ex-card ${we.supersetId ? 'superset' : ''} ${allDone ? 'complete' : ''}`}>
+    <div data-fliph={`h-${we.id}`} className={`ex-card ${we.supersetId ? 'superset' : ''} ${allDone ? 'complete' : ''}`}>
       <div className="row between">
         <span className="bp-dot" style={{ background: BODY_PART_COLORS[ex.bodyPart] }} />
         <Link to={`/exercises/${ex.id}`} className="ex-name grow ellipsis grab" {...grab}>
@@ -671,6 +672,7 @@ function ExerciseCard({
             return (
               <tr
                 key={s.id}
+                data-flip={`set-${s.id}`}
                 className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? (swipe.leaving ? 'leaving' : 'swiping') : ''}`}
                 style={swipe?.id === s.id ? { transform: `translateX(${swipe.dx}px)` } : undefined}
                 {...swipeHandlers(s.id, i)}
@@ -777,6 +779,7 @@ function ExerciseCard({
 
       <button
         className="btn sm block mt"
+        data-flip={`addset-${we.id}`}
         onClick={() =>
           upd((x) => {
             x.sets.push(newSet(x.sets[x.sets.length - 1]));
@@ -1028,6 +1031,47 @@ function WarmupSheet({
 
 const ROW_H = 56;
 const HOLD_MS = 280;
+
+/**
+ * Smooth layout changes: remembers where every `data-flip` element is and, when the next render moves one
+ * (a set was deleted, a card grew), slides it from the old position to the new one instead of jumping.
+ */
+function useFlip() {
+  const last = useRef(new Map<string, number>());
+  const heights = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const next = new Map<string, number>();
+    document.querySelectorAll<HTMLElement>('[data-flip]').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (!r.height) return;
+      const key = el.dataset.flip!;
+      const top = r.top + window.scrollY;
+      next.set(key, top);
+      const was = last.current.get(key);
+      if (was !== undefined && !reduced && Math.abs(was - top) > 1 && Math.abs(was - top) < 700) {
+        el.animate([{ transform: `translateY(${was - top}px)` }, { transform: 'translateY(0)' }], { duration: 220, easing: 'ease-out' });
+      }
+    });
+    last.current = next;
+
+    // Cards that grew or shrank: animate the box itself so rows sliding inside never poke out of it.
+    const nextH = new Map<string, number>();
+    document.querySelectorAll<HTMLElement>('[data-fliph]').forEach((el) => {
+      const h = el.getBoundingClientRect().height;
+      if (!h) return;
+      const key = el.dataset.fliph!;
+      nextH.set(key, h);
+      const was = heights.current.get(key);
+      if (was !== undefined && !reduced && Math.abs(was - h) > 1 && Math.abs(was - h) < 700) {
+        el.style.overflow = 'hidden';
+        const a = el.animate([{ height: `${was}px` }, { height: `${h}px` }], { duration: 220, easing: 'ease-out' });
+        a.onfinish = a.oncancel = () => (el.style.overflow = '');
+      }
+    });
+    heights.current = nextH;
+  });
+}
 
 /** Press and hold an exercise name to pick the card up; moving first means the user is scrolling. */
 function useGrab(onGrab: (y: number) => void) {
