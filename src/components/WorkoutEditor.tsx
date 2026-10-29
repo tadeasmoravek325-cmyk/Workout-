@@ -361,7 +361,8 @@ function ExerciseCard({
 
   // Swipe a set row to the left to delete it.
   const swipeStart = useRef<{ x: number; y: number; horizontal: boolean | null } | null>(null);
-  const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
+  const [swipe, setSwipe] = useState<{ id: string; dx: number; top: number; height: number } | null>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const SWIPE_DELETE = 90;
   const swipeHandlers = (id: string, i: number) => ({
     onTouchStart: (e: React.TouchEvent) => {
@@ -375,7 +376,11 @@ function ExerciseCard({
       const dx = p.clientX - st.x;
       const dy = p.clientY - st.y;
       if (st.horizontal === null && Math.hypot(dx, dy) > 10) st.horizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
-      if (st.horizontal) setSwipe({ id, dx: Math.min(0, dx) });
+      if (st.horizontal) {
+        const row = e.currentTarget.getBoundingClientRect();
+        const wrap = wrapRef.current?.getBoundingClientRect();
+        setSwipe({ id, dx: Math.min(0, dx), top: row.top - (wrap?.top ?? 0), height: row.height });
+      }
     },
     onTouchEnd: () => {
       const st = swipeStart.current;
@@ -565,6 +570,7 @@ function ExerciseCard({
         </div>
       )}
 
+      <div className="set-wrap" ref={wrapRef}>
       <table className="set-table">
         <thead>
           <tr>
@@ -632,7 +638,7 @@ function ExerciseCard({
             return (
               <tr
                 key={s.id}
-                className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? 'swiping' : ''} ${swipe?.id === s.id && swipe.dx <= -SWIPE_DELETE ? 'will-delete' : ''}`}
+                className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? 'swiping' : ''}`}
                 style={swipe?.id === s.id ? { transform: `translateX(${swipe.dx}px)` } : undefined}
                 {...swipeHandlers(s.id, i)}
               >
@@ -726,6 +732,15 @@ function ExerciseCard({
           })}
         </tbody>
       </table>
+      {swipe && (
+        <div
+          className={`swipe-del ${swipe.dx <= -SWIPE_DELETE ? 'armed' : ''}`}
+          style={{ top: swipe.top, height: swipe.height, width: Math.max(0, -swipe.dx) }}
+        >
+          <Trash2 size={18} /> {t('Delete')}
+        </div>
+      )}
+      </div>
 
       <button
         className="btn sm block mt"
