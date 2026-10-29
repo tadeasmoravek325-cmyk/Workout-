@@ -822,7 +822,7 @@ a.list-item:active {
 .set-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 5px;
+  border-spacing: 0 1px;
   margin-top: 8px;
 }
 
@@ -835,7 +835,7 @@ a.list-item:active {
 }
 
 .set-table td {
-  padding: 0 3px;
+  padding: 3px;
   text-align: center;
   vertical-align: middle;
   transition: background 0.25s;
@@ -845,12 +845,30 @@ a.list-item:active {
   background: var(--ok-soft);
 }
 
+.set-table td:first-child {
+  padding-left: 4px;
+}
+
+.set-table td:last-child {
+  padding-right: 4px;
+}
+
+/* A finished set is one tinted bar. Controls sit inside it with the same 4px inset all round, and the
+   bar's corner radius is the controls' radius plus that inset, so the badge, numbers and tick line up. */
 .set-table tr.done td:first-child {
-  border-radius: 14px 0 0 14px;
+  border-radius: 16px 0 0 16px;
 }
 
 .set-table tr.done td:last-child {
-  border-radius: 0 14px 14px 0;
+  border-radius: 0 16px 16px 0;
+}
+
+.set-table tr.done .set-type {
+  background: rgba(255, 122, 26, 0.22);
+}
+
+.set-table tr.done .set-type:not(.warmup):not(.drop):not(.failure) {
+  color: var(--accent);
 }
 
 .set-table tr.just-done td {
@@ -2362,7 +2380,7 @@ body::before {
 .set-table tr.swiping {
   transition: none;
   background: var(--card);
-  border-radius: 14px;
+  border-radius: 16px;
 }
 
 .set-table {
@@ -2388,7 +2406,7 @@ body::before {
   padding-left: 16px;
   overflow: hidden;
   white-space: nowrap;
-  border-radius: 14px;
+  border-radius: 16px;
   background: #ff3b30;
   color: #fff;
   font-weight: 800;
