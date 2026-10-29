@@ -346,6 +346,53 @@ function ExerciseCard({
     toast(t('Replaced with {exercise}', { exercise: alt.name }));
   };
 
+  const deleteSet = (i: number) => {
+    const copy = structuredClone(we.sets[i]);
+    if (!copy) return;
+    upd((x) => {
+      x.sets.splice(i, 1);
+    });
+    undoToast(t('Set deleted'), () =>
+      upd((x) => {
+        if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
+      }),
+    );
+  };
+
+  // Swipe a set row to the left to delete it.
+  const swipeStart = useRef<{ x: number; y: number; horizontal: boolean | null } | null>(null);
+  const [swipe, setSwipe] = useState<{ id: string; dx: number } | null>(null);
+  const SWIPE_DELETE = 90;
+  const swipeHandlers = (id: string, i: number) => ({
+    onTouchStart: (e: React.TouchEvent) => {
+      const p = e.touches[0];
+      swipeStart.current = { x: p.clientX, y: p.clientY, horizontal: null };
+    },
+    onTouchMove: (e: React.TouchEvent) => {
+      const st = swipeStart.current;
+      if (!st) return;
+      const p = e.touches[0];
+      const dx = p.clientX - st.x;
+      const dy = p.clientY - st.y;
+      if (st.horizontal === null && Math.hypot(dx, dy) > 10) st.horizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
+      if (st.horizontal) setSwipe({ id, dx: Math.min(0, dx) });
+    },
+    onTouchEnd: () => {
+      const st = swipeStart.current;
+      swipeStart.current = null;
+      const s = swipe;
+      setSwipe(null);
+      if (st?.horizontal && s && s.id === id && s.dx <= -SWIPE_DELETE) {
+        haptic(15);
+        deleteSet(i);
+      }
+    },
+    onTouchCancel: () => {
+      swipeStart.current = null;
+      setSwipe(null);
+    },
+  });
+
   let normalNo = 0;
   const allDone = we.sets.length > 0 && we.sets.every((s) => s.done);
 
@@ -583,7 +630,12 @@ function ExerciseCard({
               return a > b + 1e-6 ? 1 : a < b - 1e-6 ? -1 : 0;
             })();
             return (
-              <tr key={s.id} className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''}`}>
+              <tr
+                key={s.id}
+                className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? 'swiping' : ''} ${swipe?.id === s.id && swipe.dx <= -SWIPE_DELETE ? 'will-delete' : ''}`}
+                style={swipe?.id === s.id ? { transform: `translateX(${swipe.dx}px)` } : undefined}
+                {...swipeHandlers(s.id, i)}
+              >
                 <td>
                   <button
                     className={`set-type ${s.type}`}
@@ -725,17 +777,8 @@ function ExerciseCard({
             <button
               className="btn danger block"
               onClick={() => {
-                const i = setIdx;
-                const copy = structuredClone(we.sets[i]);
-                upd((x) => {
-                  x.sets.splice(i, 1);
-                });
+                deleteSet(setIdx);
                 setSetIdx(null);
-                undoToast(t('Set deleted'), () =>
-                  upd((x) => {
-                    if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
-                  }),
-                );
               }}
             >
               <Trash2 size={18} /> {t('Delete set')}
