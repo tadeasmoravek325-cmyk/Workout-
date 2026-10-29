@@ -361,15 +361,18 @@ function ExerciseCard({
 
   // Swipe a set row to the left to delete it.
   const swipeStart = useRef<{ x: number; y: number; horizontal: boolean | null } | null>(null);
-  const [swipe, setSwipe] = useState<{ id: string; dx: number; top: number; height: number } | null>(null);
+  const [swipe, setSwipe] = useState<{ id: string; dx: number; top: number; height: number; armed: boolean; leaving?: boolean } | null>(null);
+  const armedRef = useRef(false);
   const wrapRef = useRef<HTMLDivElement>(null);
-  const SWIPE_DELETE = 90;
+  // The row resists: it moves at half the finger's speed until the finger is 60% of the way across, then follows freely.
+  const SWIPE_RESIST = 0.5;
+  const SWIPE_ARM = 0.6;
   // A swipe never outlives the touch: clear it however the touch ends, or if the page loses it.
   useEffect(() => {
     if (!swipe) return;
     const clear = () => {
       swipeStart.current = null;
-      setSwipe(null);
+      setSwipe((s) => (s?.leaving ? s : null));
     };
     const stale = setTimeout(clear, 4000);
     window.addEventListener('touchend', clear);
@@ -386,6 +389,7 @@ function ExerciseCard({
     onTouchStart: (e: React.TouchEvent) => {
       const p = e.touches[0];
       swipeStart.current = { x: p.clientX, y: p.clientY, horizontal: null };
+      armedRef.current = false;
     },
     onTouchMove: (e: React.TouchEvent) => {
       const st = swipeStart.current;
@@ -394,25 +398,36 @@ function ExerciseCard({
       const dx = p.clientX - st.x;
       const dy = p.clientY - st.y;
       if (st.horizontal === null && Math.hypot(dx, dy) > 10) st.horizontal = Math.abs(dx) > Math.abs(dy) * 1.5;
-      if (st.horizontal) {
-        const row = e.currentTarget.getBoundingClientRect();
-        const wrap = wrapRef.current?.getBoundingClientRect();
-        setSwipe({ id, dx: Math.min(0, dx), top: row.top - (wrap?.top ?? 0), height: row.height });
-      }
+      if (!st.horizontal) return;
+      const row = e.currentTarget.getBoundingClientRect();
+      const wrap = wrapRef.current?.getBoundingClientRect();
+      const pull = Math.max(0, -dx);
+      const arm = row.width * SWIPE_ARM;
+      const shown = pull < arm ? pull * SWIPE_RESIST : arm * SWIPE_RESIST + (pull - arm);
+      const armed = pull >= arm;
+      if (armed && !armedRef.current) haptic(25);
+      armedRef.current = armed;
+      setSwipe({ id, dx: -shown, top: row.top - (wrap?.top ?? 0), height: row.height, armed });
     },
-    onTouchEnd: () => {
+    onTouchEnd: (e: React.TouchEvent) => {
       const st = swipeStart.current;
       swipeStart.current = null;
       const s = swipe;
-      setSwipe(null);
-      if (st?.horizontal && s && s.id === id && s.dx <= -SWIPE_DELETE) {
-        haptic(15);
-        deleteSet(i);
-      }
+      if (st?.horizontal && s && s.id === id && s.armed) {
+        // Past the point of no return: slide the row off to the left, then remove it.
+        const width = e.currentTarget.getBoundingClientRect().width;
+        setSwipe({ ...s, dx: -width * 1.1, leaving: true });
+        setTimeout(() => {
+          setSwipe(null);
+          if (we.sets[i]?.id === id) deleteSet(i);
+        }, 200);
+      } else setSwipe(null);
+      armedRef.current = false;
     },
     onTouchCancel: () => {
       swipeStart.current = null;
-      setSwipe(null);
+      armedRef.current = false;
+      setSwipe((s) => (s?.leaving ? s : null));
     },
   });
 
@@ -656,7 +671,7 @@ function ExerciseCard({
             return (
               <tr
                 key={s.id}
-                className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? 'swiping' : ''}`}
+                className={`${s.done ? 'done' : ''} ${justDone === s.id ? 'just-done' : ''} ${swipe?.id === s.id ? (swipe.leaving ? 'leaving' : 'swiping') : ''}`}
                 style={swipe?.id === s.id ? { transform: `translateX(${swipe.dx}px)` } : undefined}
                 {...swipeHandlers(s.id, i)}
               >
@@ -752,7 +767,7 @@ function ExerciseCard({
       </table>
       {swipe && swipe.dx < -4 && (
         <div
-          className={`swipe-del ${swipe.dx <= -SWIPE_DELETE ? 'armed' : ''}`}
+          className={`swipe-del ${swipe.armed ? 'armed' : ''}`}
           style={{ top: swipe.top, height: swipe.height, width: Math.max(0, -swipe.dx) }}
         >
           <Trash2 size={18} /> {t('Delete')}

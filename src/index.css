@@ -822,7 +822,7 @@ a.list-item:active {
 .set-table {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 0 5px;
+  border-spacing: 0 1px;
   margin-top: 8px;
 }
 
@@ -835,7 +835,7 @@ a.list-item:active {
 }
 
 .set-table td {
-  padding: 0 3px;
+  padding: 3px;
   text-align: center;
   vertical-align: middle;
   transition: background 0.25s;
@@ -845,20 +845,14 @@ a.list-item:active {
   background: var(--ok-soft);
 }
 
+/* A finished set is one tinted bar. Badge, inputs and the orange tick all sit inside it with the same 3px
+   margin on every side. The bar's radius is the controls' radius (12) plus that margin. */
 .set-table tr.done td:first-child {
-  border-radius: 14px 0 0 14px;
+  border-radius: 15px 0 0 15px;
 }
 
-/* On a finished set the orange tick is the end of the bar: flush with its top, bottom and right edge. */
 .set-table tr.done td:last-child {
-  border-radius: 0 14px 14px 0;
-  padding-right: 0;
-}
-
-.set-table tr.done .check.on {
-  display: block;
-  width: 52px;
-  border-radius: 0 14px 14px 0;
+  border-radius: 0 15px 15px 0;
 }
 
 .set-table tr.just-done td {
@@ -2367,10 +2361,16 @@ body::before {
   transition: transform 0.18s ease;
 }
 
+.set-table tr.leaving {
+  transition: transform 0.2s ease-in;
+  background: var(--card);
+  border-radius: 15px;
+}
+
 .set-table tr.swiping {
   transition: none;
   background: var(--card);
-  border-radius: 14px;
+  border-radius: 15px;
 }
 
 .set-table {
