@@ -2213,10 +2213,20 @@ body::before {
   top: 0;
   left: 0;
   right: 0;
-  height: var(--safe-t);
+  height: max(var(--safe-t), var(--status-floor, 0px));
   background: var(--bg);
   z-index: 90;
   pointer-events: none;
+}
+
+/* Safari on iPhone reports no top inset in a normal tab, yet scrolling content still slides under the
+   translucent status bar. A floor roughly the height of the status bar text keeps content out of it. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 600px) {
+    :root {
+      --status-floor: 47px;
+    }
+  }
 }
 
 /* Account */
