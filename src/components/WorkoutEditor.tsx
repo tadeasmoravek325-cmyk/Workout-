@@ -364,6 +364,24 @@ function ExerciseCard({
   const [swipe, setSwipe] = useState<{ id: string; dx: number; top: number; height: number } | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const SWIPE_DELETE = 90;
+  // A swipe never outlives the touch: clear it however the touch ends, or if the page loses it.
+  useEffect(() => {
+    if (!swipe) return;
+    const clear = () => {
+      swipeStart.current = null;
+      setSwipe(null);
+    };
+    const stale = setTimeout(clear, 4000);
+    window.addEventListener('touchend', clear);
+    window.addEventListener('touchcancel', clear);
+    window.addEventListener('blur', clear);
+    return () => {
+      clearTimeout(stale);
+      window.removeEventListener('touchend', clear);
+      window.removeEventListener('touchcancel', clear);
+      window.removeEventListener('blur', clear);
+    };
+  }, [swipe?.id]);
   const swipeHandlers = (id: string, i: number) => ({
     onTouchStart: (e: React.TouchEvent) => {
       const p = e.touches[0];
@@ -732,7 +750,7 @@ function ExerciseCard({
           })}
         </tbody>
       </table>
-      {swipe && (
+      {swipe && swipe.dx < -4 && (
         <div
           className={`swipe-del ${swipe.dx <= -SWIPE_DELETE ? 'armed' : ''}`}
           style={{ top: swipe.top, height: swipe.height, width: Math.max(0, -swipe.dx) }}

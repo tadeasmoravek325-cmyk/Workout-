@@ -2361,6 +2361,13 @@ body::before {
 
 .set-table tr.swiping {
   transition: none;
+  background: var(--card);
+  border-radius: 14px;
+}
+
+.set-table {
+  position: relative;
+  z-index: 1;
 }
 
 /* Clips at the edges of the grey exercise card, so a swiped row never sticks out of it. */
@@ -2386,6 +2393,7 @@ body::before {
   color: #fff;
   font-weight: 800;
   pointer-events: none;
+  z-index: 0;
 }
 
 .swipe-del.armed {
