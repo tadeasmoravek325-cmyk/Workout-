@@ -1,4 +1,4 @@
-const PLATE_COLORS: Record<string, string> = {
+export const PLATE_COLORS: Record<string, string> = {
   '25': '#e63946',
   '20': '#1d70d6',
   '15': '#f1c40f',

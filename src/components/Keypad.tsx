@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { create } from 'zustand';
 import { ChevronDown, Delete as Backspace, Minus, Plus, Scale } from 'lucide-react';
-import { fmtNum } from '../lib/format';
+import { fmtNum, fromDisplayWeight, toDisplayWeight } from '../lib/format';
+import { plateCalc } from '../lib/calc';
+import { useStore } from '../store/store';
+import { PLATE_COLORS } from './PlateVisual';
 import { t } from '../i18n';
 
 export type KeypadKind = 'weight' | 'reps' | 'distance';
@@ -27,6 +30,7 @@ interface KeypadState {
   /** The next typed digit replaces the value (it arrives selected). */
   replace: boolean;
   rpeOpen: boolean;
+  platesOpen: boolean;
   open: (t: KeypadTarget) => void;
   close: () => void;
 }
@@ -35,8 +39,9 @@ export const useKeypad = create<KeypadState>((set) => ({
   active: null,
   replace: true,
   rpeOpen: false,
-  open: (active) => set({ active, replace: true, rpeOpen: false }),
-  close: () => set({ active: null, rpeOpen: false }),
+  platesOpen: false,
+  open: (active) => set({ active, replace: true, rpeOpen: false, platesOpen: false }),
+  close: () => set({ active: null, rpeOpen: false, platesOpen: false }),
 }));
 
 const RPE_VALUES = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
@@ -64,7 +69,7 @@ function goNext(from: HTMLInputElement) {
  * plate calculator, and Next walks through the fields set by set. The system keyboard stays hidden.
  */
 export function Keypad() {
-  const { active, rpeOpen } = useKeypad();
+  const { active, rpeOpen, platesOpen } = useKeypad();
   const box = useRef<HTMLDivElement>(null);
 
   // Keep the page scrollable past the pad so the focused field is never hidden behind it.
@@ -114,7 +119,7 @@ export function Keypad() {
 
   const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
   const showRpe = active.kind === 'reps' && !!active.onRpe;
-  const showPlates = active.kind === 'weight' && !!active.onPlates;
+  const showPlates = active.kind === 'weight';
 
   return (
     <div ref={box} className="keypad" role="group" aria-label={t('Number pad')} {...noFocusLoss}>
@@ -141,6 +146,9 @@ export function Keypad() {
         </div>
       ) : (
         <>
+          {platesOpen && active.kind === 'weight' ? (
+            <PlatePanel target={active} />
+          ) : (
           <div className="keypad-digits">
             {keys.map((k) => (
               <button key={k} className="kp digit" onClick={() => type(k)}>
@@ -157,6 +165,7 @@ export function Keypad() {
               <Backspace size={26} />
             </button>
           </div>
+          )}
           <div className="keypad-side">
             <button
               className="kp"
@@ -174,12 +183,8 @@ export function Keypad() {
               </button>
             ) : showPlates ? (
               <button
-                className="kp"
-                onClick={() => {
-                  active.onPlates?.();
-                  active.el.blur();
-                  st.close();
-                }}
+                className={`kp ${platesOpen ? 'on' : ''}`}
+                onClick={() => useKeypad.setState({ platesOpen: !platesOpen })}
                 aria-label={t('Plate calculator')}
               >
                 <Scale size={24} />
@@ -201,6 +206,62 @@ export function Keypad() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/** Builds the weight from plates, like loading a bar: tap a plate to add it to each side, tap it on the bar to remove it. */
+function PlatePanel({ target }: { target: KeypadTarget }) {
+  const settings = useStore((s) => s.settings);
+  const unit = settings.unit;
+  const bar = settings.barWeightKg;
+  const available = [...settings.plates].sort((a, b) => b - a);
+  const [perSide, setPerSide] = useState<number[]>(() => {
+    const text = target.text() !== '' ? target.text() : target.placeholder();
+    const kg = fromDisplayWeight(toNumber(text), unit) ?? 0;
+    return plateCalc(kg, bar, available).perSide;
+  });
+  const shown = (kg: number) => fmtNum(toDisplayWeight(kg, unit) ?? 0, 2);
+  const total = bar + perSide.reduce((a, b) => a + b, 0) * 2;
+
+  const commit = (next: number[]) => {
+    setPerSide(next);
+    const kg = bar + next.reduce((a, b) => a + b, 0) * 2;
+    useKeypad.setState({ replace: true });
+    target.setText(String(Math.round((toDisplayWeight(kg, unit) ?? 0) * 100) / 100).replace('.', ','));
+  };
+  const height = (p: number) => Math.max(40, Math.min(104, 40 + p * 3));
+
+  return (
+    <div className="kp-plates">
+      <div className="kp-total">
+        {shown(total)} {unit}
+      </div>
+      <div className="kp-bar">
+        <div className="kp-bar-left">
+          {shown(bar)} {unit}
+        </div>
+        {perSide.map((p, i) => (
+          <button
+            key={i}
+            className="kp-plate"
+            style={{ height: height(p), background: PLATE_COLORS[String(p)] ?? '#6b7280', color: p === 5 ? '#111' : '#fff' }}
+            onClick={() => commit(perSide.filter((_, j) => j !== i))}
+            aria-label={t('Remove {weight} plate', { weight: shown(p) })}
+          >
+            <span>{shown(p)}</span>
+          </button>
+        ))}
+        <div className="kp-bar-right" />
+      </div>
+      <div className="kp-bar-name">{t('Barbell')}</div>
+      <div className="kp-plate-row">
+        {available.map((p) => (
+          <button key={p} className="kp" onClick={() => commit([...perSide, p].sort((a, b) => b - a))}>
+            {shown(p)}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

@@ -703,13 +703,6 @@ function ExerciseCard({
                       keypad={{
                         kind: 'weight',
                         step: unit === 'kg' ? 2.5 : 5,
-                        onPlates:
-                          ex.equipment === 'barbell'
-                            ? () => {
-                                setPlatesKg(s.weight ?? ph.weight);
-                                setSheet('plates');
-                              }
-                            : undefined,
                       }}
                       value={toDisplayWeight(s.weight, unit)}
                       placeholder={ph.weight !== undefined ? fmtNum(toDisplayWeight(ph.weight, unit)) : ''}
