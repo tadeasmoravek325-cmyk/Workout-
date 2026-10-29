@@ -17,7 +17,7 @@ import { describeSet } from '../components/WorkoutEditor';
 import { BodyMap, IDLE, loadColor } from '../components/BodyMap';
 import { workoutMuscleSets } from '../components/WorkoutCard';
 import type { Muscle } from '../types';
-import { confirmDialog, toast, undoToast } from '../components/ui';
+import { confirmDialog, toast, undoToast, BackLabel } from '../components/ui';
 import type { Routine } from '../types';
 import { t, tn } from '../i18n';
 
@@ -111,7 +111,7 @@ export default function WorkoutDetail() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => (isSummary ? navigate('/', { replace: true }) : navigate(-1))}>
-          {isSummary ? t('Done') : `‹ ${t('Back')}`}
+          {isSummary ? t('Done') : <BackLabel />}
         </button>
         <Link to={`/history/${w.id}/edit`} className="btn ghost">
           <Pencil size={16} /> {t('Edit')}

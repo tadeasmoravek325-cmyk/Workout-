@@ -7,7 +7,7 @@ import { StrongImportSheet } from '../components/StrongImportSheet';
 import { fmtClock, fmtDate, fmtDateTime, fmtNum, relativeDay } from '../lib/format';
 import { listSnapshots, parseBackup, readSnapshot, SNAPSHOT_REASON_LABELS, useSafety, type SnapshotMeta } from '../lib/safety';
 import { saveBackupFile, saveCsvFile } from '../lib/backup';
-import { ask, confirmDialog, Segmented, Sheet, Switch, toast } from '../components/ui';
+import { ask, confirmDialog, Segmented, Sheet, Switch, toast, BackLabel } from '../components/ui';
 import type { Equipment, Experience, Goal, Sex } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
 import { t, tn } from '../i18n';
@@ -78,7 +78,7 @@ export default function SettingsPage() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
       </div>
       <h1 style={{ marginBottom: 16 }}>{t('Settings')}</h1>

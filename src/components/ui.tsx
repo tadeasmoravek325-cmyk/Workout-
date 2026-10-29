@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { X } from 'lucide-react';
 import { create } from 'zustand';
 import { t } from '../i18n';
@@ -329,5 +330,14 @@ export function Dialogs() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Label for back buttons: a large chevron and the word. */
+export function BackLabel() {
+  return (
+    <>
+      <ChevronLeft size={30} strokeWidth={2.8} aria-hidden="true" style={{ marginLeft: -6 }} /> {t('Back')}
+    </>
   );
 }

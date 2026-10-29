@@ -10,7 +10,7 @@ import { BodyMap, loadColor } from '../components/BodyMap';
 import { OneRmCalculator, PlateCalculator } from '../components/ExerciseTools';
 import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
-import { confirmDialog, Empty, Segmented, undoToast } from '../components/ui';
+import { confirmDialog, Empty, Segmented, undoToast, BackLabel } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
 import { PlayCircle } from 'lucide-react';
 import { t, tn } from '../i18n';
@@ -114,7 +114,7 @@ export default function ExerciseDetail() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
         {ex.custom && (
           <div className="row">

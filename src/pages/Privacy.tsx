@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { BackLabel } from '../components/ui';
 import { t } from '../i18n';
 
 /**
@@ -28,7 +29,7 @@ export default function Privacy() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
       </div>
       <h1>{t('Privacy')}</h1>

@@ -23,7 +23,7 @@ import {
 } from '../lib/periods';
 import { ALL_MUSCLES, MUSCLE_LABELS } from '../data/exercises';
 import { BodyMap, volumeColor } from '../components/BodyMap';
-import { Empty, Segmented, Sheet } from '../components/ui';
+import { Empty, Segmented, Sheet, BackLabel } from '../components/ui';
 import type { Exercise, Workout } from '../types';
 import { t, tn } from '../i18n';
 import { CountUp } from '../components/CountUp';
@@ -263,7 +263,7 @@ export default function Stats() {
       <div className="page">
         <div className="page-header">
           <button className="back" onClick={() => navigate(-1)}>
-            ‹ {t('Back')}
+            <BackLabel />
           </button>
         </div>
         <h1>{t('Stats')}</h1>
@@ -288,7 +288,7 @@ export default function Stats() {
     <div className="page st-page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
       </div>
       <h1 style={{ marginBottom: 12 }}>{t('Stats')}</h1>

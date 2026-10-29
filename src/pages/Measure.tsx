@@ -5,7 +5,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 import { useStore } from '../store/store';
 import type { MeasurementType, Unit } from '../types';
 import { fmtDate, fmtNum, fromDisplayWeight, toDisplayWeight } from '../lib/format';
-import { NumInput, Sheet, toast, undoToast } from '../components/ui';
+import { NumInput, Sheet, toast, undoToast, BackLabel } from '../components/ui';
 import { t } from '../i18n';
 
 export const MEASUREMENT_LABELS: Record<MeasurementType, string> = {
@@ -70,7 +70,7 @@ export default function Measure() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
       </div>
       <h1 style={{ marginBottom: 14 }}>{t('Body measurements')}</h1>

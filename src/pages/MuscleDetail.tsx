@@ -6,7 +6,7 @@ import { fmtNum, relativeDay } from '../lib/format';
 import { MUSCLE_LABELS, muscleLoad } from '../data/exercises';
 import { BodyMap, IDLE, volumeColor } from '../components/BodyMap';
 import { ExerciseAvatar } from '../components/ExercisePicker';
-import { Empty } from '../components/ui';
+import { Empty, BackLabel } from '../components/ui';
 import { t, tn } from '../i18n';
 import type { Muscle } from '../types';
 
@@ -66,7 +66,7 @@ export default function MuscleDetail() {
     <div className="page">
       <div className="page-header">
         <button className="back" onClick={() => navigate(-1)}>
-          ‹ {t('Back')}
+          <BackLabel />
         </button>
       </div>
       <h1>{MUSCLE_LABELS[muscle]}</h1>
