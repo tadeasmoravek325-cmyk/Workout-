@@ -348,16 +348,10 @@ function ExerciseCard({
   };
 
   const deleteSet = (i: number) => {
-    const copy = structuredClone(we.sets[i]);
-    if (!copy) return;
+    if (!we.sets[i]) return;
     upd((x) => {
       x.sets.splice(i, 1);
     });
-    undoToast(t('Set deleted'), () =>
-      upd((x) => {
-        if (!x.sets.some((y) => y.id === copy.id)) x.sets.splice(Math.min(i, x.sets.length), 0, copy);
-      }),
-    );
   };
 
   // Swipe a set row to the left to delete it.
