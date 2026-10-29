@@ -4,6 +4,7 @@ import { HashRouter, Link, NavLink, Route, Routes, useLocation, Navigate } from 
 import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
 import { Dialogs, Toasts, useNow } from './components/ui';
+import { Keypad } from './components/Keypad';
 import { DataRecovery, SaveErrorBanner } from './components/DataGuard';
 import { useSafety } from './lib/safety';
 import { fmtClock } from './lib/format';
@@ -125,6 +126,7 @@ function Shell() {
       {!fullscreen && <ActiveBar />}
       {!fullscreen && <BottomNav />}
       <RestTimerBar aboveNav={!fullscreen} />
+      <Keypad />
       <Toasts />
       <Dialogs />
       <SaveErrorBanner />

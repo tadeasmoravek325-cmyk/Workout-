@@ -198,6 +198,7 @@ export default function RoutineEditor() {
                       {showW && (
                         <td>
                           <NumInput
+                            keypad={{ kind: 'weight', step: unit === 'kg' ? 2.5 : 5 }}
                             value={toDisplayWeight(s.weight, unit)}
                             placeholder="–"
                             onChange={(v) => editEx(re.id, (x) => void (x.sets[i].weight = fromDisplayWeight(v, unit)))}
@@ -207,6 +208,7 @@ export default function RoutineEditor() {
                       {showR && (
                         <td>
                           <NumInput
+                            keypad={{ kind: 'reps', step: 1 }}
                             value={s.reps}
                             placeholder="–"
                             onChange={(v) => editEx(re.id, (x) => void (x.sets[i].reps = v === undefined ? undefined : Math.round(v)))}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
+import { useKeypad, type KeypadKind, type KeypadTarget } from './Keypad';
 import { X } from 'lucide-react';
 import { create } from 'zustand';
 import { t } from '../i18n';
@@ -76,6 +77,7 @@ export function NumInput({
   className,
   style,
   ariaLabel,
+  keypad,
 }: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
@@ -84,6 +86,8 @@ export function NumInput({
   className?: string;
   style?: React.CSSProperties;
   ariaLabel?: string;
+  /** Use the in-app number pad instead of the system keyboard. */
+  keypad?: { kind: KeypadKind; step: number; rpe?: number; onRpe?: KeypadTarget['onRpe']; onPlates?: () => void };
 }) {
   const fmt = (v: number | undefined) => (v === undefined ? '' : String(Math.round(v * 100) / 100).replace('.', ','));
   const [text, setText] = useState(fmt(value));
@@ -91,9 +95,27 @@ export function NumInput({
   useEffect(() => {
     if (!focused) setText(fmt(value));
   }, [value, focused]);
+  // Latest props for the keypad, which outlives a render.
+  const live = useRef({ text, onChange, placeholder, keypad });
+  live.current = { text, onChange, placeholder, keypad };
+  const commit = (t: string) => {
+    setText(t);
+    const n = Number(t.replace(',', '.'));
+    live.current.onChange(t === '' || Number.isNaN(n) ? undefined : n);
+  };
+  const ref = useRef<HTMLInputElement>(null);
+  // Keep the pad's per-set extras (RPE, plates) current while this field has it.
+  useEffect(() => {
+    if (!focused || !keypad) return;
+    useKeypad.setState((s) =>
+      s.active?.el === ref.current ? { active: { ...s.active, rpe: keypad.rpe, onRpe: keypad.onRpe, onPlates: keypad.onPlates } } : s,
+    );
+  });
   return (
     <input
-      inputMode="decimal"
+      ref={ref}
+      inputMode={keypad ? 'none' : 'decimal'}
+      data-keypad={keypad ? keypad.kind : undefined}
       data-step={step}
       className={className}
       style={style}
@@ -103,8 +125,31 @@ export function NumInput({
       onFocus={(e) => {
         setFocused(true);
         e.target.select();
+        const kp = live.current.keypad;
+        if (kp && ref.current) {
+          const el = ref.current;
+          useKeypad.getState().open({
+            kind: kp.kind,
+            el,
+            step: kp.step,
+            rpe: kp.rpe,
+            onRpe: kp.onRpe,
+            onPlates: kp.onPlates,
+            text: () => live.current.text,
+            placeholder: () => live.current.placeholder ?? '',
+            setText: commit,
+          });
+          setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
+        }
       }}
-      onBlur={() => setFocused(false)}
+      onBlur={() => {
+        setFocused(false);
+        // Moving to another set field keeps the pad; leaving the fields closes it.
+        if (live.current.keypad)
+          setTimeout(() => {
+            if (!document.activeElement?.hasAttribute('data-keypad')) useKeypad.getState().close();
+          }, 60);
+      }}
       onChange={(e) => {
         const t = e.target.value.replace(/[^\d.,-]/g, '');
         setText(t);

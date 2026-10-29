@@ -216,6 +216,7 @@ function ExerciseCard({
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<null | 'rest' | 'substitute' | 'warmup' | 'pin' | 'plates'>(null);
   const [swapAny, setSwapAny] = useState(false);
+  const [platesKg, setPlatesKg] = useState<number | undefined>();
   const grab = useGrab(onGrab);
   const [justDone, setJustDone] = useState<string | null>(null);
   const [setIdx, setSetIdx] = useState<number | null>(null);
@@ -464,7 +465,7 @@ function ExerciseCard({
           >
             <Pin size={17} /> {t('Pinned note')}
           </button>
-          {ex.equipment === 'barbell' && <button onClick={() => setSheet('plates')}>
+          {ex.equipment === 'barbell' && <button onClick={() => { setPlatesKg(undefined); setSheet('plates'); }}>
               <Calculator size={17} /> {t('Plate calculator')}
             </button>}
           {hasWeight(ex) && ex.type === 'weight_reps' && <button onClick={() => setSheet('warmup')}>
@@ -699,6 +700,17 @@ function ExerciseCard({
                   <td>
                     <NumInput
                       ariaLabel={t('Weight')}
+                      keypad={{
+                        kind: 'weight',
+                        step: unit === 'kg' ? 2.5 : 5,
+                        onPlates:
+                          ex.equipment === 'barbell'
+                            ? () => {
+                                setPlatesKg(s.weight ?? ph.weight);
+                                setSheet('plates');
+                              }
+                            : undefined,
+                      }}
                       value={toDisplayWeight(s.weight, unit)}
                       placeholder={ph.weight !== undefined ? fmtNum(toDisplayWeight(ph.weight, unit)) : ''}
                       onChange={(v) => setField({ weight: fromDisplayWeight(v, unit) })}
@@ -709,6 +721,7 @@ function ExerciseCard({
                   <td>
                     <NumInput
                       ariaLabel={t('Distance')}
+                      keypad={{ kind: 'distance', step: 0.5 }}
                       value={s.distance}
                       placeholder={ph.distance !== undefined ? fmtNum(ph.distance, 2) : ''}
                       onChange={(v) => setField({ distance: v })}
@@ -719,6 +732,7 @@ function ExerciseCard({
                   <td>
                     <NumInput
                       ariaLabel={t('Reps')}
+                      keypad={{ kind: 'reps', step: 1, rpe: s.rpe, onRpe: (v) => setField({ rpe: v }) }}
                       value={s.reps}
                       placeholder={ph.reps !== undefined ? String(ph.reps) : ''}
                       onChange={(v) => setField({ reps: v === undefined ? undefined : Math.round(v) })}
@@ -897,9 +911,9 @@ function ExerciseCard({
       )}
 
       {sheet === 'plates' && (
-        <Sheet title={t('Plate calculator')} onClose={() => setSheet(null)}>
+        <Sheet title={t('Plate calculator')} onClose={() => { setSheet(null); setPlatesKg(undefined); }}>
           {(() => {
-            const target = we.sets.find((x) => !x.done && x.weight)?.weight ?? workingWeight;
+            const target = platesKg ?? we.sets.find((x) => !x.done && x.weight)?.weight ?? workingWeight;
             const res = plateCalc(target, settings.barWeightKg, settings.plates);
             const per = res.perSide.map((p) => Math.round((toDisplayWeight(p, unit) ?? 0) * 100) / 100);
             return (

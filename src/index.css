@@ -2407,3 +2407,100 @@ body::before {
 .swipe-del.armed {
   background: #d92c22;
 }
+
+/* In-app number pad (see Keypad.tsx) */
+.keypad {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 130;
+  max-width: 520px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 3fr 1fr;
+  gap: 8px;
+  padding: 10px 10px calc(10px + var(--safe-b));
+  background: var(--bg-2);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+  animation: up 0.18s ease-out;
+}
+
+.keypad-digits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.keypad-side {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.kp {
+  display: grid;
+  place-items: center;
+  min-height: 54px;
+  border-radius: 14px;
+  background: var(--card-2);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.kp.digit {
+  background: transparent;
+  font-size: 30px;
+}
+
+.kp:active {
+  background: var(--card);
+}
+
+.kp.next {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.kp.on {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.kp.wide {
+  width: 100%;
+}
+
+.kp-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.keypad-rpe {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.keypad-rpe-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.has-keypad .page {
+  padding-bottom: calc(var(--keypad-h, 300px) + 120px);
+}
+
+.has-keypad .nav,
+.has-keypad nav {
+  visibility: hidden;
+}
