@@ -755,7 +755,8 @@ a.list-item:active {
 
 .wk-header {
   position: sticky;
-  top: 0;
+  /* Below the opaque strip that covers the status bar (see body::before), or Finish ends up under it. */
+  top: var(--status-floor, 0px);
   z-index: 20;
   background: var(--bg);
   padding: calc(10px + var(--safe-t)) 0 10px;
@@ -1767,7 +1768,7 @@ body:not(:has(.bottom-nav)) .toast-wrap {
 
 .save-error {
   position: fixed;
-  top: calc(8px + var(--safe-t));
+  top: calc(8px + max(var(--safe-t), var(--status-floor, 0px)));
   left: 12px;
   right: 12px;
   max-width: 456px;
@@ -2237,7 +2238,7 @@ body::before {
 /* Safari on iPhone reports no top inset in a normal tab, yet scrolling content still slides under the
    translucent status bar. A floor roughly the height of the status bar text keeps content out of it. */
 @supports (-webkit-touch-callout: none) {
-  @media (max-width: 600px) {
+  @media (max-width: 600px) and (display-mode: browser) {
     :root {
       --status-floor: 47px;
     }
