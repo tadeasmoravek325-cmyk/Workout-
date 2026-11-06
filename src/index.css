@@ -2332,11 +2332,12 @@ body::before {
 }
 
 .reorder-row.lifted {
-  transition: none;
+  transition: box-shadow 0.15s;
   z-index: 2;
   background: var(--card-2);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   transform-origin: center;
+  scale: 1.03;
 }
 
 .body-map.rotatable {
@@ -2604,4 +2605,46 @@ body::before {
   min-height: 46px;
   min-width: 0;
   font-size: 16px;
+}
+
+/* Cards fold into the list and unfold again instead of snapping. */
+.reorder {
+  animation: reorder-in 0.16s ease-out;
+}
+
+.reorder-row {
+  animation: reorder-row-in 0.22s ease-out both;
+  animation-delay: calc(var(--i, 0) * 18ms);
+}
+
+@keyframes reorder-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes reorder-row-in {
+  from {
+    opacity: 0;
+    margin-top: -10px;
+  }
+}
+
+.card-drop {
+  animation: card-drop 0.3s ease-out;
+}
+
+@keyframes card-drop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reorder,
+  .reorder-row,
+  .card-drop {
+    animation: none;
+  }
 }

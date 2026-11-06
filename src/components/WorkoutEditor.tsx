@@ -103,7 +103,23 @@ export function WorkoutEditor({
   const settings = useStore((s) => s.settings);
   const [picker, setPicker] = useState(false);
   const [reorder, setReorder] = useState<{ id: string; y: number } | null>(null);
+  const [dropped, setDropped] = useState<string | null>(null);
+  const scrollBefore = useRef(0);
   useFlip();
+
+  // The collapsed list is much shorter than the cards, so the browser clamps the scroll position. Put the
+  // page back where it was and make sure the card that was moved is on screen.
+  useLayoutEffect(() => {
+    if (reorder || !dropped) return;
+    window.scrollTo(0, scrollBefore.current);
+    const el = document.querySelector<HTMLElement>(`[data-card="${dropped}"]`);
+    if (el) {
+      const r = el.getBoundingClientRect();
+      if (r.top < 120 || r.top > window.innerHeight - 160) el.scrollIntoView({ block: 'center' });
+    }
+    const t = setTimeout(() => setDropped(null), 400);
+    return () => clearTimeout(t);
+  }, [reorder, dropped]);
 
   // History without this workout and without anything later than it (when editing an old workout).
   const history = useMemo(
@@ -137,6 +153,7 @@ export function WorkoutEditor({
           startId={reorder.id}
           startY={reorder.y}
           onDone={(ids) => {
+            setDropped(reorder.id);
             setReorder(null);
             if (ids)
               mutate((w) => {
@@ -151,7 +168,7 @@ export function WorkoutEditor({
         const ex = exMap.get(we.exerciseId);
         if (!ex) return null;
         return (
-          <div key={we.id} hidden={!!reorder}>
+          <div key={we.id} hidden={!!reorder} data-card={we.id} className={dropped === we.id ? 'card-drop' : undefined}>
           <ExerciseCard
             we={we}
             ex={ex}
@@ -161,7 +178,10 @@ export function WorkoutEditor({
             mutate={mutate}
             live={live}
             settings={settings}
-            onGrab={(y) => setReorder({ id: we.id, y })}
+            onGrab={(y) => {
+              scrollBefore.current = window.scrollY;
+              setReorder({ id: we.id, y });
+            }}
           />
           </div>
         );
@@ -1167,6 +1187,13 @@ function ReorderList({
   const order = baseIds.filter((id) => id !== startId);
   order.splice(target, 0, startId);
   idsRef.current = order;
+  const lastSlot = useRef(baseIds.indexOf(startId));
+  useEffect(() => {
+    if (lastSlot.current !== target) {
+      lastSlot.current = target;
+      haptic(8);
+    }
+  }, [target]);
 
   return (
     <div ref={box} className="reorder" style={{ height: n * ROW_H }}>
@@ -1177,7 +1204,7 @@ function ReorderList({
           <div
             key={we.id}
             className={`reorder-row ${dragging ? 'lifted' : ''}`}
-            style={{ height: ROW_H - 8, transform: `translateY(${dragging ? dragTop : order.indexOf(we.id) * ROW_H}px)` }}
+            style={{ height: ROW_H - 8, ['--i' as string]: order.indexOf(we.id), transform: `translateY(${dragging ? dragTop : order.indexOf(we.id) * ROW_H}px)` }}
           >
             <span className="bp-dot" style={{ background: ex ? BODY_PART_COLORS[ex.bodyPart] : undefined }} />
             <span className="ex-name grow ellipsis">{ex?.name ?? ''}</span>
