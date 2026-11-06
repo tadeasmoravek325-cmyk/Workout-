@@ -2311,8 +2311,9 @@ body::before {
 }
 
 .reorder {
-  position: relative;
-  margin-top: 12px;
+  position: absolute;
+  left: 16px;
+  right: 16px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -2336,8 +2337,6 @@ body::before {
   z-index: 2;
   background: var(--card-2);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  transform-origin: center;
-  scale: 1.03;
 }
 
 .body-map.rotatable {
@@ -2607,28 +2606,19 @@ body::before {
   font-size: 16px;
 }
 
-/* Cards fold into the list and unfold again instead of snapping. The extra space below lets the page
-   scroll far enough to put the held row under the finger wherever it was in the workout. */
-.reorder {
-  animation: reorder-in 0.16s ease-out;
-  margin-bottom: 85vh;
-}
-
-.reorder-row {
-  animation: reorder-row-in 0.22s ease-out both;
-  animation-delay: calc(var(--i, 0) * 18ms);
+/* Reordering: a full-screen layer with the exercise names, built around the finger. */
+.reorder-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  background: var(--bg);
+  touch-action: none;
+  animation: reorder-in 0.12s ease-out;
 }
 
 @keyframes reorder-in {
   from {
     opacity: 0;
-  }
-}
-
-@keyframes reorder-row-in {
-  from {
-    opacity: 0;
-    margin-top: -10px;
   }
 }
 
@@ -2644,8 +2634,7 @@ body::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reorder,
-  .reorder-row,
+  .reorder-layer,
   .card-drop {
     animation: none;
   }

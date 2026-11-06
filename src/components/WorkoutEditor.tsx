@@ -104,14 +104,11 @@ export function WorkoutEditor({
   const [picker, setPicker] = useState(false);
   const [reorder, setReorder] = useState<{ id: string; y: number } | null>(null);
   const [dropped, setDropped] = useState<string | null>(null);
-  const scrollBefore = useRef(0);
   useFlip();
 
-  // The collapsed list is much shorter than the cards, so the browser clamps the scroll position. Put the
-  // page back where it was and make sure the card that was moved is on screen.
+  // After a move, make sure the card that was moved is on screen.
   useLayoutEffect(() => {
     if (reorder || !dropped) return;
-    window.scrollTo(0, scrollBefore.current);
     const el = document.querySelector<HTMLElement>(`[data-card="${dropped}"]`);
     if (el) {
       const r = el.getBoundingClientRect();
@@ -168,7 +165,7 @@ export function WorkoutEditor({
         const ex = exMap.get(we.exerciseId);
         if (!ex) return null;
         return (
-          <div key={we.id} hidden={!!reorder} data-card={we.id} className={dropped === we.id ? 'card-drop' : undefined}>
+          <div key={we.id} data-card={we.id} className={dropped === we.id ? 'card-drop' : undefined}>
           <ExerciseCard
             we={we}
             ex={ex}
@@ -178,10 +175,7 @@ export function WorkoutEditor({
             mutate={mutate}
             live={live}
             settings={settings}
-            onGrab={(y) => {
-              scrollBefore.current = window.scrollY;
-              setReorder({ id: we.id, y });
-            }}
+            onGrab={(y) => setReorder({ id: we.id, y })}
           />
           </div>
         );
@@ -1050,7 +1044,7 @@ function WarmupSheet({
   );
 }
 
-const ROW_H = 56;
+const ROW_H = 48;
 const HOLD_MS = 280;
 
 /**
@@ -1149,27 +1143,13 @@ function ReorderList({
   const box = useRef<HTMLDivElement>(null);
   const baseIds = useMemo(() => workout.exercises.map((x) => x.id), [workout.exercises]);
   const [pointerY, setPointerY] = useState(startY);
-  const [top, setTop] = useState(0);
   const idsRef = useRef(baseIds);
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
-  // Fold the cards into the list around the finger: the held exercise's row appears exactly where the
-  // finger is, with the others above and below it, so nothing jumps under the finger.
-  useLayoutEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const index = baseIds.indexOf(startId);
-    const wantTop = startY - index * ROW_H - ROW_H / 2;
-    window.scrollBy(0, el.getBoundingClientRect().top - wantTop);
-    setTop(el.getBoundingClientRect().top);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   useEffect(() => {
     const move = (e: PointerEvent) => {
       setPointerY(e.clientY);
-      setTop(box.current?.getBoundingClientRect().top ?? 0);
     };
     const end = (cancel: boolean) => () =>
       doneRef.current(cancel || idsRef.current.join() === baseIds.join() ? null : idsRef.current);
@@ -1189,6 +1169,30 @@ function ReorderList({
   }, [baseIds]);
 
   const n = baseIds.length;
+  // The list is built around the finger: the held exercise's row starts exactly where the finger is and the
+  // others sit above and below it in their current order. Nothing on the page scrolls. Rows that start
+  // off-screen come into view by holding the finger near the top or bottom edge, which slides the list.
+  const [top, setTop] = useState(() => startY - baseIds.indexOf(startId) * ROW_H - ROW_H / 2);
+  const topRef = useRef(top);
+  const pointerRef = useRef(startY);
+  pointerRef.current = pointerY;
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const vh = window.innerHeight;
+      const y = pointerRef.current;
+      let next = topRef.current;
+      if (y < 110 && next < 70) next += Math.min(10, (110 - y) / 6 + 2);
+      else if (y > vh - 110 && next + baseIds.length * ROW_H > vh - 30) next -= Math.min(10, (y - (vh - 110)) / 6 + 2);
+      if (next !== topRef.current) {
+        topRef.current = next;
+        setTop(next);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [baseIds.length]);
   const dragTop = Math.min(Math.max(pointerY - top - ROW_H / 2, 0), (n - 1) * ROW_H);
   const target = Math.min(n - 1, Math.max(0, Math.round(dragTop / ROW_H)));
   const order = baseIds.filter((id) => id !== startId);
@@ -1203,7 +1207,8 @@ function ReorderList({
   }, [target]);
 
   return (
-    <div ref={box} className="reorder" style={{ height: n * ROW_H }}>
+    <div className="reorder-layer">
+    <div ref={box} className="reorder" style={{ height: n * ROW_H, top }}>
       {workout.exercises.map((we) => {
         const ex = exMap.get(we.exerciseId);
         const dragging = we.id === startId;
@@ -1211,7 +1216,7 @@ function ReorderList({
           <div
             key={we.id}
             className={`reorder-row ${dragging ? 'lifted' : ''}`}
-            style={{ height: ROW_H - 8, ['--i' as string]: order.indexOf(we.id), transform: `translateY(${dragging ? dragTop : order.indexOf(we.id) * ROW_H}px)` }}
+            style={{ height: ROW_H - 8, transform: `translateY(${dragging ? dragTop : order.indexOf(we.id) * ROW_H}px)` }}
           >
             <span className="bp-dot" style={{ background: ex ? BODY_PART_COLORS[ex.bodyPart] : undefined }} />
             <span className="ex-name grow ellipsis">{ex?.name ?? ''}</span>
@@ -1219,6 +1224,7 @@ function ReorderList({
           </div>
         );
       })}
+    </div>
     </div>
   );
 }
