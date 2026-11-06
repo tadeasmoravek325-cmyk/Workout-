@@ -7,6 +7,7 @@ import {
   exerciseHistory,
   muscleRecovery,
   plateCalc,
+  prefillSets,
   setsPerMuscle,
   startOfWeek,
   suggestNext,
@@ -214,5 +215,27 @@ describe('youtubeSearchUrl', () => {
     expect(q('Bench Press (Barbell)')).toBe('barbell bench press proper form');
     expect(q('Bench Press - Close Grip (Barbell)')).toBe('barbell bench press close grip proper form');
     expect(q('Pull Up')).toBe('pull up proper form');
+  });
+});
+
+describe('prefillSets', () => {
+  const last = exerciseHistory([workout(2, 'bench-press', [set(60, 10, { type: 'warmup' }), set(100, 8), set(105, 6)])], 'bench-press')[0];
+  const blank = (type: WorkoutSet['type'] = 'normal'): WorkoutSet => ({ id: String(++n), type, done: false });
+
+  it('fills empty sets from the last session, set by set and by type', () => {
+    const out = prefillSets([blank('warmup'), blank(), blank(), blank()], last);
+    expect(out.map((s) => s.weight)).toEqual([60, 100, 105, 105]);
+    expect(out[1].reps).toBe(8);
+  });
+
+  it('keeps values already on a set unless asked to override', () => {
+    const own: WorkoutSet = { ...blank(), weight: 80, reps: 12 };
+    expect(prefillSets([own], last)[0].weight).toBe(80);
+    expect(prefillSets([own], last, true)[0].weight).toBe(100);
+  });
+
+  it('leaves sets alone without history', () => {
+    const s = blank();
+    expect(prefillSets([s], undefined)[0]).toBe(s);
   });
 });

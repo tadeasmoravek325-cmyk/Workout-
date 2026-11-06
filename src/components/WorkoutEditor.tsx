@@ -10,6 +10,7 @@ import {
   targetSets,
   exerciseHistory,
   isWorkingSet,
+  prefillSets,
   suggestNext,
   uid,
   warmupSets,
@@ -130,6 +131,7 @@ export function WorkoutEditor({
         const prev = exerciseHistory(history, id)[0];
         const ex = exMap.get(id);
         const we = newWorkoutExercise(id, prev ? Math.max(1, prev.sets.filter(isWorkingSet).length) : 3);
+        we.sets = prefillSets(we.sets, prev);
         if (ex?.type === 'duration' || ex?.type === 'distance_duration') we.sets = we.sets.slice(0, prev ? we.sets.length : 1);
         w.exercises.push(we);
       }
@@ -353,9 +355,12 @@ function ExerciseCard({
   ].filter(Boolean) as string[];
 
   const replaceWith = (alt: Exercise) => {
+    // Start the new exercise from its own last session instead of the old one's weights.
+    const last = exerciseHistory(history, alt.id)[0];
     upd((x) => {
       x.exerciseId = alt.id;
       for (const s of x.sets) if (!s.done) delete s.weight;
+      x.sets = prefillSets(x.sets, last);
     });
     setSheet(null);
     setSwapAny(false);

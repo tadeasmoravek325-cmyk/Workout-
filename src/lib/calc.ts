@@ -71,6 +71,31 @@ export function exerciseHistory(workouts: Workout[], exerciseId: string): Sessio
   return out.sort((a, b) => b.date - a.date);
 }
 
+/**
+ * Fills empty weight, reps, time and distance of new sets from the exercise's last session, set by set
+ * (warm-ups with warm-ups, working sets with working sets; extra sets copy the last one). Values already
+ * on a set are kept unless `override` is set (a routine's saved numbers give way to what was actually
+ * lifted last). The same exercise starts from where you left off in any workout, not just the one it was
+ * done in.
+ */
+export function prefillSets(sets: WorkoutSet[], last: Session | undefined, override = false): WorkoutSet[] {
+  if (!last) return sets;
+  const seen: Record<string, number> = {};
+  return sets.map((s) => {
+    const same = last.sets.filter((x) => x.type === s.type);
+    const n = (seen[s.type] = (seen[s.type] ?? -1) + 1);
+    const src = same[n] ?? same[same.length - 1];
+    if (!src || s.done) return s;
+    return {
+      ...s,
+      weight: override ? (src.weight ?? s.weight) : (s.weight ?? src.weight),
+      reps: override ? (src.reps ?? s.reps) : (s.reps ?? src.reps),
+      durationSec: override ? (src.durationSec ?? s.durationSec) : (s.durationSec ?? src.durationSec),
+      distance: override ? (src.distance ?? s.distance) : (s.distance ?? src.distance),
+    };
+  });
+}
+
 export interface Records {
   maxWeight: number;
   maxE1rm: number;

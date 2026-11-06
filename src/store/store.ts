@@ -13,7 +13,7 @@ import type {
   WorkoutExercise,
   WorkoutSet,
 } from '../types';
-import { defaultSettings, startOfWeek, uid } from '../lib/calc';
+import { defaultSettings, exerciseHistory, prefillSets, startOfWeek, uid } from '../lib/calc';
 import { BUILTIN_EXERCISES, normalizeMuscles } from '../data/exercises';
 import { LOCALE_TAG, t } from '../i18n';
 import { PROGRAMS } from '../data/programs';
@@ -107,6 +107,12 @@ export function newSet(prev?: WorkoutSet): WorkoutSet {
   };
 }
 
+/** New workout whose sets start from each exercise's last performance in any workout. */
+function withHistoryValues(w: Workout, history: Workout[]): Workout {
+  for (const we of w.exercises) we.sets = prefillSets(we.sets, exerciseHistory(history, we.exerciseId)[0], true);
+  return w;
+}
+
 function workoutFromRoutine(r: Routine): Workout {
   return {
     id: uid(),
@@ -186,7 +192,7 @@ export const useStore = create<State>()(
       startWorkout: (routine) => {
         if (getState().active) return;
         const w: Workout = routine
-          ? workoutFromRoutine(routine)
+          ? withHistoryValues(workoutFromRoutine(routine), getState().workouts)
           : { id: uid(), name: defaultWorkoutName(), startedAt: Date.now(), exercises: [], notes: '' };
         setState({ active: w });
       },
