@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronLeft } from 'lucide-react';
-import { useKeypad, type KeypadKind, type KeypadTarget } from './Keypad';
+import { revealAboveKeypad, useKeypad, type KeypadKind, type KeypadTarget } from './Keypad';
 import { X } from 'lucide-react';
 import { create } from 'zustand';
 import { t } from '../i18n';
@@ -139,7 +139,7 @@ export function NumInput({
             placeholder: () => live.current.placeholder ?? '',
             setText: commit,
           });
-          setTimeout(() => el.scrollIntoView({ block: 'center', behavior: 'smooth' }), 80);
+          setTimeout(() => revealAboveKeypad(el), 90);
         }
       }}
       onBlur={() => {

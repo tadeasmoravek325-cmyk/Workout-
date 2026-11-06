@@ -755,8 +755,7 @@ a.list-item:active {
 
 .wk-header {
   position: sticky;
-  /* Below the opaque strip that covers the status bar (see body::before), or Finish ends up under it. */
-  top: var(--status-floor, 0px);
+  top: 0;
   z-index: 20;
   background: var(--bg);
   padding: calc(10px + var(--safe-t)) 0 10px;
@@ -1768,7 +1767,7 @@ body:not(:has(.bottom-nav)) .toast-wrap {
 
 .save-error {
   position: fixed;
-  top: calc(8px + max(var(--safe-t), var(--status-floor, 0px)));
+  top: calc(8px + var(--safe-t));
   left: 12px;
   right: 12px;
   max-width: 456px;
@@ -2221,30 +2220,6 @@ button.league-card {
   color: var(--on-accent);
 }
 
-/* The status bar and notch are translucent over the page, in Safari and when installed. Content must
-   start below them, and scrolling content must not show through behind them. */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: max(var(--safe-t), var(--status-floor, 0px));
-  background: var(--bg);
-  z-index: 90;
-  pointer-events: none;
-}
-
-/* Safari on iPhone reports no top inset in a normal tab, yet scrolling content still slides under the
-   translucent status bar. A floor roughly the height of the status bar text keeps content out of it. */
-@supports (-webkit-touch-callout: none) {
-  @media (max-width: 600px) and (display-mode: browser) {
-    :root {
-      --status-floor: 47px;
-    }
-  }
-}
-
 /* Account */
 .account-icon {
   flex: none;
@@ -2446,7 +2421,7 @@ body::before {
   display: grid;
   grid-template-columns: 3fr 1fr;
   gap: 8px;
-  padding: 10px 10px calc(10px + var(--safe-b));
+  padding: 10px 10px calc(10px + var(--safe-b) + var(--browser-bar, 0px));
   background: var(--bg-2);
   border-radius: 20px 20px 0 0;
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
@@ -2637,5 +2612,15 @@ body::before {
   .reorder-layer,
   .card-drop {
     animation: none;
+  }
+}
+
+/* Safari on iPhone floats its address bar over the bottom of the page: keep the keys above it. The pad's
+   background still reaches the screen edge, so nothing shows through if the bar collapses. */
+@supports (-webkit-touch-callout: none) {
+  @media (display-mode: browser) {
+    :root {
+      --browser-bar: 64px;
+    }
   }
 }

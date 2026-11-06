@@ -51,13 +51,27 @@ function toNumber(text: string): number {
   return Number.isNaN(n) ? 0 : n;
 }
 
+/**
+ * Scrolls just enough that the field is neither under the pad nor under the workout header. No centring or
+ * smooth scrolling: a jump per field is what made the page and the pad feel like they were fighting.
+ */
+export function revealAboveKeypad(el: HTMLElement) {
+  const pad = document.querySelector<HTMLElement>('.keypad');
+  const padTop = pad ? pad.getBoundingClientRect().top : window.innerHeight;
+  const r = el.getBoundingClientRect();
+  const lowest = padTop - 16;
+  const highest = 150;
+  if (r.bottom > lowest) window.scrollBy(0, r.bottom - lowest);
+  else if (r.top < highest) window.scrollBy(0, r.top - highest);
+}
+
 /** Moves to the next set input in the page, or closes the keypad after the last one. */
 function goNext(from: HTMLInputElement) {
   const all = Array.from(document.querySelectorAll<HTMLInputElement>('input[data-keypad]'));
   const next = all[all.indexOf(from) + 1];
   if (next) {
     next.focus();
-    next.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    requestAnimationFrame(() => revealAboveKeypad(next));
   } else {
     from.blur();
     useKeypad.getState().close();
