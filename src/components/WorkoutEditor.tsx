@@ -1154,9 +1154,16 @@ function ReorderList({
   const doneRef = useRef(onDone);
   doneRef.current = onDone;
 
+  // Fold the cards into the list around the finger: the held exercise's row appears exactly where the
+  // finger is, with the others above and below it, so nothing jumps under the finger.
   useLayoutEffect(() => {
-    box.current?.scrollIntoView({ block: 'center' });
-    setTop(box.current?.getBoundingClientRect().top ?? 0);
+    const el = box.current;
+    if (!el) return;
+    const index = baseIds.indexOf(startId);
+    const wantTop = startY - index * ROW_H - ROW_H / 2;
+    window.scrollBy(0, el.getBoundingClientRect().top - wantTop);
+    setTop(el.getBoundingClientRect().top);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

@@ -2607,9 +2607,11 @@ body::before {
   font-size: 16px;
 }
 
-/* Cards fold into the list and unfold again instead of snapping. */
+/* Cards fold into the list and unfold again instead of snapping. The extra space below lets the page
+   scroll far enough to put the held row under the finger wherever it was in the workout. */
 .reorder {
   animation: reorder-in 0.16s ease-out;
+  margin-bottom: 85vh;
 }
 
 .reorder-row {
