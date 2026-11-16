@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { BookOpen, CalendarDays, Dumbbell, House, LayoutGrid, Play } from 'lucide-react';
 import { HashRouter, Link, NavLink, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { useStore } from './store/store';
@@ -11,21 +11,23 @@ import { fmtClock } from './lib/format';
 import { t } from './i18n';
 import Home from './pages/Home';
 import Train from './pages/Train';
-import RoutineEditor from './pages/RoutineEditor';
 import ActiveWorkout from './pages/ActiveWorkout';
 import History from './pages/History';
-import WorkoutDetail from './pages/WorkoutDetail';
-import WorkoutEdit from './pages/WorkoutEdit';
 import Exercises from './pages/Exercises';
-import ExerciseDetail from './pages/ExerciseDetail';
 import More from './pages/More';
-import Stats from './pages/Stats';
-import MuscleDetail from './pages/MuscleDetail';
-import Privacy from './pages/Privacy';
 import { startCloud } from './lib/cloud';
-import Measure from './pages/Measure';
-import SettingsPage from './pages/Settings';
 import Onboarding from './pages/Onboarding';
+
+// Secondary screens load on demand, so the first paint only carries Home and the workout itself.
+const RoutineEditor = lazy(() => import('./pages/RoutineEditor'));
+const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'));
+const WorkoutEdit = lazy(() => import('./pages/WorkoutEdit'));
+const ExerciseDetail = lazy(() => import('./pages/ExerciseDetail'));
+const Stats = lazy(() => import('./pages/Stats'));
+const MuscleDetail = lazy(() => import('./pages/MuscleDetail'));
+const Privacy = lazy(() => import('./pages/Privacy'));
+const Measure = lazy(() => import('./pages/Measure'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
 
 function useTheme() {
   const theme = useStore((s) => s.settings.theme);
@@ -101,6 +103,7 @@ function Shell() {
   }, [pathname]);
   return (
     <>
+      <Suspense fallback={<div className="page" />}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/train" element={<Train />} />
@@ -123,6 +126,7 @@ function Shell() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Home />} />
       </Routes>
+      </Suspense>
       {!fullscreen && <ActiveBar />}
       {!fullscreen && <BottomNav />}
       <RestTimerBar aboveNav={!fullscreen} />

@@ -25,7 +25,7 @@ export function PlateVisual({ plates }: { plates: number[] }) {
             color: p === 5 ? '#111' : '#fff',
           }}
         >
-          {String(p).replace('.', ',')}
+          {p}
         </div>
       ))}
       <div className="bar" style={{ width: 24, height: 18 }} />

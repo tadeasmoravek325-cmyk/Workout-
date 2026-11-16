@@ -89,7 +89,7 @@ export default function MuscleDetail() {
         </div>
       </div>
       <div className="small muted mt">
-        {last ? t('Last trained hard: {when}', { when: relativeDay(last) }) : t('Not trained yet.')}{' '}
+        {last ? t('Last trained hard: {when}.', { when: relativeDay(last) }) : t('Not trained yet.')}{' '}
         {t('Sets count fully when this is the main muscle and partly when it assists.')}
       </div>
 

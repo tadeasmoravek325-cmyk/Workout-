@@ -133,10 +133,10 @@ export default function RoutineEditor() {
                 <Trash2 size={17} />
               </button>
             </div>
-            <div className="row small" style={{ gap: 8, marginTop: 8 }}>
+            <div className="row wrap small" style={{ gap: 8, marginTop: 8 }}>
               <span className="muted">{t('Rest')}</span>
               <select
-                style={{ width: 'auto', padding: '5px 8px' }}
+                style={{ width: 'auto', minHeight: 40, padding: '5px 8px' }}
                 value={re.restSec ?? ''}
                 onChange={(e) => {
                   const v = e.target.value;

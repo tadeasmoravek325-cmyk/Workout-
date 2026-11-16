@@ -101,20 +101,6 @@ export default function SettingsPage() {
             <option value="f">{t('Female')}</option>
           </select>
         </Row>
-        <Row title={t('Birth year')} desc={t('Optional')}>
-          <select
-            style={{ width: 130 }}
-            value={settings.birthYear ?? ''}
-            onChange={(e) => update({ birthYear: e.target.value ? Number(e.target.value) : undefined })}
-          >
-            <option value="">{t('Rather not say')}</option>
-            {Array.from({ length: 80 }, (_, i) => new Date().getFullYear() - 12 - i).map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </Row>
         <Row title={t('Goal')}>
           <select style={{ width: 130 }} value={settings.goal} onChange={(e) => update({ goal: e.target.value as Goal })}>
             <option value="strength">{t('Strength')}</option>
@@ -218,7 +204,7 @@ export default function SettingsPage() {
       </div>
       <div className="card">
         <div className="small muted" style={{ marginBottom: 10 }}>
-          {t('The workout generator only picks exercises that use this equipment.')}
+          {t('Exercise suggestions for each muscle only use this equipment.')}
         </div>
         <div className="row wrap" style={{ gap: 6 }}>
           {(Object.keys(EQUIPMENT_LABELS) as Equipment[]).map((eq) => {

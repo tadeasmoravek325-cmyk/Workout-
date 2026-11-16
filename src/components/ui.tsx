@@ -89,7 +89,7 @@ export function NumInput({
   /** Use the in-app number pad instead of the system keyboard. */
   keypad?: { kind: KeypadKind; step: number; rpe?: number; onRpe?: KeypadTarget['onRpe']; onPlates?: () => void };
 }) {
-  const fmt = (v: number | undefined) => (v === undefined ? '' : String(Math.round(v * 100) / 100).replace('.', ','));
+  const fmt = (v: number | undefined) => (v === undefined ? '' : String(Math.round(v * 100) / 100));
   const [text, setText] = useState(fmt(value));
   const [focused, setFocused] = useState(false);
   useEffect(() => {
@@ -157,44 +157,6 @@ export function NumInput({
         onChange(t === '' || Number.isNaN(n) ? undefined : n);
       }}
     />
-  );
-}
-
-export function Ring({
-  value,
-  size = 96,
-  stroke = 9,
-  color = 'var(--accent)',
-  children,
-}: {
-  value: number;
-  size?: number;
-  stroke?: number;
-  color?: string;
-  children?: ReactNode;
-}) {
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const v = Math.max(0, Math.min(1, value));
-  return (
-    <div className="ring" style={{ width: size, height: size }}>
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--card-2)" strokeWidth={stroke} fill="none" />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke={color}
-          strokeWidth={stroke}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - v)}
-          style={{ transition: 'stroke-dashoffset 0.5s ease' }}
-        />
-      </svg>
-      <div className="label">{children}</div>
-    </div>
   );
 }
 

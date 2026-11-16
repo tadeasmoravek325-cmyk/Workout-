@@ -109,13 +109,13 @@ export function Keypad() {
     const cur = useKeypad.getState().replace ? '' : active.text();
     let next = cur;
     if (key === 'back') next = useKeypad.getState().replace ? '' : cur.slice(0, -1);
-    else if (key === ',') {
+    else if (key === '.') {
       if (active.kind === 'reps') return;
-      if (cur.includes(',')) return;
-      next = (cur || '0') + ',';
+      if (/[.,]/.test(cur)) return;
+      next = (cur || '0') + '.';
     } else {
       const max = active.kind === 'reps' ? 3 : 7;
-      if (cur.replace(',', '').length >= max) return;
+      if (cur.replace(/[.,]/, '').length >= max) return;
       next = cur === '0' ? key : cur + key;
     }
     useKeypad.setState({ replace: false });
@@ -126,7 +126,7 @@ export function Keypad() {
     const base = active.text() !== '' ? toNumber(active.text()) : toNumber(active.placeholder());
     const next = Math.max(0, Math.round((base + dir * active.step) * 100) / 100);
     useKeypad.setState({ replace: true });
-    active.setText(String(next).replace('.', ','));
+    active.setText(String(next));
     // Keep the selection visible so another digit starts fresh.
     active.el.select();
   };
@@ -169,8 +169,8 @@ export function Keypad() {
                 {k}
               </button>
             ))}
-            <button className="kp digit" onClick={() => type(',')} disabled={active.kind === 'reps'} aria-label={t('Decimal comma')}>
-              {active.kind === 'reps' ? '' : ','}
+            <button className="kp digit" onClick={() => type('.')} disabled={active.kind === 'reps'} aria-label={t('Decimal point')}>
+              {active.kind === 'reps' ? '' : '.'}
             </button>
             <button className="kp digit" onClick={() => type('0')}>
               0
@@ -242,7 +242,7 @@ function PlatePanel({ target }: { target: KeypadTarget }) {
     setPerSide(next);
     const kg = bar + next.reduce((a, b) => a + b, 0) * 2;
     useKeypad.setState({ replace: true });
-    target.setText(String(Math.round((toDisplayWeight(kg, unit) ?? 0) * 100) / 100).replace('.', ','));
+    target.setText(String(Math.round((toDisplayWeight(kg, unit) ?? 0) * 100) / 100));
   };
   const height = (p: number) => Math.max(40, Math.min(104, 40 + p * 3));
 

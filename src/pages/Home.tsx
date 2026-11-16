@@ -124,7 +124,7 @@ export default function Home() {
       )}
       {signIn && <SignInSheet onClose={() => setSignIn(false)} />}
 
-      {!cloudUser && backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
+      {!cloudConfigured && backupDue(workouts.length, settings.lastBackupAt, settings.backupSnoozeUntil) && (
         <div className="card backup-nudge mt">
           <div className="bold">{t('Back up your workouts')}</div>
           <div className="small muted" style={{ marginTop: 4 }}>

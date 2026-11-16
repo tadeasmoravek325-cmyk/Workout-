@@ -234,6 +234,20 @@ function ExerciseCard({
   const [swapAny, setSwapAny] = useState(false);
   const [platesKg, setPlatesKg] = useState<number | undefined>();
   const grab = useGrab(onGrab);
+  const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menu) return;
+    const outside = (e: Event) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenu(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(false);
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', key);
+    };
+  }, [menu]);
   const [justDone, setJustDone] = useState<string | null>(null);
   const [setIdx, setSetIdx] = useState<number | null>(null);
   const pinned = useStore((s) => s.exerciseNotes?.[ex.id]);
@@ -472,7 +486,7 @@ function ExerciseCard({
       </div>
 
       {menu && (
-        <div className="menu" onClick={() => setMenu(false)}>
+        <div className="menu" ref={menuRef} onClick={() => setMenu(false)}>
           <button onClick={() => upd((x) => void (x.notes = x.notes ?? ''))}>
             <NotebookPen size={17} /> {t("Note for today")}
           </button>

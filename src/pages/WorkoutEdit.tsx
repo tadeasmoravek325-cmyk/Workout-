@@ -61,7 +61,7 @@ export default function WorkoutEdit() {
               inputMode="numeric"
               value={durMin}
               onChange={(e) => {
-                const m = Number(e.target.value);
+                const m = Math.min(24 * 60, Math.max(0, Number(e.target.value.replace(/[^\d]/g, ''))));
                 if (!Number.isNaN(m))
                   mutate((w) => {
                     w.finishedAt = w.startedAt + m * 60000;

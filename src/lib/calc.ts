@@ -399,11 +399,6 @@ export function weekStreak(workouts: Workout[], goal: number, now = Date.now()):
   return streak;
 }
 
-export function workoutsThisWeek(workouts: Workout[], now = Date.now()): number {
-  const s = startOfWeek(now);
-  return workouts.filter((w) => w.startedAt >= s).length;
-}
-
 /**
  * Fractional hard sets per muscle: every working set adds the exercise's load for each muscle
  * (prime mover 1, synergists 0.25–0.75). Warm-ups are ignored.

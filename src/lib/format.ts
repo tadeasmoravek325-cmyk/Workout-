@@ -20,12 +20,6 @@ export function fmtNum(v: number | undefined, digits = 1): string {
   return r.toLocaleString(LOCALE_TAG, { maximumFractionDigits: digits });
 }
 
-export function fmtWeight(kg: number | undefined, unit: Unit, digits = 1): string {
-  const v = toDisplayWeight(kg, unit);
-  if (v === undefined) return '–';
-  return `${fmtNum(v, digits)} ${unit}`;
-}
-
 export function fmtVolume(kg: number, unit: Unit): string {
   const v = toDisplayWeight(kg, unit) ?? 0;
   if (v >= 10000) return unit === 'kg' ? `${fmtNum(v / 1000, 1)} t` : `${fmtNum(v / 1000, 1)}k lb`;
