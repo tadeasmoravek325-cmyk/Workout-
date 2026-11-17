@@ -144,6 +144,7 @@ export default function SettingsPage() {
             <option value="glow">{t('Glow')}</option>
             <option value="aurora">{t('Animated')}</option>
             <option value="grid">{t('Grid')}</option>
+            <option value="carbon">{t('Carbon')}</option>
           </select>
         </Row>
         <Row title={t('Appearance')}>

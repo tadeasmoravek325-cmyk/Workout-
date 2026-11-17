@@ -2241,7 +2241,8 @@ a.list-item:active,
 
 /* ---------- decorative backgrounds (Settings → Background) ---------- */
 html[data-bg='glow'] body,
-html[data-bg='grid'] body {
+html[data-bg='grid'] body,
+html[data-bg='carbon'] body {
   background-attachment: fixed;
 }
 
@@ -2326,4 +2327,23 @@ html:not([data-bg='none']) .ex-card {
   html[data-bg='aurora'] body::after {
     animation: none;
   }
+}
+
+/* Carbon fibre: a small woven check with a faint accent sheen from the top corner. */
+html[data-bg='carbon'] body {
+  background-color: #0c0c0d;
+  background-image:
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, transparent), transparent 45%),
+    linear-gradient(45deg, #151516 25%, transparent 25%, transparent 75%, #151516 75%),
+    linear-gradient(45deg, #151516 25%, transparent 25%, transparent 75%, #151516 75%);
+  background-size: auto, 12px 12px, 12px 12px;
+  background-position: 0 0, 0 0, 6px 6px;
+}
+
+html[data-theme='light'][data-bg='carbon'] body {
+  background-color: #e8e8ec;
+  background-image:
+    linear-gradient(160deg, color-mix(in srgb, var(--accent) 18%, transparent), transparent 45%),
+    linear-gradient(45deg, #dedee3 25%, transparent 25%, transparent 75%, #dedee3 75%),
+    linear-gradient(45deg, #dedee3 25%, transparent 25%, transparent 75%, #dedee3 75%);
 }
