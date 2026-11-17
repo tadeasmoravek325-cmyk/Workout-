@@ -180,6 +180,8 @@ export interface Settings {
   /** Available plates in kg (per side). */
   plates: number[];
   theme: 'dark' | 'light' | 'system';
+  /** Decorative background behind the pages. */
+  background?: 'none' | 'glow' | 'aurora' | 'grid';
   showRpe: boolean;
   smartCoach: boolean;
   /** When the user last saved a backup file (ms). */

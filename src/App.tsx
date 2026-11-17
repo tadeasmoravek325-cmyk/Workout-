@@ -31,6 +31,10 @@ const SettingsPage = lazy(() => import('./pages/Settings'));
 
 function useTheme() {
   const theme = useStore((s) => s.settings.theme);
+  const background = useStore((s) => s.settings.background ?? 'none');
+  useEffect(() => {
+    document.documentElement.dataset.bg = background;
+  }, [background]);
   useEffect(() => {
     const apply = () => {
       const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);

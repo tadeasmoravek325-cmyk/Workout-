@@ -2238,3 +2238,92 @@ a.list-item:active,
     transition: none;
   }
 }
+
+/* ---------- decorative backgrounds (Settings → Background) ---------- */
+html[data-bg='glow'] body,
+html[data-bg='grid'] body {
+  background-attachment: fixed;
+}
+
+html[data-bg='glow'] body {
+  background-image:
+    radial-gradient(120% 70% at 85% -10%, color-mix(in srgb, var(--accent) 42%, transparent), transparent 62%),
+    radial-gradient(90% 60% at -10% 110%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 60%);
+}
+
+html[data-bg='grid'] body {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 1px),
+    radial-gradient(100% 60% at 50% -10%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
+  background-size: 32px 32px, 32px 32px, auto;
+}
+
+/* Slow drifting colour blobs. Pure CSS transforms, so they cost almost nothing, and they stop when the
+   phone is set to reduce motion. */
+/* The page colour moves to <html> so the blobs can sit between it and the (now transparent) body. */
+html[data-bg='aurora'] {
+  background: var(--bg);
+}
+
+html[data-bg='aurora'] body {
+  background: transparent;
+}
+
+html[data-bg='aurora'] body::before,
+html[data-bg='aurora'] body::after {
+  content: '';
+  position: fixed;
+  z-index: -1;
+  width: 120vmax;
+  height: 120vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.85;
+  pointer-events: none;
+  will-change: transform;
+}
+
+html[data-bg='aurora'] body::before {
+  top: -75vmax;
+  right: -62vmax;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 80%, transparent), transparent 66%);
+  animation: aurora-a 22s ease-in-out infinite alternate;
+}
+
+html[data-bg='aurora'] body::after {
+  bottom: -80vmax;
+  left: -70vmax;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 40%, #7a3cff 60%), transparent 66%);
+  animation: aurora-b 28s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-a {
+  to {
+    transform: translate(-22vmax, 20vmax) scale(1.15);
+  }
+}
+
+@keyframes aurora-b {
+  to {
+    transform: translate(26vmax, -18vmax) scale(1.2);
+  }
+}
+
+html[data-theme='light'][data-bg='aurora'] body::before,
+html[data-theme='light'][data-bg='aurora'] body::after {
+  opacity: 0.4;
+}
+
+/* Cards let a little of the background through so it feels like one surface. */
+html:not([data-bg='none']) .card,
+html:not([data-bg='none']) .ex-card {
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-bg='aurora'] body::before,
+  html[data-bg='aurora'] body::after {
+    animation: none;
+  }
+}

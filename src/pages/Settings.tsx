@@ -134,6 +134,18 @@ export default function SettingsPage() {
             />
           </div>
         </Row>
+        <Row title={t('Background')} desc={t('Behind every screen')}>
+          <select
+            style={{ width: 130 }}
+            value={settings.background ?? 'none'}
+            onChange={(e) => update({ background: e.target.value as NonNullable<typeof settings.background> })}
+          >
+            <option value="none">{t('Plain')}</option>
+            <option value="glow">{t('Glow')}</option>
+            <option value="aurora">{t('Animated')}</option>
+            <option value="grid">{t('Grid')}</option>
+          </select>
+        </Row>
         <Row title={t('Appearance')}>
           <div style={{ width: 190 }}>
             <Segmented
