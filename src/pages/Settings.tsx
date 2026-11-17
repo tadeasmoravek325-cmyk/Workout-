@@ -141,10 +141,7 @@ export default function SettingsPage() {
             onChange={(e) => update({ background: e.target.value as NonNullable<typeof settings.background> })}
           >
             <option value="none">{t('Plain')}</option>
-            <option value="glow">{t('Glow')}</option>
-            <option value="aurora">{t('Animated')}</option>
-            <option value="grid">{t('Grid')}</option>
-            <option value="carbon">{t('Carbon')}</option>
+            <option value="topo">{t('Contours')}</option>
           </select>
         </Row>
         <Row title={t('Appearance')}>

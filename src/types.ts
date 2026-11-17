@@ -181,7 +181,7 @@ export interface Settings {
   plates: number[];
   theme: 'dark' | 'light' | 'system';
   /** Decorative background behind the pages. */
-  background?: 'none' | 'glow' | 'aurora' | 'grid' | 'carbon';
+  background?: 'none' | 'topo';
   showRpe: boolean;
   smartCoach: boolean;
   /** When the user last saved a backup file (ms). */

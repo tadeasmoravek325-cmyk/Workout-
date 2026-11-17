@@ -5,6 +5,7 @@ import { useStore } from './store/store';
 import { RestTimerBar } from './components/RestTimer';
 import { Dialogs, Toasts, useNow } from './components/ui';
 import { Keypad } from './components/Keypad';
+import { topoDataUri } from './lib/topo';
 import { DataRecovery, SaveErrorBanner } from './components/DataGuard';
 import { useSafety } from './lib/safety';
 import { fmtClock } from './lib/format';
@@ -33,12 +34,14 @@ function useTheme() {
   const theme = useStore((s) => s.settings.theme);
   const background = useStore((s) => s.settings.background ?? 'none');
   useEffect(() => {
-    document.documentElement.dataset.bg = background;
+    document.documentElement.dataset.bg = background === 'topo' ? 'topo' : 'none';
   }, [background]);
   useEffect(() => {
     const apply = () => {
       const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      // Beige contour lines: pale on dark, deeper sand on light.
+      document.documentElement.style.setProperty('--topo', dark ? topoDataUri('#e4d5b7', 0.16) : topoDataUri('#b39a6b', 0.34));
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0a0a' : '#f4f4f4');
     };
     apply();
