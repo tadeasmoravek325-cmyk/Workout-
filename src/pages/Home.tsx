@@ -211,7 +211,7 @@ export default function Home() {
           <div className="list">
             {recentPRs.map((p, i) => (
               <Link key={i} to={`/exercises/${p.exerciseId}`} className="list-item">
-                <div className="avatar" style={{ background: 'var(--grad-gold)', color: '#2a1400' }}>
+                <div className="avatar" style={{ background: 'var(--grad-gold)', color: '#1a0d00' }}>
                   <Trophy size={20} />
                 </div>
                 <div className="grow">

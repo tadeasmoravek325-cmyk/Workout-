@@ -259,14 +259,14 @@ export function muscleLoad(ex: Exercise): MuscleLoad {
 }
 
 export const BODY_PART_COLORS: Record<BodyPart, string> = {
-  chest: '#ff4a1a',
-  back: '#ff7a1a',
-  legs: '#ffa030',
-  shoulders: '#ffc65c',
-  arms: '#ff5e2a',
-  core: '#ff8f3a',
-  cardio: '#ffb347',
-  fullbody: '#ff6a1f',
+  chest: '#d4552b',
+  back: '#d9782d',
+  legs: '#e8964a',
+  shoulders: '#eeb06a',
+  arms: '#c9622f',
+  core: '#dc8446',
+  cardio: '#e6a05c',
+  fullbody: '#d06a2c',
 };
 
 /**

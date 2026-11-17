@@ -102,14 +102,14 @@ export function mix(a: string, b: string, t: number): string {
 /** Involvement of a muscle in one exercise (0..1) → colour. */
 export function loadColor(load: number | undefined): string {
   if (!load) return IDLE;
-  return mix('#5a2a10', '#ff7a1a', Math.min(1, load));
+  return mix('#4a2610', '#d9782d', Math.min(1, load));
 }
 
 /** Weekly fractional sets → colour. 10–20 is the productive zone for most people. */
 export function volumeColor(sets: number): string {
   if (sets < 0.25) return IDLE;
-  if (sets < 10) return mix('#5a2a10', '#ff7a1a', Math.min(1, sets / 10));
-  if (sets <= 20) return '#ffa030';
+  if (sets < 10) return mix('#4a2610', '#d9782d', Math.min(1, sets / 10));
+  if (sets <= 20) return '#e89a4a';
   return '#ff4433';
 }
 
