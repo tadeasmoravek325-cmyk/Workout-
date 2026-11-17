@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, ListPlus, NotebookPen, Pin, PlayCircle, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
+import { Calculator, Copy, Crosshair, Dumbbell, Flame, Link2, ListPlus, NotebookPen, Pin, PlayCircle, Replace, Timer, Trash2, TrendingUp, TriangleAlert, Trophy, Unlink } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Exercise, SetType, Settings, Workout, WorkoutExercise, WorkoutSet } from '../types';
@@ -538,28 +538,6 @@ function ExerciseCard({
               }
             >
               <Unlink size={17} /> {t('Remove superset')}
-            </button>
-          )}
-          {index > 0 && (
-            <button
-              onClick={() =>
-                mutate((w) => {
-                  [w.exercises[index - 1], w.exercises[index]] = [w.exercises[index], w.exercises[index - 1]];
-                })
-              }
-            >
-              <ArrowUp size={17} /> {t('Move up')}
-            </button>
-          )}
-          {index < workout.exercises.length - 1 && (
-            <button
-              onClick={() =>
-                mutate((w) => {
-                  [w.exercises[index + 1], w.exercises[index]] = [w.exercises[index], w.exercises[index + 1]];
-                })
-              }
-            >
-              <ArrowDown size={17} /> {t('Move down')}
             </button>
           )}
           <button
