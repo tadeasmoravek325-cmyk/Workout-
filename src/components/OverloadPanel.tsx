@@ -49,7 +49,7 @@ export function OverloadPanel({ sessions }: { sessions: Session[] }) {
         </div>
       </div>
       <div className="small muted" style={{ margin: '4px 0 8px' }}>
-        {t('Compares your last 2 sessions with the 2 before.')}
+        {t('Compares your last 2 sessions with the 2 before.')} {series.some((p) => !p.reliable) && t('≈ marks estimates from sets above 12 reps, which are less reliable.')}
       </div>
       <div className="chips" style={{ marginBottom: 8 }}>
         {RANGES.map((n) => (
@@ -76,6 +76,7 @@ export function OverloadPanel({ sessions }: { sessions: Session[] }) {
           <div key={p.date} className="row between small" style={{ padding: '3px 0' }}>
             <span className="muted">{fmtDate(p.date)}</span>
             <span>
+              {!p.reliable && '≈ '}
               {fmtNum(toDisplayWeight(p.e1rm, unit))} {unit} e1RM
               {prev && d !== 0 && <span className={d > 0 ? 'overload-up' : 'overload-down'}> {d > 0 ? '▲' : '▼'}</span>}
             </span>

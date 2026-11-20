@@ -1,5 +1,7 @@
 import type { Exercise, ExerciseTarget, Focus } from '../../types';
-import { e1rm, isWorkingSet, weightIncrement, type Session } from '../calc';
+import { weightIncrement } from '../calc';
+import { e1rm, e1rmReliable, isLoggedWorkingSet } from '../../core/metrics';
+import type { Session } from '../../core/history';
 import { t } from '../../i18n';
 
 /**
@@ -54,7 +56,7 @@ interface TopWork {
 
 /** The working sets at the heaviest working weight of a session. */
 export function topWork(s: Session): TopWork | null {
-  const work = s.sets.filter((x) => isWorkingSet(x) && (x.reps ?? 0) > 0);
+  const work = s.sets.filter((x) => isLoggedWorkingSet(x) && (x.reps ?? 0) > 0);
   if (!work.length) return null;
   const weight = Math.max(...work.map((x) => x.weight ?? 0));
   const at = work.filter((x) => (x.weight ?? 0) === weight);
@@ -87,7 +89,7 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   const warnings = out.warnings;
   const hasRir = last.rirs.length > 0;
   if (!hasRir) warnings.push(t('RIR was not logged, so the advice is less certain.'));
-  if (last.reps.some((r) => r > 12)) warnings.push(t('Sets above 12 reps make the 1RM estimate unreliable.'));
+  if (last.reps.some((r) => !e1rmReliable(r))) warnings.push(t('Sets above 12 reps make the 1RM estimate unreliable.'));
 
   // Decline: three sessions in a row, each lower than the one before, and the total fall is more than noise.
   if (tops.length >= 3) {

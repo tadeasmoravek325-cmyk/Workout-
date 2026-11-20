@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { useAllExercises, useExerciseMap, useStore } from '../store/store';
-import { isWorkingSet, muscleRecovery, startOfWeek } from '../lib/calc';
+import { countWorkingSets } from '../core/metrics';
+import { muscleRecovery, startOfWeek } from '../lib/calc';
 import { fmtNum, relativeDay } from '../lib/format';
 import { MUSCLE_LABELS, muscleLoad } from '../data/exercises';
 import { BodyMap, IDLE, volumeColor } from '../components/BodyMap';
@@ -33,7 +34,7 @@ export default function MuscleDetail() {
         const ex = exMap.get(we.exerciseId);
         const share = ex ? (muscleLoad(ex)[muscle] ?? 0) : 0;
         if (!share) continue;
-        const n = we.sets.filter((s) => s.done && isWorkingSet(s)).length;
+        const n = countWorkingSets(we.sets);
         if (!n) continue;
         if (share >= 0.5 && (last === undefined || w.startedAt > last)) last = w.startedAt;
         used.set(we.exerciseId, (used.get(we.exerciseId) ?? 0) + n);

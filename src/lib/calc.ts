@@ -1,46 +1,20 @@
 import type { Exercise, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
 import { muscleLoad } from '../data/exercises';
 import { t, tn } from '../i18n';
+export * from '../core/metrics';
+export * from '../core/history';
+export * from '../core/records';
+export * from '../core/muscles';
+import { e1rm, isWorkingSet } from '../core/metrics';
+import type { Session } from '../core/history';
 
 export function uid(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
-/** Estimated one-rep max (Epley). Unreliable above ~12 reps, so it is capped. */
-export function e1rm(weight: number, reps: number): number {
-  if (!weight || !reps || reps <= 0) return 0;
-  if (reps === 1) return weight;
-  return weight * (1 + Math.min(reps, 15) / 30);
-}
-
-/** Weight that should be liftable for the given number of reps, based on a 1RM. */
-export function weightForReps(oneRm: number, reps: number): number {
-  if (reps <= 1) return oneRm;
-  return oneRm / (1 + reps / 30);
-}
-
 export function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
-}
-
-export function isWorkingSet(s: WorkoutSet): boolean {
-  return s.type !== 'warmup';
-}
-
-export function setVolume(s: WorkoutSet, ex?: Exercise): number {
-  if (!s.done) return 0;
-  if (ex && (ex.type === 'assisted_bodyweight' || ex.type === 'duration' || ex.type === 'distance_duration')) return 0;
-  return (s.weight ?? 0) * (s.reps ?? 0);
-}
-
-export function workoutVolume(w: Workout, exMap: Map<string, Exercise>): number {
-  let total = 0;
-  for (const we of w.exercises) {
-    const ex = exMap.get(we.exerciseId);
-    for (const s of we.sets) total += setVolume(s, ex);
-  }
-  return total;
 }
 
 export function doneSetCount(w: Workout): number {
@@ -49,26 +23,6 @@ export function doneSetCount(w: Workout): number {
 
 export function workoutDurationMs(w: Workout): number {
   return (w.finishedAt ?? Date.now()) - w.startedAt;
-}
-
-export interface Session {
-  workoutId: string;
-  workoutName: string;
-  date: number;
-  sets: WorkoutSet[];
-}
-
-/** All finished sessions of an exercise, newest first. Only completed sets are included. */
-export function exerciseHistory(workouts: Workout[], exerciseId: string): Session[] {
-  const out: Session[] = [];
-  for (const w of workouts) {
-    for (const we of w.exercises) {
-      if (we.exerciseId !== exerciseId) continue;
-      const sets = we.sets.filter((s) => s.done);
-      if (sets.length) out.push({ workoutId: w.id, workoutName: w.name, date: w.startedAt, sets });
-    }
-  }
-  return out.sort((a, b) => b.date - a.date);
 }
 
 /**
@@ -114,97 +68,6 @@ export function minutesLeft(active: Workout, history: Workout[]): number | null 
   per.sort((a, b) => a - b);
   const sec = per.length ? per[Math.floor(per.length / 2)] : 150;
   return Math.max(1, Math.round((left * sec) / 60));
-}
-
-export interface Records {
-  maxWeight: number;
-  maxE1rm: number;
-  maxReps: number;
-  maxSetVolume: number;
-  maxSessionVolume: number;
-  maxDuration: number;
-  maxDistance: number;
-  /** Heaviest weight lifted for each rep count 1..12. */
-  repMaxes: Record<number, number>;
-}
-
-export function emptyRecords(): Records {
-  return {
-    maxWeight: 0,
-    maxE1rm: 0,
-    maxReps: 0,
-    maxSetVolume: 0,
-    maxSessionVolume: 0,
-    maxDuration: 0,
-    maxDistance: 0,
-    repMaxes: {},
-  };
-}
-
-export function computeRecords(sessions: Session[]): Records {
-  const r = emptyRecords();
-  for (const session of sessions) {
-    let sessionVolume = 0;
-    for (const s of session.sets) {
-      if (!isWorkingSet(s)) continue;
-      const w = s.weight ?? 0;
-      const reps = s.reps ?? 0;
-      r.maxWeight = Math.max(r.maxWeight, reps > 0 ? w : 0);
-      r.maxE1rm = Math.max(r.maxE1rm, e1rm(w, reps));
-      r.maxReps = Math.max(r.maxReps, reps);
-      r.maxSetVolume = Math.max(r.maxSetVolume, w * reps);
-      r.maxDuration = Math.max(r.maxDuration, s.durationSec ?? 0);
-      r.maxDistance = Math.max(r.maxDistance, s.distance ?? 0);
-      if (reps >= 1 && reps <= 12 && w > 0) r.repMaxes[reps] = Math.max(r.repMaxes[reps] ?? 0, w);
-      sessionVolume += w * reps;
-    }
-    r.maxSessionVolume = Math.max(r.maxSessionVolume, sessionVolume);
-  }
-  return r;
-}
-
-export type PrKind = 'weight' | 'e1rm' | 'reps' | 'volume' | 'duration' | 'distance';
-
-export interface PrHit {
-  exerciseId: string;
-  kind: PrKind;
-  value: number;
-  previous: number;
-}
-
-/**
- * Personal records reached in `workout` compared with everything in `previous`.
- * Exercises never done before do not produce records (first session is a baseline).
- */
-export function detectPRs(workout: Workout, previous: Workout[], exMap: Map<string, Exercise>): PrHit[] {
-  const hits: PrHit[] = [];
-  const seen = new Set<string>();
-  for (const we of workout.exercises) {
-    if (seen.has(we.exerciseId)) continue;
-    seen.add(we.exerciseId);
-    const ex = exMap.get(we.exerciseId);
-    const past = exerciseHistory(previous.filter((w) => w.id !== workout.id), we.exerciseId);
-    if (!past.length) continue;
-    const before = computeRecords(past);
-    const sets = workout.exercises.filter((x) => x.exerciseId === we.exerciseId).flatMap((x) => x.sets.filter((s) => s.done));
-    const now = computeRecords([{ workoutId: workout.id, workoutName: workout.name, date: workout.startedAt, sets }]);
-    const check = (kind: PrKind, a: number, b: number) => {
-      if (a > 0 && a > b + 1e-9) hits.push({ exerciseId: we.exerciseId, kind, value: a, previous: b });
-    };
-    const type = ex?.type ?? 'weight_reps';
-    if (type === 'weight_reps' || type === 'weighted_bodyweight') {
-      check('weight', now.maxWeight, before.maxWeight);
-      check('e1rm', now.maxE1rm, before.maxE1rm);
-      check('volume', now.maxSetVolume, before.maxSetVolume);
-    } else if (type === 'reps_only') {
-      check('reps', now.maxReps, before.maxReps);
-    } else if (type === 'duration') {
-      check('duration', now.maxDuration, before.maxDuration);
-    } else if (type === 'distance_duration') {
-      check('distance', now.maxDistance, before.maxDistance);
-    }
-  }
-  return hits;
 }
 
 export interface PlateResult {
@@ -447,25 +310,6 @@ export function weekStreak(workouts: Workout[], goal: number, now = Date.now()):
     week = startOfWeek(week - WEEK_MS / 2);
   }
   return streak;
-}
-
-/**
- * Fractional hard sets per muscle: every working set adds the exercise's load for each muscle
- * (prime mover 1, synergists 0.25–0.75). Warm-ups are ignored.
- */
-export function setsPerMuscle(workouts: Workout[], exMap: Map<string, Exercise>, since: number): Record<Muscle, number> {
-  const out = {} as Record<Muscle, number>;
-  for (const w of workouts) {
-    if (w.startedAt < since) continue;
-    for (const we of w.exercises) {
-      const ex = exMap.get(we.exerciseId);
-      if (!ex) continue;
-      const n = we.sets.filter((s) => s.done && isWorkingSet(s)).length;
-      if (!n) continue;
-      for (const [m, w] of Object.entries(muscleLoad(ex)) as [Muscle, number][]) out[m] = (out[m] ?? 0) + n * w;
-    }
-  }
-  return out;
 }
 
 const RECOVERY_HOURS: Partial<Record<Muscle, number>> = {

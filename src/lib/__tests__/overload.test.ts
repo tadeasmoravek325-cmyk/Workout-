@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { overloadState, type OverloadPoint } from '../overload';
 
-const p = (e1rm: number, volume: number): OverloadPoint => ({ date: 0, e1rm, volume, reps: 0 });
+const p = (e1rm: number, volume: number): OverloadPoint => ({ date: 0, e1rm, volume, reps: 0, reliable: true });
 
 describe('overloadState', () => {
   it('needs four sessions', () => {

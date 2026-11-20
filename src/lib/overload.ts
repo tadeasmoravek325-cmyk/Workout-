@@ -1,5 +1,6 @@
 import type { Exercise, Workout } from '../types';
-import { e1rm, exerciseHistory, isWorkingSet, type Session } from './calc';
+import { e1rm, e1rmReliable, isWorkingSet, workSetVolume } from '../core/metrics';
+import { exerciseHistory, type Session } from '../core/history';
 
 export type OverloadState = 'up' | 'flat' | 'down' | 'new';
 
@@ -11,15 +12,19 @@ export interface OverloadPoint {
   volume: number;
   /** Total working reps. */
   reps: number;
+  /** False when the best estimate comes from a set with too many reps to trust. */
+  reliable: boolean;
 }
 
 const point = (s: Session): OverloadPoint => {
   const w = s.sets.filter(isWorkingSet);
+  const best = w.reduce((b, x) => (e1rm(x.weight ?? 0, x.reps ?? 0) > e1rm(b.weight ?? 0, b.reps ?? 0) ? x : b), w[0]);
   return {
     date: s.date,
     e1rm: Math.max(0, ...w.map((x) => e1rm(x.weight ?? 0, x.reps ?? 0))),
-    volume: w.reduce((a, x) => a + (x.weight ?? 0) * (x.reps ?? 0), 0),
+    volume: w.reduce((a, x) => a + workSetVolume(x), 0),
     reps: w.reduce((a, x) => a + (x.reps ?? 0), 0),
+    reliable: !best || e1rmReliable(best.reps ?? 0),
   };
 };
 

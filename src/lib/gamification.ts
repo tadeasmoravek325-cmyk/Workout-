@@ -1,5 +1,6 @@
-import type { Exercise, Workout, WorkoutSet } from '../types';
-import { e1rm, isWorkingSet, startOfWeek } from './calc';
+import type { Exercise, Workout } from '../types';
+import { e1rm, startOfWeek } from './calc';
+import { isLoggedWorkingSet } from '../core/metrics';
 
 /* ------------------------------------------------------------------ */
 /* Weekly goal history                                                 */
@@ -80,9 +81,7 @@ interface Best {
 }
 
 /** A finished working set with something actually logged. Empty ticked rows earn nothing. */
-export function countsForXp(s: WorkoutSet): boolean {
-  return s.done && isWorkingSet(s) && ((s.reps ?? 0) > 0 || (s.durationSec ?? 0) > 0 || (s.distance ?? 0) > 0);
-}
+export const countsForXp = isLoggedWorkingSet;
 
 /** A workout that counts towards the weekly goal and streak: at least one real working set. */
 export function isGoalWorkout(w: Workout): boolean {
