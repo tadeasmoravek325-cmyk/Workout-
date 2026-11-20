@@ -1,4 +1,4 @@
-import type { Exercise, Workout } from '../types';
+import type { Exercise, ExerciseType, Workout, WorkoutSet } from '../types';
 import { e1rm, isWorkingSet } from './metrics';
 import { exerciseHistory, type Session } from './history';
 
@@ -91,4 +91,38 @@ export function detectPRs(workout: Workout, previous: Workout[], exMap: Map<stri
     }
   }
   return hits;
+}
+
+/** A set heavier than any earlier working set. */
+export function isWeightRecord(before: Records, set: WorkoutSet): boolean {
+  return (set.weight ?? 0) > before.maxWeight;
+}
+
+export type LiveRecord = 'weight' | 'e1rm' | null;
+
+/**
+ * Is `set`, just completed, a new record? `before` are the records from earlier sessions, `doneHere` the other
+ * finished working sets of the same exercise in the current workout. A heavier weight wins over a better 1RM estimate.
+ */
+export function liveRecord(before: Records, doneHere: WorkoutSet[], set: WorkoutSet): LiveRecord {
+  const bestW = Math.max(before.maxWeight, ...doneHere.map((y) => y.weight ?? 0));
+  const best1 = Math.max(before.maxE1rm, ...doneHere.map((y) => e1rm(y.weight ?? 0, y.reps ?? 0)));
+  const w = set.weight ?? 0;
+  if (w > bestW && w > 0) return 'weight';
+  if (e1rm(w, set.reps ?? 0) > best1 + 0.01) return 'e1rm';
+  return null;
+}
+
+/**
+ * One comparable number per set, higher is better, used to mark a set better or worse than the same set last time.
+ * Weighted lifts use the 1RM estimate (reps if no weight), assisted lifts reward reps and less assistance,
+ * the rest use reps, distance or time.
+ */
+export function setScore(type: ExerciseType, s: Partial<WorkoutSet>): number {
+  const weighted = type === 'weight_reps' || type === 'weighted_bodyweight';
+  if (weighted) return e1rm(s.weight ?? 0, s.reps ?? 0) || (s.reps ?? 0);
+  if (type === 'assisted_bodyweight') return (s.reps ?? 0) * 100 - (s.weight ?? 0);
+  if (type === 'distance_duration') return s.distance ?? 0;
+  if (type === 'duration') return s.durationSec ?? 0;
+  return s.reps ?? 0;
 }

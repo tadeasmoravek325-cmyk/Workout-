@@ -22,6 +22,7 @@ import { findSubstitutes } from '../lib/substitutes';
 import { askNotificationsOnce, unlockAudio } from '../lib/feedback';
 import { haptic } from '../lib/celebrate';
 import { plateCalc } from '../lib/calc';
+import { isWeightRecord, liveRecord, setScore } from '../core/records';
 import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, Sheet, toast, undoToast } from './ui';
@@ -332,15 +333,14 @@ function ExerciseCard({
       const doneHere = workout.exercises
         .filter((x) => x.exerciseId === ex.id)
         .flatMap((x) => x.sets.filter((y) => y.done && y.id !== filled.id && isWorkingSet(y)));
-      const bestW = Math.max(records.maxWeight, ...doneHere.map((y) => y.weight ?? 0));
-      const best1 = Math.max(records.maxE1rm, ...doneHere.map((y) => e1rm(y.weight ?? 0, y.reps ?? 0)));
       const w = filled.weight ?? 0;
       const one = e1rm(w, filled.reps ?? 0);
       const celebrate = () => haptic([30, 60, 30]);
-      if (w > bestW && w > 0) {
+      const hit = liveRecord(records, doneHere, filled);
+      if (hit === 'weight') {
         toast(t('New PR · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(w, unit)), unit }), 'pr', 4000);
         celebrate();
-      } else if (one > best1 + 0.01) {
+      } else if (hit === 'e1rm') {
         toast(t('New best est. 1RM · {exercise}: {weight} {unit}', { exercise: ex.name, weight: fmtNum(toDisplayWeight(one, unit)), unit }), 'pr', 4000);
         celebrate();
       }
@@ -670,21 +670,11 @@ function ExerciseCard({
               isWorkingSet(s) &&
               sessions.length > 0 &&
               ex.type === 'weight_reps' &&
-              (s.weight ?? 0) > records.maxWeight;
+              isWeightRecord(records, s);
             const perf = (() => {
               if (!s.done || !prevSame || isPr) return 0;
-              const score = (x: Partial<WorkoutSet>) =>
-                hasWeight(ex) && ex.type !== 'assisted_bodyweight'
-                  ? e1rm(x.weight ?? 0, x.reps ?? 0) || (x.reps ?? 0)
-                  : ex.type === 'assisted_bodyweight'
-                    ? (x.reps ?? 0) * 100 - (x.weight ?? 0)
-                    : hasReps(ex)
-                      ? (x.reps ?? 0)
-                      : ex.type === 'distance_duration'
-                        ? (x.distance ?? 0)
-                        : (x.durationSec ?? 0);
-              const a = score(s);
-              const b = score(prevSame);
+              const a = setScore(ex.type, s);
+              const b = setScore(ex.type, prevSame);
               return a > b + 1e-6 ? 1 : a < b - 1e-6 ? -1 : 0;
             })();
             return (

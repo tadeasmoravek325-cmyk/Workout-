@@ -55,8 +55,7 @@ Suggestions are advice only. Nothing writes to a workout or routine until the us
 - **Reference snapshot** (local): put a backup file at `private/backup.json` and run `REF_WRITE=1 npx vitest run reference`. It writes `private/reference-before.json` with counts, volumes, records, set counts per muscle, trend states and suggestions. Later runs of `npx vitest run reference` compare against it. Any intended change in results shows up as a diff to review.
 
 ## Known gaps
-- `lib/calc.ts` still reads the clock in a few places (`muscleRecovery`, `workoutDurationMs`); `suggestNext` takes `now` as a parameter.
-- `WorkoutEditor` keeps its own "new record" and "improvement" markers next to `computeRecords`.
-- `RoutineEditor` computes planned volume with its own formula (it describes a plan, not logged sets).
-- No native haptics or reliable background timers on iOS (PWA limits).
-- Texts are English only; there is no Czech dictionary yet.
+- iOS PWA limits: no native haptics and no reliable background timers. `navigator.vibrate` does nothing on iPhone; the app uses a small switch-input trick for a tick and notifications while hidden.
+- Texts are English only; there is no Czech dictionary (about 720 strings would need translating).
+- `uid()` and `suggestNext`/`muscleRecovery`/`weekStreak`/`workoutDurationMs` default their clock to `Date.now()` but all take it as a parameter, so tests can fix it.
+- The live "new record" toast, the row record flag and the better/worse arrow next to a set use `liveRecord`, `isWeightRecord` and `setScore` from `core/records.ts`; routine volume uses `plannedVolume` from `core/metrics.ts`.

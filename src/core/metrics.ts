@@ -62,3 +62,8 @@ export function workoutVolume(w: Workout, exMap: Map<string, Exercise>): number 
   }
   return total;
 }
+
+/** Volume of planned sets (routines): weight × reps, no finished-state check. */
+export function plannedVolume(sets: { weight?: number; reps?: number }[]): number {
+  return sets.reduce((a, s) => a + (s.weight ?? 0) * (s.reps ?? 0), 0);
+}

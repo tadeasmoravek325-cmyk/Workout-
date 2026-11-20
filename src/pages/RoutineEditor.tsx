@@ -7,6 +7,7 @@ import { uid } from '../lib/calc';
 import { fmtClock, fmtNum, fromDisplayWeight, parseClock, toDisplayWeight } from '../lib/format';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { NumInput, toast } from '../components/ui';
+import { plannedVolume } from '../core/metrics';
 import { t } from '../i18n';
 
 const TYPES: SetType[] = ['normal', 'warmup', 'drop', 'failure'];
@@ -247,7 +248,7 @@ export default function RoutineEditor() {
             {re.sets.some((s) => s.weight) && (
               <div className="tiny muted mt">
                 {t('{volume} total volume', {
-                  volume: `${fmtNum(toDisplayWeight(re.sets.reduce((a, s) => a + (s.weight ?? 0) * (s.reps ?? 0), 0), unit), 0)} ${unit}`,
+                  volume: `${fmtNum(toDisplayWeight(plannedVolume(re.sets), unit), 0)} ${unit}`,
                 })}
               </div>
             )}

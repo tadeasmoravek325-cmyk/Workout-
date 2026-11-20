@@ -39,3 +39,28 @@ describe('core metrics', () => {
     expect(setsPerMuscle([w], exMap, 0).chest).toBe(2);
   });
 });
+
+import { isWeightRecord, liveRecord, emptyRecords, setScore } from '../../core/records';
+import { plannedVolume } from '../../core/metrics';
+
+describe('live records and set score', () => {
+  const before = { ...emptyRecords(), maxWeight: 100, maxE1rm: 130 };
+  it('flags a heavier weight, then a better estimate, else nothing', () => {
+    expect(liveRecord(before, [], s('normal', 105, 3))).toBe('weight');
+    expect(liveRecord(before, [], s('normal', 95, 12))).toBe('e1rm'); // 95 × 1.4 = 133 > 130
+    expect(liveRecord(before, [], s('normal', 90, 5))).toBeNull();
+    expect(isWeightRecord(before, s('normal', 101, 1))).toBe(true);
+  });
+  it('counts sets already done in this workout as the bar to beat', () => {
+    expect(liveRecord(before, [s('normal', 110, 3)], s('normal', 105, 3))).toBeNull();
+  });
+  it('scores each exercise type on its own scale', () => {
+    expect(setScore('weight_reps', { weight: 100, reps: 5 })).toBeGreaterThan(setScore('weight_reps', { weight: 100, reps: 4 }));
+    expect(setScore('assisted_bodyweight', { weight: 20, reps: 8 })).toBeGreaterThan(setScore('assisted_bodyweight', { weight: 30, reps: 8 }));
+    expect(setScore('reps_only', { reps: 12 })).toBe(12);
+    expect(setScore('duration', { durationSec: 45 })).toBe(45);
+  });
+  it('sums planned volume', () => {
+    expect(plannedVolume([{ weight: 50, reps: 10 }, { weight: 60, reps: 8 }, {}])).toBe(980);
+  });
+});
