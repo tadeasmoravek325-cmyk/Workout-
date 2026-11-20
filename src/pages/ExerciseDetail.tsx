@@ -12,6 +12,7 @@ import { ExerciseAvatar, ExerciseForm, ExercisePicker } from '../components/Exer
 import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, Empty, Segmented, undoToast, BackLabel } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
+import { OverloadPanel } from '../components/OverloadPanel';
 import { PlayCircle } from 'lucide-react';
 import { t, tn } from '../i18n';
 import type { Exercise } from '../types';
@@ -160,6 +161,7 @@ export default function ExerciseDetail() {
 
       {tab === 'charts' && (
         <div className="mt-l">
+          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} />}
           {metrics.length > 1 && (
             <div className="chips">
               {metrics.map((m) => (

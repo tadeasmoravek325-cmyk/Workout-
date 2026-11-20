@@ -2297,3 +2297,6 @@ html[data-bg='topo'] .ex-card {
 }
 
 .merge-card{display:block;width:100%;text-align:left;margin:0 0 12px;border:1px solid var(--accent)}
+.overload-up{color:var(--ok)}
+.overload-down{color:var(--danger)}
+.overload-flat,.overload-new{color:var(--muted)}

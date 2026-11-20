@@ -258,6 +258,8 @@ export interface Suggestion {
   weight?: number;
   reps?: number;
   durationSec?: number;
+  /** The weight last time, when the suggestion adds to it. */
+  from?: number;
   reason: string;
 }
 
@@ -321,15 +323,15 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue)
   const s = baseSuggestion(ex, history);
   if (!s || !fatigue || s.kind !== 'increase') return s;
   if (fatigue.session >= FATIGUE_SESSION) {
-    return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
+    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
   }
   // Order effect: strength gains are larger for lifts done early in the session (Nunes et al. 2020; Avelar 2019),
   // so a compound lift buried late in the workout adds a rep instead of load. Hypertrophy is unaffected by order.
   if (fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex) && s.weight !== undefined && s.reps !== undefined) {
-    return { ...s, kind: 'repeat', weight: s.weight - weightIncrement(ex), reps: s.reps + 1, reason: t('Exercise number {n} of the workout. Keep the weight and add one rep instead of load.', { n: fatigue.position + 1 }) };
+    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps + 1, reason: t('Exercise number {n} of the workout. Keep the weight and add one rep instead of load.', { n: fatigue.position + 1 }) };
   }
   if (fatigue.recent >= FATIGUE_RECENT) {
-    return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reason: t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }) };
+    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reason: t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }) };
   }
   return s;
 }
@@ -357,6 +359,16 @@ function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
   const rpes = topSets.map((s) => s.rpe).filter((r): r is number => typeof r === 'number');
   const hardRpe = rpes.length > 0 && Math.max(...rpes) >= 9.5;
   const inc = weightIncrement(ex);
+  const easy = rpes.length > 0 && Math.max(...rpes) <= 7;
+  const daysOff = (Date.now() - last.date) / 86_400_000;
+
+  // Long break: detraining is fast enough that last time's weight is no longer a fair target (heuristic thresholds).
+  if (ex.type === 'weight_reps' && daysOff > 28 && top > 0) {
+    return { kind: 'deload', weight: roundTo(top * 0.9, 2.5), reps: firstReps, reason: t('{n} weeks since you last did this. Restart 10% lighter.', { n: Math.round(daysOff / 7) }) };
+  }
+  if (ex.type === 'weight_reps' && daysOff > 14 && held && !hardRpe) {
+    return { kind: 'repeat', weight: top, reps: firstReps, reason: t('{n} weeks since you last did this. Repeat the weight before adding more.', { n: Math.round(daysOff / 7) }) };
+  }
 
   if (ex.type === 'assisted_bodyweight') {
     if (held && !hardRpe) {
@@ -380,11 +392,16 @@ function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
   }
 
   if (held && !hardRpe) {
+    // Reported RPE 7 or less means reps were left in the tank: take a double step.
+    const step = easy ? inc * 2 : inc;
     return {
       kind: 'increase',
-      weight: top + inc,
+      weight: top + step,
+      from: top,
       reps: firstReps,
-      reason: t('Last time {sets}× {reps} reps with no drop-off. Add {inc} kg.', { sets: topSets.length, reps: firstReps, inc }),
+      reason: easy
+        ? t('Last time was easy (RPE 7 or less). Add {inc} kg.', { inc: step })
+        : t('Last time {sets}× {reps} reps with no drop-off. Add {inc} kg.', { sets: topSets.length, reps: firstReps, inc }),
     };
   }
   return {

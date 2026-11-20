@@ -102,6 +102,12 @@ describe('suggestNext (smart coach)', () => {
     expect(late?.reps).toBe(9);
   });
 
+  it('restarts lighter after a long break', () => {
+    const s = suggestNext(bench, exerciseHistory([workout(40, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press'));
+    expect(s?.kind).toBe('deload');
+    expect(s?.weight).toBe(72.5);
+  });
+
   it('adds 5 kg on lower-body barbell lifts', () => {
     const squat = exMap.get('squat')!;
     const s = suggestNext(squat, exerciseHistory([workout(2, 'squat', [set(100, 5), set(100, 5)])], 'squat'));
