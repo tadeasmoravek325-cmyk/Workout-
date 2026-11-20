@@ -106,3 +106,24 @@ describe('backupDue', () => {
   });
   it('respects snoozing', () => expect(backupDue(5, undefined, now + DAY, now)).toBe(false));
 });
+
+describe('coalescedJsonStorage', () => {
+  it('writes a burst of changes once, with the latest state, and flushes on demand', async () => {
+    vi.useFakeTimers();
+    const writes: string[] = [];
+    const base = { getItem: async () => null, setItem: async (_n: string, v: string) => void writes.push(v), removeItem: async () => {} };
+    const { coalescedJsonStorage } = await import('../safety');
+    const st = coalescedJsonStorage<{ n: number }>(base, 300);
+    for (let i = 1; i <= 5; i++) void st.setItem('k', { state: { n: i }, version: 1 });
+    expect(writes).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(350);
+    expect(writes).toHaveLength(1);
+    expect(JSON.parse(writes[0]).state.n).toBe(5);
+
+    void st.setItem('k', { state: { n: 6 }, version: 1 });
+    await st.flush();
+    expect(writes).toHaveLength(2);
+    expect(JSON.parse(writes[1]).state.n).toBe(6);
+    vi.useRealTimers();
+  });
+});

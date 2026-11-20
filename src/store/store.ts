@@ -1,8 +1,8 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { withSuggestedMuscles } from '../lib/suggestMuscles';
 import { remapExercise } from '../lib/mergeExercises';
-import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY, whileQuiet } from '../lib/safety';
+import { coalescedJsonStorage, createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY, whileQuiet } from '../lib/safety';
 import type {
   Exercise,
   Measurement,
@@ -539,7 +539,7 @@ export const useStore = create<State>()(
       // Storage key kept from the original working name so existing data is not lost.
       name: STORE_KEY,
       version: 1,
-      storage: createJSONStorage(() => safeStorage),
+      storage: coalescedJsonStorage<Partial<State>>(safeStorage),
       // Future schema changes go here. Returning the state untouched keeps data instead of dropping it.
       migrate: (persisted) => persisted as State,
       partialize: (s) => ({
