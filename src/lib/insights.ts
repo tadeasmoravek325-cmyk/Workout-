@@ -1,5 +1,6 @@
 import type { Exercise, Muscle, Workout } from '../types';
-import { e1rm, exerciseHistory, isWorkingSet, setsPerMuscle } from './calc';
+import { exerciseHistory, setsPerMuscle } from './calc';
+import { analyzeTrend, trendPoints } from '../core/progress/trend';
 import { MUSCLE_LABELS } from '../data/exercises';
 import { t } from '../i18n';
 
@@ -38,18 +39,15 @@ export function coachInsights(workouts: Workout[], exMap: Map<string, Exercise>,
     if (high) out.push({ kind: 'high', text: t('{muscle}: {n} sets in 7 days. Gains flatten above roughly {max}, so you can hold here.', { muscle: MUSCLE_LABELS[high[0]], n: Math.round(high[1]), max: WEEKLY_MAX }) });
   }
 
-  // Plateau: the last three sessions of a lift never beat what came before.
+  // Plateau: judged by the one shared trend definition.
   const ids = new Set(workouts.filter((w) => w.startedAt > now - 42 * DAY).flatMap((w) => w.exercises.map((e) => e.exerciseId)));
   for (const id of ids) {
     const ex = exMap.get(id);
     if (!ex || ex.type !== 'weight_reps') continue;
-    const h = exerciseHistory(workouts, id);
-    if (h.length < 5) continue;
-    const best = (s: (typeof h)[number]) => Math.max(0, ...s.sets.filter(isWorkingSet).map((x) => e1rm(x.weight ?? 0, x.reps ?? 0)));
-    const recent = Math.max(...h.slice(0, 3).map(best));
-    const before = Math.max(...h.slice(3).map(best));
-    if (before > 0 && recent <= before) out.push({ kind: 'stall', text: t('{name}: no new best in your last 3 sessions. Try adding a rep before adding weight, or take an easier week.', { name: ex.name }) });
-    if (out.filter((i) => i.kind === 'stall').length >= 1) break;
+    if (analyzeTrend(trendPoints(exerciseHistory(workouts, id))).state === 'stagnation') {
+      out.push({ kind: 'stall', text: t('{name}: no new best in your last 3 sessions. Try adding a rep before adding weight, or take an easier week.', { name: ex.name }) });
+      break;
+    }
   }
   return out.slice(0, 3);
 }

@@ -1,6 +1,7 @@
 import type { Exercise, Workout } from '../types';
 import { e1rm, e1rmReliable, isWorkingSet, workSetVolume } from '../core/metrics';
 import { exerciseHistory, type Session } from '../core/history';
+import { analyzeTrend } from '../core/progress/trend';
 
 export type OverloadState = 'up' | 'flat' | 'down' | 'new';
 
@@ -29,24 +30,18 @@ const point = (s: Session): OverloadPoint => {
 };
 
 /** Oldest first, the last `n` sessions. */
-export function overloadSeries(sessions: Session[], n = 8): OverloadPoint[] {
+export function overloadSeries(sessions: Session[], n = 11): OverloadPoint[] {
   return sessions.slice(0, n).map(point).reverse();
 }
 
 /**
- * Progressive overload counts as progress when strength (e1RM) or work done (volume) rose. Compares the average
- * of the latest two sessions with the two before them; a change under 1% is treated as flat.
+ * State of a lift, from the single trend definition in `core/progress/trend`
+ * (recent best against the best of the sessions just before; stuck only when neither strength nor work rose).
  */
 export function overloadState(series: OverloadPoint[]): { state: OverloadState; change: number } {
-  if (series.length < 4) return { state: 'new', change: 0 };
-  const avg = (a: OverloadPoint[], k: 'e1rm' | 'volume') => a.reduce((x, p) => x + p[k], 0) / a.length;
-  const cur = series.slice(-2);
-  const prev = series.slice(-4, -2);
-  const ch = (k: 'e1rm' | 'volume') => (avg(prev, k) ? (avg(cur, k) - avg(prev, k)) / avg(prev, k) : 0);
-  const best = Math.abs(ch('e1rm')) >= Math.abs(ch('volume')) ? ch('e1rm') : ch('volume');
-  const up = ch('e1rm') > 0.01 || ch('volume') > 0.01;
-  const down = ch('e1rm') < -0.01 && ch('volume') < -0.01;
-  return { state: up ? 'up' : down ? 'down' : 'flat', change: best * 100 };
+  const t = analyzeTrend([...series].reverse());
+  if (t.state === 'insufficient') return { state: 'new', change: 0 };
+  return { state: t.state === 'improving' ? 'up' : t.state === 'stagnation' ? 'flat' : 'down', change: t.change };
 }
 
 export interface OverloadRow {

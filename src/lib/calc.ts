@@ -5,7 +5,10 @@ export * from '../core/metrics';
 export * from '../core/history';
 export * from '../core/records';
 export * from '../core/muscles';
-import { e1rm, isWorkingSet } from '../core/metrics';
+export * from '../core/progress/increment';
+import { weightIncrement } from '../core/progress/increment';
+import { analyzeTrend, trendPoints } from '../core/progress/trend';
+import { isWorkingSet } from '../core/metrics';
 import type { Session } from '../core/history';
 
 export function uid(): string {
@@ -126,13 +129,6 @@ export interface Suggestion {
   reason: string;
 }
 
-export function weightIncrement(ex: Exercise): number {
-  if (ex.equipment === 'barbell' && (ex.bodyPart === 'legs' || ex.id.includes('deadlift'))) return 5;
-  if (ex.equipment === 'dumbbell') return 2;
-  if (ex.equipment === 'kettlebell') return 4;
-  return 2.5;
-}
-
 /**
  * "Smart coach": recommends the next target for an exercise using double progression.
  * - all working sets at the top weight kept their reps and RPE was not maxed → add weight
@@ -182,8 +178,8 @@ export function targetSets(ex: Exercise, workouts: Workout[], exMap: Map<string,
  * Progression target for the next session. A heavily worked muscle (lots of sets in the last
  * three days or earlier in this workout) holds its weight instead of adding more.
  */
-export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue): Suggestion | null {
-  const s = baseSuggestion(ex, history);
+export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue, now = Date.now()): Suggestion | null {
+  const s = baseSuggestion(ex, history, now);
   if (!s || !fatigue || s.kind !== 'increase') return s;
   if (fatigue.session >= FATIGUE_SESSION) {
     return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
@@ -199,7 +195,7 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue)
   return s;
 }
 
-function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
+function baseSuggestion(ex: Exercise, history: Session[], now: number): Suggestion | null {
   const last = history[0];
   if (!last) return null;
   const working = last.sets.filter(isWorkingSet);
@@ -223,7 +219,7 @@ function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
   const hardRpe = rpes.length > 0 && Math.max(...rpes) >= 9.5;
   const inc = weightIncrement(ex);
   const easy = rpes.length > 0 && Math.max(...rpes) <= 7;
-  const daysOff = (Date.now() - last.date) / 86_400_000;
+  const daysOff = (now - last.date) / 86_400_000;
 
   // Long break: detraining is fast enough that last time's weight is no longer a fair target (heuristic thresholds).
   if (ex.type === 'weight_reps' && daysOff > 28 && top > 0) {
@@ -240,18 +236,15 @@ function baseSuggestion(ex: Exercise, history: Session[]): Suggestion | null {
     return { kind: 'repeat', weight: top, reps: firstReps, reason: t('Keep the same assistance and match your reps.') };
   }
 
-  // Stall detection: top-weight e1RM not improving over the last 3 sessions.
-  if (history.length >= 3) {
-    const best = (s: Session) => Math.max(0, ...s.sets.filter(isWorkingSet).map((x) => e1rm(x.weight ?? 0, x.reps ?? 0)));
-    const [a, b, c] = history.slice(0, 3).map(best);
-    if (a <= b && b <= c && a > 0 && !held) {
-      return {
-        kind: 'deload',
-        weight: roundTo(top * 0.9, 2.5),
-        reps: firstReps,
-        reason: t('Three workouts without progress. Drop 10% and build back up.'),
-      };
-    }
+  // Stalled or sliding: the shared trend definition decides, so this agrees with the progress panel and the engine.
+  const trend = analyzeTrend(trendPoints(history)).state;
+  if ((trend === 'stagnation' || trend === 'decline') && !held) {
+    return {
+      kind: 'deload',
+      weight: roundTo(top * 0.9, 2.5),
+      reps: firstReps,
+      reason: t('No progress over the last sessions. Drop 10% and build back up.'),
+    };
   }
 
   if (held && !hardRpe) {

@@ -1,6 +1,6 @@
-import { computeRecords, exerciseHistory, isWorkingSet, setsPerMuscle, workoutVolume } from '../calc';
+import { computeRecords, exerciseHistory, isWorkingSet, setsPerMuscle, suggestNext, workoutVolume } from '../calc';
 import { BUILTIN_EXERCISES } from '../../data/exercises';
-import { evaluateExercise, targetFor } from '../progress/engine';
+import { evaluateExercise, targetFor } from '../../core/progress/engine';
 import { overloadOverview } from '../overload';
 import type { Exercise, Workout } from '../../types';
 
@@ -31,6 +31,14 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
     }),
   );
   const sets = setsPerMuscle(workouts, exMap, 0);
+  // Fixed clock (the day after the last workout) so the numbers do not drift with today's date.
+  const now = Math.max(0, ...workouts.map((w) => w.startedAt)) + 86_400_000;
+  const suggestKinds = Object.fromEntries(
+    ids.flatMap((id) => {
+      const ex = exMap.get(id);
+      return ex ? [[id, suggestNext(ex, exerciseHistory(workouts, id), undefined, now)?.kind ?? 'none']] : [];
+    }),
+  );
   return {
     workouts: workouts.length,
     exercisesUsed: ids.length,
@@ -40,6 +48,7 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
     volumeKgNow: Math.round(volumeNow),
     volumeKgWithoutWarmups: Math.round(volumeNoWarmup),
     setsPerMuscle: Object.fromEntries(Object.entries(sets).map(([m, v]) => [m, Math.round((v as number) * 10) / 10])),
+    suggestKinds,
     overloadStates: Object.fromEntries(overloadOverview(workouts, exMap).map((r) => [r.exercise.id, r.state])),
     perExercise,
   };

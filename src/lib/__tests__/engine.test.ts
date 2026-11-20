@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateExercise, rirOf, targetFor } from '../progress/engine';
+import { evaluateExercise, rirOf, targetFor } from '../../core/progress/engine';
 import type { Session } from '../calc';
 import type { Exercise, WorkoutSet } from '../../types';
 

@@ -1,7 +1,8 @@
 import type { Exercise, ExerciseTarget, Focus } from '../../types';
-import { weightIncrement } from '../calc';
-import { e1rm, e1rmReliable, isLoggedWorkingSet } from '../../core/metrics';
-import type { Session } from '../../core/history';
+import { weightIncrement } from './increment';
+import { analyzeTrend, TREND, trendPoints } from './trend';
+import { e1rm, e1rmReliable, isLoggedWorkingSet } from '../metrics';
+import type { Session } from '../history';
 import { t } from '../../i18n';
 
 /**
@@ -70,10 +71,6 @@ export function topWork(s: Session): TopWork | null {
 }
 
 const MIN_SESSIONS = 2;
-const STALL_RECENT = 3;
-const STALL_BASE = 2;
-const STALL_TOLERANCE = 0.005;
-const DECLINE_DROP = 0.03;
 
 /** Evaluates one weighted exercise. Only `weight_reps` style lifts are supported; others return `insufficient`. */
 export function evaluateExercise(ex: Exercise, sessions: Session[], target: ExerciseTarget): ProgressAdvice {
@@ -91,43 +88,32 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   if (!hasRir) warnings.push(t('RIR was not logged, so the advice is less certain.'));
   if (last.reps.some((r) => !e1rmReliable(r))) warnings.push(t('Sets above 12 reps make the 1RM estimate unreliable.'));
 
-  // Decline: three sessions in a row, each lower than the one before, and the total fall is more than noise.
-  if (tops.length >= 3) {
-    const [a, b, c] = tops;
-    if (a.best1rm < b.best1rm && b.best1rm < c.best1rm && (c.best1rm - a.best1rm) / c.best1rm > DECLINE_DROP) {
-      return {
-        ...out,
-        state: 'decline',
-        weight: last.weight,
-        reps: Math.min(...last.reps),
-        confidence: hasRir ? 'medium' : 'low',
-        reasons: [
-          t('Estimated 1RM fell in 3 sessions in a row ({from} → {to} kg).', { from: Math.round(c.best1rm), to: Math.round(a.best1rm) }),
-          t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
-        ],
-      };
-    }
+  const trend = analyzeTrend(trendPoints(sessions));
+  if (trend.state === 'decline') {
+    return {
+      ...out,
+      state: 'decline',
+      weight: last.weight,
+      reps: Math.min(...last.reps),
+      confidence: hasRir ? 'medium' : 'low',
+      reasons: [
+        t('Estimated 1RM fell in 3 sessions in a row ({from} → {to} kg).', { from: Math.round(trend.baselineBest), to: Math.round(trend.recentBest) }),
+        t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
+      ],
+    };
   }
-
-  // Stagnation: recent sessions never beat an earlier baseline, over several exposures and at least two weeks.
-  if (tops.length >= STALL_RECENT + STALL_BASE) {
-    const recent = tops.slice(0, STALL_RECENT);
-    const baseline = Math.max(...tops.slice(STALL_RECENT).map((x) => x.best1rm));
-    const spanDays = (recent[0].date - recent[recent.length - 1].date) / 86_400_000;
-    const bestRecent = Math.max(...recent.map((x) => x.best1rm));
-    const reachedTop = last.reps.every((r) => r >= target.repMax) && last.reps.length >= target.sets;
-    if (bestRecent <= baseline * (1 + STALL_TOLERANCE) && spanDays >= 14 && !reachedTop) {
-      return {
-        ...out,
-        state: 'stagnation',
-        weight: last.weight,
-        reps: Math.min(...last.reps),
-        reasons: [
-          t('No new best estimated 1RM in the last {n} sessions (over {d} days).', { n: STALL_RECENT, d: Math.round(spanDays) }),
-          t('A single weak session does not count. This is repeated exposure without progress.'),
-        ],
-      };
-    }
+  const reachedTop = last.reps.every((r) => r >= target.repMax) && last.reps.length >= target.sets;
+  if (trend.state === 'stagnation' && !reachedTop) {
+    return {
+      ...out,
+      state: 'stagnation',
+      weight: last.weight,
+      reps: Math.min(...last.reps),
+      reasons: [
+        t('No new best estimated 1RM in the last {n} sessions (over {d} days).', { n: TREND.recent, d: Math.round(trend.spanDays) }),
+        t('A single weak session does not count. This is repeated exposure without progress.'),
+      ],
+    };
   }
 
   const topReached = last.reps.length >= target.sets && last.reps.every((r) => r >= target.repMax);

@@ -134,18 +134,22 @@ describe('suggestNext (smart coach)', () => {
     expect(s?.kind).toBe('repeat');
   });
 
-  it('suggests a deload after three sessions without progress', () => {
+  it('suggests a deload after repeated exposures without progress', () => {
     const hist = exerciseHistory(
-      [
-        workout(2, 'bench-press', [set(80, 8), set(80, 5)]),
-        workout(5, 'bench-press', [set(80, 8), set(80, 6)]),
-        workout(8, 'bench-press', [set(80, 8), set(80, 7)]),
-      ],
+      [2, 9, 16, 23, 30].map((d) => workout(d, 'bench-press', [set(80, 8), set(80, 5)])),
       'bench-press',
     );
     const s = suggestNext(bench, hist);
     expect(s?.kind).toBe('deload');
     expect(s?.weight).toBe(72.5);
+  });
+
+  it('does not call three flat sessions a stall', () => {
+    const hist = exerciseHistory(
+      [2, 5, 8].map((d) => workout(d, 'bench-press', [set(80, 8), set(80, 5)])),
+      'bench-press',
+    );
+    expect(suggestNext(bench, hist)?.kind).not.toBe('deload');
   });
 
   it('adds a rep for reps-only exercises', () => {
