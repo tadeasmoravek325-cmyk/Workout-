@@ -2,8 +2,6 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, ChevronRight, Plus, RotateCcw, Settings as SettingsIcon, Trophy } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
-import { coachInsights } from '../lib/insights';
-import { overloadOverview } from '../lib/overload';
 import { nextRoutine, startOfWeek, workoutVolume } from '../lib/calc';
 import { fmtVolume, relativeDay } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
@@ -33,8 +31,6 @@ export default function Home() {
   const cloudUser = useCloud((s) => s.user);
   const [signIn, setSignIn] = useState(false);
 
-  const overload = useMemo(() => overloadOverview(workouts, exMap), [workouts, exMap]);
-  const insights = useMemo(() => coachInsights(workouts, exMap), [workouts, exMap]);
   const weekStart = startOfWeek(Date.now());
   const thisWeek = workouts.filter((w) => w.startedAt >= weekStart);
   const weekVolume = thisWeek.reduce((a, w) => a + workoutVolume(w, exMap), 0);
@@ -82,28 +78,6 @@ export default function Home() {
       </div>
 
 
-      {insights.length > 0 && (
-        <div className="card mt">
-          <div className="bold" style={{ marginBottom: 6 }}>{t('Coach')}</div>
-          {insights.map((i) => (
-            <div key={i.text} className="small" style={{ margin: '4px 0' }}>{i.text}</div>
-          ))}
-        </div>
-      )}
-      {overload.length > 0 && (
-        <div className="card mt">
-          <div className="row between">
-            <div className="bold">{t('Progressive overload')}</div>
-            <div className="small muted">{t('{up} of {n} lifts progressing', { up: overload.filter((r) => r.state === 'up').length, n: overload.length })}</div>
-          </div>
-          {overload.filter((r) => r.state !== 'flat').slice(0, 3).map((r) => (
-            <Link key={r.exercise.id} to={`/exercises/${r.exercise.id}`} className="row between small" style={{ padding: '5px 0' }}>
-              <span className="ellipsis">{r.exercise.name}</span>
-              <span className={`overload-${r.state}`}>{r.change > 0 ? '+' : ''}{Math.round(r.change)}%</span>
-            </Link>
-          ))}
-        </div>
-      )}
       {/* Week */}
       <div className="card">
         <div className="row between" style={{ marginBottom: 12 }}>

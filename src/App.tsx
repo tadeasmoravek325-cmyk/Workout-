@@ -24,6 +24,7 @@ const RoutineEditor = lazy(() => import('./pages/RoutineEditor'));
 const WorkoutDetail = lazy(() => import('./pages/WorkoutDetail'));
 const WorkoutEdit = lazy(() => import('./pages/WorkoutEdit'));
 const ExerciseDetail = lazy(() => import('./pages/ExerciseDetail'));
+const Coach = lazy(() => import('./pages/Coach'));
 const Stats = lazy(() => import('./pages/Stats'));
 const MuscleDetail = lazy(() => import('./pages/MuscleDetail'));
 const Privacy = lazy(() => import('./pages/Privacy'));
@@ -122,6 +123,7 @@ function Shell() {
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/exercises/:id" element={<ExerciseDetail />} />
         <Route path="/more" element={<More />} />
+        <Route path="/coach" element={<Coach />} />
         <Route path="/stats" element={<Stats />} />
         <Route path="/muscles/:id" element={<MuscleDetail />} />
         <Route path="/privacy" element={<Privacy />} />
