@@ -26,6 +26,7 @@ import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, Sheet, toast, undoToast } from './ui';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS, youtubeSearchUrl } from '../data/exercises';
+import { defaultFocus, targetFor } from '../core/progress/engine';
 import { t, tn } from '../i18n';
 
 type Mutate = (fn: (w: Workout) => void) => void;
@@ -38,6 +39,7 @@ const SET_TYPE_NAME: Record<SetType, string> = {
   drop: 'Drop set',
   failure: 'Failure',
 };
+const CONFIDENCE_LABEL = { low: 'low', medium: 'medium', high: 'high' } as const;
 const RPE_OPTIONS = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 const REST_OPTIONS = [0, 30, 45, 60, 75, 90, 120, 150, 180, 240, 300];
 
@@ -266,8 +268,8 @@ function ExerciseCard({
   const sessionSets = targetSets(ex, [workout], exMap, -Infinity, we.id);
   const position = workout.exercises.findIndex((x) => x.id === we.id);
   const suggestion: Suggestion | null = useMemo(
-    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets, position }) : null),
-    [live, settings.smartCoach, ex, sessions, recentSets, sessionSets, position],
+    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets, position }, Date.now(), targetFor(ex.id, settings.exerciseTargets, defaultFocus(settings))) : null),
+    [live, settings.smartCoach, settings.exerciseTargets, settings.trainingFocus, settings.goal, ex, sessions, recentSets, sessionSets, position],
   );
 
   const unit = settings.unit;
@@ -604,6 +606,15 @@ function ExerciseCard({
               )}
             </div>
             <div className="muted tiny">{suggestion.reason}</div>
+            {suggestion.advice && (
+              <div className="muted tiny" style={{ marginTop: 2 }}>
+                {t('Confidence: {level}', { level: t(CONFIDENCE_LABEL[suggestion.advice.confidence]) })} ·{' '}
+                {tn(suggestion.advice.sessionsUsed, 'based on {n} session', 'based on {n} sessions')}
+                {suggestion.advice.warnings.map((w) => (
+                  <div key={w}>{w}</div>
+                ))}
+              </div>
+            )}
           </div>
           <button className="btn sm soft" onClick={applySuggestion}>
             {t('Apply')}

@@ -38,6 +38,17 @@ export const DEFAULT_TARGETS: Record<Focus, Omit<ExerciseTarget, 'focus'>> = {
   both: { repMin: 6, repMax: 10, sets: 3, rir: 2 },
 };
 
+/** How sure the advice is: more logged sessions and a logged RIR raise it. Missing RIR is never guessed. */
+export function confidenceOf(sessions: number, hasRir: boolean): Confidence {
+  const score = (sessions >= 5 ? 1 : 0) + (hasRir ? 1 : 0);
+  return score >= 2 ? 'high' : score === 1 ? 'medium' : 'low';
+}
+
+/** Rep range defaults follow the user's goal unless a training focus was chosen explicitly. */
+export function defaultFocus(settings: { trainingFocus?: Focus; goal: string }): Focus {
+  return settings.trainingFocus ?? (settings.goal === 'muscle' ? 'hypertrophy' : settings.goal === 'strength' ? 'strength' : 'both');
+}
+
 export function targetFor(exerciseId: string, targets: Record<string, ExerciseTarget> | undefined, focus: Focus = 'both'): ExerciseTarget {
   return { ...DEFAULT_TARGETS[focus], focus, ...(targets?.[exerciseId] ?? {}) };
 }
@@ -82,7 +93,7 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
     return { ...base, sessionsUsed: tops.length, reasons: [t('Needs at least {n} logged sessions of this exercise.', { n: MIN_SESSIONS })] };
   }
   const last = tops[0];
-  const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence: 'medium' };
+  const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence: confidenceOf(tops.length, last.rirs.length > 0) };
   const warnings = out.warnings;
   const hasRir = last.rirs.length > 0;
   if (!hasRir) warnings.push(t('RIR was not logged, so the advice is less certain.'));
@@ -95,7 +106,6 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
       state: 'decline',
       weight: last.weight,
       reps: Math.min(...last.reps),
-      confidence: hasRir ? 'medium' : 'low',
       reasons: [
         t('Estimated 1RM fell in 3 sessions in a row ({from} → {to} kg).', { from: Math.round(trend.baselineBest), to: Math.round(trend.recentBest) }),
         t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
@@ -128,13 +138,14 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
         reasons: [t('All sets reached {n} reps, but the last set was at or near failure (RIR {r}). Repeat once with a rep in reserve before adding weight.', { n: target.repMax, r: minRir })],
       };
     }
-    const inc = weightIncrement(ex);
+    // Three or more reps in reserve on every set: the weight was easy, take a double step.
+    const easy = minRir !== undefined && minRir >= 3;
+    const inc = weightIncrement(ex) * (easy ? 2 : 1);
     return {
       ...out,
       state: 'ready',
       weight: last.weight + inc,
       reps: target.repMin,
-      confidence: hasRir ? 'high' : 'medium',
       reasons: [t('All {sets} sets reached {n} reps at {w} kg. Add {inc} kg and restart at {min} reps.', { sets: last.reps.length, n: target.repMax, w: last.weight, inc, min: target.repMin })],
     };
   }

@@ -13,6 +13,7 @@ import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, Empty, Segmented, undoToast, BackLabel } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
 import { OverloadPanel } from '../components/OverloadPanel';
+import { TargetEditor } from '../components/TargetEditor';
 import { PlayCircle } from 'lucide-react';
 import { t, tn } from '../i18n';
 import type { Exercise } from '../types';
@@ -327,6 +328,7 @@ export default function ExerciseDetail() {
         const load = muscleLoad(ex);
         return (
         <div className="mt-l stack">
+          {ex.type === 'weight_reps' && <TargetEditor ex={ex} />}
           <a className="btn primary block" href={youtubeSearchUrl(ex)} target="_blank" rel="noreferrer">
             <PlayCircle size={18} /> {t('Watch how to do it')}
           </a>

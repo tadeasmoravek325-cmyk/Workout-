@@ -36,7 +36,9 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
   const suggestKinds = Object.fromEntries(
     ids.flatMap((id) => {
       const ex = exMap.get(id);
-      return ex ? [[id, suggestNext(ex, exerciseHistory(workouts, id), undefined, now)?.kind ?? 'none']] : [];
+      if (!ex) return [];
+      const g = suggestNext(ex, exerciseHistory(workouts, id), undefined, now);
+      return [[id, g ? `${g.kind} ${g.weight ?? '-'}x${g.reps ?? '-'}` : 'none']];
     }),
   );
   return {

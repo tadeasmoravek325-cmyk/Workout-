@@ -102,6 +102,21 @@ describe('suggestNext (smart coach)', () => {
     expect(late?.reps).toBe(9);
   });
 
+  it('follows double progression inside the rep range once there is history', () => {
+    const target = { repMin: 8, repMax: 12, sets: 3, rir: 2 };
+    const full = exerciseHistory([workout(2, 'bench-press', [set(70, 12), set(70, 12), set(70, 12)]), workout(9, 'bench-press', [set(70, 10), set(70, 10), set(70, 9)])], 'bench-press');
+    const up = suggestNext(bench, full, undefined, Date.now(), target);
+    expect(up?.kind).toBe('increase');
+    expect(up?.weight).toBe(72.5);
+    expect(up?.reps).toBe(8);
+    expect(up?.advice?.confidence).toBe('low'); // no RIR logged
+    const partial = exerciseHistory([workout(2, 'bench-press', [set(70, 10), set(70, 9), set(70, 8)]), workout(9, 'bench-press', [set(70, 8), set(70, 8), set(70, 8)])], 'bench-press');
+    const build = suggestNext(bench, partial, undefined, Date.now(), target);
+    expect(build?.kind).toBe('repeat');
+    expect(build?.weight).toBe(70);
+    expect(build?.reps).toBe(9);
+  });
+
   it('restarts lighter after a long break', () => {
     const s = suggestNext(bench, exerciseHistory([workout(40, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press'));
     expect(s?.kind).toBe('deload');

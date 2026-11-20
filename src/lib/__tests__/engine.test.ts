@@ -17,11 +17,21 @@ describe('double progression engine', () => {
     expect(a.state).toBe('ready');
     expect(a.weight).toBe(72.5);
     expect(a.reps).toBe(8);
+    expect(a.confidence).toBe('medium'); // RIR logged, but only 2 sessions of history
+  });
+  it('is confident with RIR and a longer history', () => {
+    const older = [16, 23, 30, 37].map((d) => session(d, [set(70, 9, 8), set(70, 9, 8), set(70, 8, 8)]));
+    const a = evaluateExercise(bench, [session(2, [set(70, 12, 8), set(70, 12, 8), set(70, 12, 8)]), session(9, [set(70, 10, 8), set(70, 10, 8), set(70, 9, 8)]), ...older], target);
+    expect(a.state).toBe('ready');
     expect(a.confidence).toBe('high');
+  });
+  it('takes a double step when every set had 3+ reps in reserve', () => {
+    const a = evaluateExercise(bench, [session(2, [set(70, 12, 7), set(70, 12, 7), set(70, 12, 6.5)]), session(9, [set(70, 10), set(70, 10), set(70, 9)])], target);
+    expect(a.weight).toBe(75);
   });
   it('lowers confidence and warns when RIR is missing', () => {
     const a = evaluateExercise(bench, [session(2, [set(70, 12), set(70, 12), set(70, 12)]), session(9, [set(70, 10), set(70, 10), set(70, 9)])], target);
-    expect(a.confidence).toBe('medium');
+    expect(a.confidence).toBe('low');
     expect(a.warnings.length).toBeGreaterThan(0);
   });
   it('holds when the top of the range came at failure', () => {

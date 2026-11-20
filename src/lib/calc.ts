@@ -1,4 +1,4 @@
-import type { Exercise, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
+import type { Exercise, ExerciseTarget, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
 import { muscleLoad } from '../data/exercises';
 import { t, tn } from '../i18n';
 export * from '../core/metrics';
@@ -8,6 +8,7 @@ export * from '../core/muscles';
 export * from '../core/progress/increment';
 import { weightIncrement } from '../core/progress/increment';
 import { analyzeTrend, trendPoints } from '../core/progress/trend';
+import { evaluateExercise, targetFor, type Confidence, type ProgressState } from '../core/progress/engine';
 import { isWorkingSet } from '../core/metrics';
 import type { Session } from '../core/history';
 
@@ -127,6 +128,8 @@ export interface Suggestion {
   /** The weight last time, when the suggestion adds to it. */
   from?: number;
   reason: string;
+  /** Set when the progression engine produced the advice: state, how sure it is, caveats. */
+  advice?: { state: ProgressState; confidence: Confidence; warnings: string[]; sessionsUsed: number };
 }
 
 /**
@@ -178,8 +181,8 @@ export function targetSets(ex: Exercise, workouts: Workout[], exMap: Map<string,
  * Progression target for the next session. A heavily worked muscle (lots of sets in the last
  * three days or earlier in this workout) holds its weight instead of adding more.
  */
-export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue, now = Date.now()): Suggestion | null {
-  const s = baseSuggestion(ex, history, now);
+export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue, now = Date.now(), target?: ExerciseTarget): Suggestion | null {
+  const s = baseSuggestion(ex, history, now, target ?? targetFor(ex.id, undefined, 'both'));
   if (!s || !fatigue || s.kind !== 'increase') return s;
   if (fatigue.session >= FATIGUE_SESSION) {
     return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
@@ -195,7 +198,7 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue,
   return s;
 }
 
-function baseSuggestion(ex: Exercise, history: Session[], now: number): Suggestion | null {
+function baseSuggestion(ex: Exercise, history: Session[], now: number, target: ExerciseTarget): Suggestion | null {
   const last = history[0];
   if (!last) return null;
   const working = last.sets.filter(isWorkingSet);
@@ -245,6 +248,22 @@ function baseSuggestion(ex: Exercise, history: Session[], now: number): Suggesti
       reps: firstReps,
       reason: t('No progress over the last sessions. Drop 10% and build back up.'),
     };
+  }
+
+  // Weighted lifts follow double progression inside the user's rep range (the progression engine).
+  if (ex.type === 'weight_reps') {
+    const a = evaluateExercise(ex, history, target);
+    if (a.state !== 'insufficient' && a.weight !== undefined) {
+      const advice = { state: a.state, confidence: a.confidence, warnings: a.warnings, sessionsUsed: a.sessionsUsed };
+      return {
+        kind: a.state === 'ready' ? 'increase' : 'repeat',
+        weight: a.weight,
+        reps: a.reps,
+        from: a.state === 'ready' ? top : undefined,
+        reason: a.reasons[0] ?? '',
+        advice,
+      };
+    }
   }
 
   if (held && !hardRpe) {

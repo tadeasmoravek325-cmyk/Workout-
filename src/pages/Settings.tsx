@@ -10,6 +10,8 @@ import { saveBackupFile, saveCsvFile } from '../lib/backup';
 import { ask, confirmDialog, Segmented, Sheet, Switch, toast, BackLabel } from '../components/ui';
 import type { Equipment, Experience, Goal, Sex } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
+import { defaultFocus } from '../core/progress/engine';
+import type { Focus } from '../types';
 import { t, tn } from '../i18n';
 
 function Row({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
@@ -201,7 +203,18 @@ export default function SettingsPage() {
             </button>
           </Row>
         )}
-        <Row title={t('Log RPE')} desc={t('How hard a set felt (6–10)')}>
+        <Row title={t('Training focus')} desc={t('Sets the default rep range the coach aims for')}>
+          <select
+            style={{ width: 150 }}
+            value={defaultFocus(settings)}
+            onChange={(e) => update({ trainingFocus: e.target.value as Focus })}
+          >
+            <option value="strength">{t('Strength (3–6 reps)')}</option>
+            <option value="hypertrophy">{t('Muscle (8–12 reps)')}</option>
+            <option value="both">{t('Both (6–10 reps)')}</option>
+          </select>
+        </Row>
+        <Row title={t('Log RPE')} desc={t('How hard a set felt (6–10). The coach uses it as reps in reserve; without it, advice is less certain.')}>
           <Switch on={settings.showRpe} onChange={(showRpe) => update({ showRpe })} />
         </Row>
         <Row title={t('Smart coach')} desc={t('Suggests weight and reps based on your last workout')}>
