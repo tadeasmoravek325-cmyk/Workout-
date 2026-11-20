@@ -264,9 +264,10 @@ function ExerciseCard({
     [ex, history, exMap, workout.startedAt],
   );
   const sessionSets = targetSets(ex, [workout], exMap, -Infinity, we.id);
+  const position = workout.exercises.findIndex((x) => x.id === we.id);
   const suggestion: Suggestion | null = useMemo(
-    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets }) : null),
-    [live, settings.smartCoach, ex, sessions, recentSets, sessionSets],
+    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets, position }) : null),
+    [live, settings.smartCoach, ex, sessions, recentSets, sessionSets, position],
   );
 
   const unit = settings.unit;

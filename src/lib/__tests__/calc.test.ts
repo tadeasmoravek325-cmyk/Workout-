@@ -92,6 +92,16 @@ describe('suggestNext (smart coach)', () => {
     expect(s?.reps).toBe(8);
   });
 
+  it('adds a rep instead of load for a compound lift late in the workout', () => {
+    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press');
+    const early = suggestNext(bench, h, { recent: 0, session: 0, position: 0 });
+    const late = suggestNext(bench, h, { recent: 0, session: 0, position: 4 });
+    expect(early?.weight).toBe(82.5);
+    expect(late?.kind).toBe('repeat');
+    expect(late?.weight).toBe(80);
+    expect(late?.reps).toBe(9);
+  });
+
   it('adds 5 kg on lower-body barbell lifts', () => {
     const squat = exMap.get('squat')!;
     const s = suggestNext(squat, exerciseHistory([workout(2, 'squat', [set(100, 5), set(100, 5)])], 'squat'));

@@ -280,10 +280,18 @@ export interface Fatigue {
   recent: number;
   /** Earlier today, in this same workout. */
   session: number;
+  /** How many exercises come before this one in the workout (0 = first). */
+  position?: number;
 }
 
 const FATIGUE_RECENT = 14;
 const FATIGUE_SESSION = 8;
+/** From the fourth exercise on, heavy compound lifts stop adding load and build reps instead. */
+const LATE_POSITION = 3;
+
+function isCompound(ex: Exercise): boolean {
+  return Object.values(muscleLoad(ex)).filter((v) => (v ?? 0) >= 0.5).length >= 2;
+}
 
 /** Sets on the exercise's main muscles, each counted by how much of the load that muscle takes. */
 export function targetSets(ex: Exercise, workouts: Workout[], exMap: Map<string, Exercise>, from = -Infinity, skipId?: string): number {
@@ -314,6 +322,11 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue)
   if (!s || !fatigue || s.kind !== 'increase') return s;
   if (fatigue.session >= FATIGUE_SESSION) {
     return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
+  }
+  // Order effect: strength gains are larger for lifts done early in the session (Nunes et al. 2020; Avelar 2019),
+  // so a compound lift buried late in the workout adds a rep instead of load. Hypertrophy is unaffected by order.
+  if (fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex) && s.weight !== undefined && s.reps !== undefined) {
+    return { ...s, kind: 'repeat', weight: s.weight - weightIncrement(ex), reps: s.reps + 1, reason: t('Exercise number {n} of the workout. Keep the weight and add one rep instead of load.', { n: fatigue.position + 1 }) };
   }
   if (fatigue.recent >= FATIGUE_RECENT) {
     return { ...s, kind: 'repeat', weight: s.weight !== undefined ? s.weight - weightIncrement(ex) : undefined, reason: t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }) };
