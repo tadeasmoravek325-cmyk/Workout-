@@ -4,6 +4,7 @@ import { useStore } from '../store/store';
 import { WorkoutEditor } from '../components/WorkoutEditor';
 import { confirmDialog, undoToast, useNow } from '../components/ui';
 import { fmtClock } from '../lib/format';
+import { minutesLeft } from '../lib/calc';
 import { t, tn } from '../i18n';
 
 export default function ActiveWorkout() {
@@ -14,6 +15,7 @@ export default function ActiveWorkout() {
   const navigate = useNavigate();
   const now = useNow(1000);
   const [confirming, setConfirming] = useState(false);
+  const history = useStore((s) => s.workouts);
 
   // Keep the screen on during a workout: a sleeping phone pauses the rest timer and its alert.
   useEffect(() => {
@@ -73,6 +75,10 @@ export default function ActiveWorkout() {
             </div>
             <div className="tiny muted">
               {t('{done}/{total} sets', { done, total })}
+              {(() => {
+                const m = minutesLeft(active, history);
+                return m ? ` · ${t('~{n} min left', { n: m })}` : '';
+              })()}
             </div>
           </div>
           <button className="btn ok sm" onClick={() => (done < total || done === 0 ? setConfirming(true) : doFinish())}>

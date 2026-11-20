@@ -5,6 +5,7 @@ import { useAllExercises, useStore } from '../store/store';
 import { ExerciseAvatar, ExerciseFilters, ExerciseForm, filterExercises } from '../components/ExercisePicker';
 import { BODY_PART_LABELS, EQUIPMENT_LABELS } from '../data/exercises';
 import { relativeDay } from '../lib/format';
+import { MergeDuplicates } from '../components/MergeDuplicates';
 import { t, tn } from '../i18n';
 
 export default function Exercises() {
@@ -39,6 +40,7 @@ export default function Exercises() {
           + {t('New')}
         </button>
       </div>
+      <MergeDuplicates />
       <ExerciseFilters {...{ query, setQuery, part, setPart, equipment, setEquipment }} />
       <div className="row between mt">
         <span className="small muted">{tn(list.length, '{n} exercise', '{n} exercises')}</span>

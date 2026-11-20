@@ -9,7 +9,7 @@ import { WorkoutCard } from '../components/WorkoutCard';
 import { useGame } from '../lib/useGame';
 import { backupDue, saveBackupFile } from '../lib/backup';
 import { cloudConfigured, useCloud } from '../lib/cloud';
-import { SignInSheet } from '../components/Account';
+import { SignInSheet, SyncBadge } from '../components/Account';
 
 const DOW = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -76,6 +76,8 @@ export default function Home() {
           <SettingsIcon size={19} />
         </Link>
       </div>
+
+      <SyncBadge />
 
       {/* Week */}
       <div className="card">

@@ -138,7 +138,7 @@ export async function requestPersistence(): Promise<boolean | null> {
 /* Snapshots                                                           */
 /* ------------------------------------------------------------------ */
 
-export type SnapshotReason = 'daily' | 'before-import' | 'before-reset' | 'before-restore' | 'manual';
+export type SnapshotReason = 'daily' | 'before-import' | 'before-reset' | 'before-restore' | 'before-merge' | 'manual';
 
 export interface SnapshotMeta {
   id: string;
@@ -156,6 +156,7 @@ export const SNAPSHOT_REASON_LABELS: Record<SnapshotReason, string> = {
   'before-import': 'Before import',
   'before-reset': 'Before deleting data',
   'before-restore': 'Before restoring a backup',
+  'before-merge': 'Before merging exercises',
   manual: 'Manual restore point',
 };
 

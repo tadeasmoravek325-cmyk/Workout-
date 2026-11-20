@@ -6,6 +6,7 @@ import {
   nextRoutine,
   exerciseHistory,
   muscleRecovery,
+  minutesLeft,
   plateCalc,
   prefillSets,
   setsPerMuscle,
@@ -237,5 +238,20 @@ describe('prefillSets', () => {
   it('leaves sets alone without history', () => {
     const s = blank();
     expect(prefillSets([s], undefined)[0]).toBe(s);
+  });
+});
+
+describe('minutesLeft', () => {
+  const sets = (k: number, done: boolean) => Array.from({ length: k }, () => ({ ...set(60, 8), done }));
+  const w = (start: number, minutes: number, k: number): Workout => ({ id: 'h' + start, name: 'H', startedAt: start, finishedAt: start + minutes * 60000, exercises: [{ id: 'e' + start, exerciseId: 'bench-press', sets: sets(k, true) }] });
+  it('uses your usual time per set', () => {
+    const history = [w(1e9, 30, 10), w(2e9, 30, 10), w(3e9, 30, 10)]; // 3 min per set
+    const active: Workout = { id: 'a', name: 'A', startedAt: 4e9, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: [...sets(2, true), ...sets(4, false)] }] };
+    expect(minutesLeft(active, history)).toBe(12);
+  });
+  it('falls back without history and is null when nothing is left', () => {
+    const active: Workout = { id: 'a', name: 'A', startedAt: 1, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: sets(4, false) }] };
+    expect(minutesLeft(active, [])).toBe(10);
+    expect(minutesLeft({ ...active, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: sets(2, true) }] }, [])).toBeNull();
   });
 });

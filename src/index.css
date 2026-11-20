@@ -2277,3 +2277,23 @@ html[data-bg='topo'] .ex-card {
     animation: none;
   }
 }
+
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin: -4px 0 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sync-badge.bad {
+  color: var(--danger);
+}
+
+.merge-card{display:block;width:100%;text-align:left;margin:0 0 12px;border:1px solid var(--accent)}

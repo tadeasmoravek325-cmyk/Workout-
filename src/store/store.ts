@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { withSuggestedMuscles } from '../lib/suggestMuscles';
+import { remapExercise } from '../lib/mergeExercises';
 import { createSnapshot, finishLoad, maybeDailySnapshot, onOtherTabSaved, requestPersistence, safeStorage, STORE_KEY, whileQuiet } from '../lib/safety';
 import type {
   Exercise,
@@ -65,6 +66,11 @@ interface State extends BackupData {
   fillMissingMuscles: () => number;
   saveExercise: (e: Exercise) => void;
   deleteExercise: (id: string) => void;
+  /**
+   * Folds a custom exercise into another one without losing anything: every workout, routine and note that
+   * used it now uses the target. A restore point is saved first. Returns how many workouts and routines changed.
+   */
+  mergeExercises: (fromId: string, toId: string) => { workouts: number; routines: number } | null;
 
   addMeasurement: (m: Omit<Measurement, 'id'>) => void;
   deleteMeasurement: (id: string) => void;
@@ -383,6 +389,33 @@ export const useStore = create<State>()(
             deleted: withoutTombstone(s.deleted, 'customExercises', e.id),
           };
         }),
+
+      mergeExercises: (fromId, toId) => {
+        const s = getState();
+        if (fromId === toId || !s.customExercises.some((e) => e.id === fromId)) return null;
+        void createSnapshot('before-merge', exportBackup());
+        const at = stampNow();
+        const w = remapExercise(s.workouts, fromId, toId);
+        const r = remapExercise(s.routines, fromId, toId);
+        const notes = { ...(s.exerciseNotes ?? {}) };
+        const moved = notes[fromId];
+        if (moved) {
+          notes[toId] = notes[toId] ? `${notes[toId]}\n${moved}` : moved;
+          delete notes[fromId];
+        }
+        const stampChanged = <T extends { exercises: { exerciseId: string }[] }>(before: T[], after: T[]) =>
+          after.map((x, i) => (x === before[i] ? x : stamp(x, at)));
+        setState({
+          workouts: stampChanged(s.workouts, w.items),
+          routines: stampChanged(s.routines, r.items),
+          active: s.active ? remapExercise([s.active], fromId, toId).items[0] : s.active,
+          exerciseNotes: notes,
+          notesUpdatedAt: moved ? at : s.notesUpdatedAt,
+          customExercises: s.customExercises.filter((e) => e.id !== fromId),
+          deleted: withTombstones(s.deleted, 'customExercises', [fromId], at),
+        });
+        return { workouts: w.changed, routines: r.changed };
+      },
 
       deleteExercise: (id) =>
         setState((s) => ({

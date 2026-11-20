@@ -96,6 +96,26 @@ export function prefillSets(sets: WorkoutSet[], last: Session | undefined, overr
   });
 }
 
+/**
+ * Minutes left in a workout: the sets still to do times how long a set usually takes you (the median of
+ * your last finished workouts, rest included). Falls back to about 2.5 minutes a set with no history.
+ */
+export function minutesLeft(active: Workout, history: Workout[]): number | null {
+  const left = active.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
+  if (!left) return null;
+  const per: number[] = [];
+  for (const w of history) {
+    if (!w.finishedAt) continue;
+    const sets = w.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
+    const sec = (w.finishedAt - w.startedAt) / 1000 / Math.max(1, sets);
+    if (sets >= 5 && sec >= 45 && sec <= 420) per.push(sec);
+    if (per.length >= 8) break;
+  }
+  per.sort((a, b) => a - b);
+  const sec = per.length ? per[Math.floor(per.length / 2)] : 150;
+  return Math.max(1, Math.round((left * sec) / 60));
+}
+
 export interface Records {
   maxWeight: number;
   maxE1rm: number;

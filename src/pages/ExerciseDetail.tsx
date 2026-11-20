@@ -8,7 +8,7 @@ import { fmtClock, fmtDate, fmtNum, toDisplayWeight } from '../lib/format';
 import { BODY_PART_LABELS, EQUIPMENT_LABELS, EXERCISE_TYPE_LABELS, MUSCLE_LABELS, muscleLoad, youtubeSearchUrl } from '../data/exercises';
 import { BodyMap, loadColor } from '../components/BodyMap';
 import { OneRmCalculator, PlateCalculator } from '../components/ExerciseTools';
-import { ExerciseAvatar, ExerciseForm } from '../components/ExercisePicker';
+import { ExerciseAvatar, ExerciseForm, ExercisePicker } from '../components/ExercisePicker';
 import { describeSet } from '../components/WorkoutEditor';
 import { confirmDialog, Empty, Segmented, undoToast, BackLabel } from '../components/ui';
 import { findSubstitutes } from '../lib/substitutes';
@@ -74,6 +74,7 @@ export default function ExerciseDetail() {
   const ex = exMap.get(id);
   const [tab, setTab] = useState<Tab>('charts');
   const [editing, setEditing] = useState(false);
+  const [merging, setMerging] = useState(false);
   const metrics = ex ? metricsFor(ex) : [];
   const [metric, setMetric] = useState<Metric>(metrics[0] ?? 'e1rm');
   const [range, setRange] = useState<Range>('6m');
@@ -120,6 +121,9 @@ export default function ExerciseDetail() {
           <div className="row">
             <button className="btn ghost" onClick={() => setEditing(true)}>
               {t('Edit')}
+            </button>
+            <button className="btn ghost" onClick={() => setMerging(true)}>
+              {t('Merge')}
             </button>
             <button
               className="btn ghost danger"
@@ -378,6 +382,21 @@ export default function ExerciseDetail() {
       })()}
 
       {editing && <ExerciseForm initial={ex} onClose={() => setEditing(false)} />}
+      {merging && (
+        <ExercisePicker
+          multi={false}
+          title={t('Merge into…')}
+          onClose={() => setMerging(false)}
+          onPick={async ([to]) => {
+            setMerging(false);
+            if (!to || to === ex.id) return;
+            const target = all.find((e) => e.id === to);
+            if (!(await confirmDialog(t('Merge exercises?'), `${ex.name} → ${target?.name ?? ''}. ${t('A restore point is saved first, nothing is lost.')}`, t('Merge')))) return;
+            useStore.getState().mergeExercises(ex.id, to);
+            navigate(`/exercises/${to}`, { replace: true });
+          }}
+        />
+      )}
     </div>
   );
 }

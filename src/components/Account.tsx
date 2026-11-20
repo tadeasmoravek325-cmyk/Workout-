@@ -21,6 +21,25 @@ function statusText(s: ReturnType<typeof useCloud.getState>): string {
   }
 }
 
+/** One-line backup status for Home: tap to sync now. */
+export function SyncBadge() {
+  const cloud = useCloud();
+  if (cloud.status === 'off' || !cloud.user) return null;
+  const bad = cloud.status === 'error';
+  return (
+    <button
+      className={`sync-badge ${bad ? 'bad' : ''}`}
+      onClick={() => void syncNow()}
+      disabled={cloud.status === 'syncing'}
+      aria-label={t('Sync now')}
+    >
+      {bad ? <TriangleAlert size={14} /> : cloud.status === 'offline' ? <CloudOff size={14} /> : <Cloud size={14} />}
+      <span className="ellipsis">{bad ? t('Backup problem. Tap to retry.') : statusText(cloud)}</span>
+      {cloud.status === 'syncing' && <RefreshCw size={13} className="spin" />}
+    </button>
+  );
+}
+
 /** Settings block: sign-in prompt, or the account with sync status and actions. */
 export function AccountCard() {
   const cloud = useCloud();
