@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Pencil, RefreshCw, Repeat2, Save, Share2, Trash2 } from 'lucide-react';
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
@@ -17,8 +17,9 @@ import { describeSet } from '../components/WorkoutEditor';
 import { BodyMap, IDLE, loadColor } from '../components/BodyMap';
 import { workoutMuscleSets } from '../components/WorkoutCard';
 import type { Muscle } from '../types';
-import { confirmDialog, toast, undoToast, BackLabel } from '../components/ui';
+import { ask, confirmDialog, toast, undoToast, BackLabel } from '../components/ui';
 import type { Routine } from '../types';
+import { hasChanges, routineChanges } from '../lib/routineDiff';
 import { t, tn } from '../i18n';
 
 const PR_LABEL: Record<PrHit['kind'], string> = {
@@ -65,6 +66,32 @@ export default function WorkoutDetail() {
     const v = load[m] ?? 0;
     return v < 0.25 || !maxLoad ? IDLE : loadColor(0.3 + (0.7 * v) / maxLoad);
   };
+
+  // Right after finishing: offer to bring the routine in line with what was actually done.
+  const asked = useRef(false);
+  useEffect(() => {
+    if (!isSummary || asked.current || !w) return;
+    const r = routines.find((x) => x.id === w.routineId);
+    if (!r) return;
+    const c = routineChanges(r, w);
+    if (!hasChanges(c)) return;
+    asked.current = true;
+    const parts = [
+      c.addedExercises && tn(c.addedExercises, 'Adds {n} exercise.', 'Adds {n} exercises.'),
+      c.removedExercises && tn(c.removedExercises, 'Removes {n} exercise.', 'Removes {n} exercises.'),
+      c.addedSets && tn(c.addedSets, 'Adds {n} set.', 'Adds {n} sets.'),
+      c.removedSets && tn(c.removedSets, 'Removes {n} set.', 'Removes {n} sets.'),
+      c.rest && t('Updates rest timers.'),
+    ].filter(Boolean);
+    void ask(t('Update routine?'), `${t('You made changes to “{name}”.', { name: r.name })} ${parts.join(' ')}`, [
+      { label: t('Keep original'), value: false, kind: 'plain' },
+      { label: t('Update routine'), value: true, kind: 'primary' },
+    ]).then((yes) => {
+      if (!yes) return;
+      updateRoutineFromWorkout(w.id);
+      toast(t('Routine “{name}” updated', { name: r.name }));
+    });
+  }, [isSummary, w, routines, updateRoutineFromWorkout]);
 
   if (!w) return <Navigate to="/history" replace />;
 
