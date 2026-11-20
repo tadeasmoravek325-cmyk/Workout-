@@ -81,7 +81,7 @@ export default function ActiveWorkout() {
               })()}
             </div>
           </div>
-          <button className="btn ok sm" onClick={() => (done < total || done === 0 ? setConfirming(true) : doFinish())}>
+          <button className="btn ok sm" onClick={() => setConfirming(true)}>
             {t('Finish')}
           </button>
         </div>
@@ -140,11 +140,13 @@ export default function ActiveWorkout() {
                 <>
                   <h2>{t('Finish workout?')}</h2>
                   <p className="muted">
-                    {tn(
-                      total - done,
-                      "You have {n} unfinished set. It won't be saved.",
-                      "You have {n} unfinished sets. They won't be saved.",
-                    )}
+                    {total > done
+                      ? tn(
+                          total - done,
+                          "You have {n} unfinished set. It won't be saved.",
+                          "You have {n} unfinished sets. They won't be saved.",
+                        )
+                      : tn(done, 'All {n} set is complete. Save this workout?', 'All {n} sets are complete. Save this workout?')}
                   </p>
                   <div className="grid-2">
                     <button className="btn" onClick={() => setConfirming(false)}>
