@@ -151,6 +151,20 @@ export interface Measurement {
 export type Unit = 'kg' | 'lb';
 
 export type Goal = 'strength' | 'muscle' | 'fitness' | 'weightloss';
+/** What the training is mainly for. Drives default rep ranges for the progression engine. */
+export type Focus = 'strength' | 'hypertrophy' | 'both';
+
+/** Per-exercise progression target. Stored in Settings so it follows the exercise across workouts and sync. */
+export interface ExerciseTarget {
+  repMin: number;
+  repMax: number;
+  /** Working sets per session. */
+  sets: number;
+  /** Target reps in reserve on the last set. */
+  rir?: number;
+  focus?: Focus;
+}
+
 export type Experience = 'beginner' | 'intermediate' | 'advanced';
 export type Sex = 'm' | 'f';
 
@@ -162,6 +176,10 @@ export interface Settings {
   /** Used for age-adjusted strength standards. */
   birthYear?: number;
   goal: Goal;
+  /** Optional; defaults to 'both'. */
+  trainingFocus?: Focus;
+  /** Progression targets by exercise id. Missing entries use defaults for the training focus. */
+  exerciseTargets?: Record<string, ExerciseTarget>;
   experience: Experience;
   onboarded: boolean;
   /** Equipment available for the workout generator. */
