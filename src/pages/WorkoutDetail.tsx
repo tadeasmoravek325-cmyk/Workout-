@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-r
 import { useExerciseMap, useStore } from '../store/store';
 import {
   detectPRs,
-  doneSetCount,
+  workingSetCount,
   e1rm,
   isWorkingSet,
   uid,
@@ -186,7 +186,7 @@ export default function WorkoutDetail() {
           <div className="l">{t('Volume')}</div>
         </div>
         <div className="stat">
-          <div className="v">{doneSetCount(w)}</div>
+          <div className="v">{workingSetCount(w)}</div>
           <div className="l">{t('Sets')}</div>
         </div>
       </div>

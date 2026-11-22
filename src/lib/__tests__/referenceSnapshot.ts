@@ -47,6 +47,7 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
     unknownExercises: ids.filter((id) => !exMap.has(id)).length,
     doneSets: done.length,
     warmupSets: warm.length,
+    workingSets: done.length - warm.length,
     volumeKgNow: Math.round(volumeNow),
     volumeKgWithoutWarmups: Math.round(volumeNoWarmup),
     setsPerMuscle: Object.fromEntries(Object.entries(sets).map(([m, v]) => [m, Math.round((v as number) * 10) / 10])),

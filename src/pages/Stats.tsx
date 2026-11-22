@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarRange, Clock, Dumbbell, Layers, Timer, Trophy } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
-import { computeRecords, doneSetCount, exerciseHistory, setsPerMuscle, workoutDurationMs, workoutVolume } from '../lib/calc';
+import { computeRecords, exerciseHistory, setsPerMuscle, workoutDurationMs, workoutVolume } from '../lib/calc';
+import { countWorkingSets, workingSetCount } from '../core/metrics';
 import { computeProgress, type Progress } from '../lib/gamification';
 import { fmtDate, fmtDuration, fmtNum, fmtVolume, toDisplayWeight } from '../lib/format';
 import {
@@ -65,7 +66,7 @@ function summarise(list: Workout[], exMap: Map<string, Exercise>, perWorkout: Pr
   for (const w of list) {
     s.volume += workoutVolume(w, exMap);
     s.time += workoutDurationMs(w);
-    s.sets += doneSetCount(w);
+    s.sets += workingSetCount(w);
     s.prs += perWorkout.get(w.id)?.prExercises.length ?? 0;
   }
   return s;
@@ -229,7 +230,7 @@ export default function Stats() {
     const m = new Map<string, number>();
     for (const w of cur)
       for (const e of w.exercises) {
-        const n = e.sets.filter((s) => s.done).length;
+        const n = countWorkingSets(e.sets);
         if (n) m.set(e.exerciseId, (m.get(e.exerciseId) ?? 0) + n);
       }
     return [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);

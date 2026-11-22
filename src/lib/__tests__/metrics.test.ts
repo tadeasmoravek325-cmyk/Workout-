@@ -64,3 +64,12 @@ describe('live records and set score', () => {
     expect(plannedVolume([{ weight: 50, reps: 10 }, { weight: 60, reps: 8 }, {}])).toBe(980);
   });
 });
+
+import { workingSetCount } from '../../core/metrics';
+
+describe('workingSetCount', () => {
+  it('excludes warm-ups and unfinished sets from the sets shown in statistics', () => {
+    const w = { exercises: [{ sets: [s('warmup', 40, 10), s('warmup', 60, 5), s('normal', 80, 8), s('drop', 60, 8), s('normal', 80, 8, false)] }] } as unknown as Workout;
+    expect(workingSetCount(w)).toBe(2);
+  });
+});

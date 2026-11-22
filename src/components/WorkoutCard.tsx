@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import type { Exercise, Muscle, Workout } from '../types';
 import { useExerciseMap, useStore } from '../store/store';
-import { doneSetCount, setsPerMuscle, workoutDurationMs, workoutVolume } from '../lib/calc';
+import { setsPerMuscle, workoutDurationMs, workoutVolume } from '../lib/calc';
+import { countWorkingSets, workingSetCount } from '../core/metrics';
 import { fmtVolume, relativeDay, splitUnit } from '../lib/format';
 
 import { ANATOMY } from '../data/anatomy';
@@ -61,7 +62,7 @@ export function WorkoutCard({ w, prCount }: { w: Workout; prCount?: number }) {
 
   const [durV, durU] = durationParts(workoutDurationMs(w));
   const [volV, volU] = splitUnit(fmtVolume(workoutVolume(w, exMap), unit));
-  const sets = doneSetCount(w);
+  const sets = workingSetCount(w);
   const rest = w.exercises.length - SHOWN;
   const prs = prCount ?? 0;
   const recent = Date.now() - w.startedAt < 6 * 86_400_000;
@@ -108,7 +109,7 @@ export function WorkoutCard({ w, prCount }: { w: Workout; prCount?: number }) {
           </div>
           <ul className="wcard-ex">
             {w.exercises.slice(0, SHOWN).map((e) => {
-              const n = e.sets.filter((s) => s.done).length || e.sets.length;
+              const n = countWorkingSets(e.sets) || e.sets.filter((s) => s.type !== 'warmup').length || e.sets.length;
               return (
                 <li key={e.id} className="ellipsis">
                   <span className="n">{n} ×</span> {exMap.get(e.exerciseId)?.name ?? t('Unknown exercise')}

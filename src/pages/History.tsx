@@ -4,7 +4,8 @@ import type { Workout } from '../types';
 import { useExerciseMap, useStore } from '../store/store';
 import { WorkoutCard } from '../components/WorkoutCard';
 import { Empty } from '../components/ui';
-import { doneSetCount, startOfWeek, workoutVolume } from '../lib/calc';
+import { startOfWeek, workoutVolume } from '../lib/calc';
+import { workingSetCount } from '../core/metrics';
 import { computeProgress, goalForWeek, isGoalWorkout, type GoalPlan } from '../lib/gamification';
 import { fmtDate, fmtVolume, splitUnit } from '../lib/format';
 import { LOCALE_TAG, t, tn } from '../i18n';
@@ -58,7 +59,7 @@ export default function History() {
       const s = map.get(wk) ?? { count: 0, volume: 0, sets: 0 };
       if (isGoalWorkout(w)) s.count++;
       s.volume += workoutVolume(w, exMap);
-      s.sets += doneSetCount(w);
+      s.sets += workingSetCount(w);
       map.set(wk, s);
     }
     return map;

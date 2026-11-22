@@ -21,10 +21,6 @@ export function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
-export function doneSetCount(w: Workout): number {
-  return w.exercises.reduce((n, we) => n + we.sets.filter((s) => s.done).length, 0);
-}
-
 export function workoutDurationMs(w: Workout, now = Date.now()): number {
   return (w.finishedAt ?? now) - w.startedAt;
 }

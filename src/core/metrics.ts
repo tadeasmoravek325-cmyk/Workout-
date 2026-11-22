@@ -42,6 +42,11 @@ export function countWorkingSets(sets: WorkoutSet[]): number {
   return sets.filter((s) => s.done && isWorkingSet(s)).length;
 }
 
+/** Finished working sets in a workout, warm-ups excluded. This is the "sets" number shown in statistics. */
+export function workingSetCount(w: Workout): number {
+  return w.exercises.reduce((n, we) => n + countWorkingSets(we.sets), 0);
+}
+
 /** Weight × reps of a finished set, warm-ups included. This is the general "volume" shown across the app. */
 export function setVolume(s: WorkoutSet, ex?: Exercise): number {
   if (!s.done) return 0;
