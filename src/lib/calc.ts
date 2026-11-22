@@ -51,11 +51,14 @@ export function prefillSets(sets: WorkoutSet[], last: Session | undefined, overr
 }
 
 /**
- * Minutes left in a workout: the sets still to do times how long a set usually takes you (the median of
- * your last finished workouts, rest included). Falls back to about 2.5 minutes a set with no history.
+ * Minutes left in a workout: the sets still to do times the time a set takes. The pace starts as the median of
+ * your last finished workouts (rest included, about 2.5 minutes with no history) and moves towards today's own
+ * pace as sets are completed, so a slow or fast day corrects the estimate. Today's pace counts for half after
+ * six sets and for more the longer the workout goes.
  */
-export function minutesLeft(active: Workout, history: Workout[]): number | null {
-  const left = active.exercises.reduce((n, e) => n + e.sets.filter((s) => !s.done).length, 0);
+export function minutesLeft(active: Workout, history: Workout[], now = Date.now()): number | null {
+  const all = active.exercises.flatMap((e) => e.sets);
+  const left = all.filter((s) => !s.done).length;
   if (!left) return null;
   const per: number[] = [];
   for (const w of history) {
@@ -66,7 +69,18 @@ export function minutesLeft(active: Workout, history: Workout[]): number | null 
     if (per.length >= 8) break;
   }
   per.sort((a, b) => a - b);
-  const sec = per.length ? per[Math.floor(per.length / 2)] : 150;
+  let sec = per.length ? per[Math.floor(per.length / 2)] : 150;
+
+  const done = all.filter((s) => s.done);
+  if (done.length >= 3) {
+    // Up to the last tick, so the rest you are in right now does not stretch the average.
+    const last = Math.max(0, ...done.map((s) => s.completedAt ?? 0)) || now;
+    const today = (last - active.startedAt) / 1000 / done.length;
+    if (today >= 20 && today <= 420) {
+      const w = done.length / (done.length + 6);
+      sec = w * today + (1 - w) * sec;
+    }
+  }
   return Math.max(1, Math.round((left * sec) / 60));
 }
 

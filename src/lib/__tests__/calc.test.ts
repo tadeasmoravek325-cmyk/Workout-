@@ -284,6 +284,21 @@ describe('minutesLeft', () => {
     const active: Workout = { id: 'a', name: 'A', startedAt: 4e9, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: [...sets(2, true), ...sets(4, false)] }] };
     expect(minutesLeft(active, history)).toBe(12);
   });
+  it("moves towards today's pace as sets are completed", () => {
+    const history = [w(1e9, 30, 10), w(2e9, 30, 10), w(3e9, 30, 10)]; // 3 min per set
+    const start = 5e9;
+    const done = Array.from({ length: 6 }, (_, i) => ({ ...set(60, 8), done: true, completedAt: start + (i + 1) * 5 * 60000 })); // 5 min per set today
+    const active: Workout = { id: 'a', name: 'A', startedAt: start, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: [...done, ...sets(4, false)] }] };
+    // Halfway between 3 and 5 minutes: 4 sets × 4 min.
+    expect(minutesLeft(active, history, start + 31 * 60000)).toBe(16);
+  });
+  it('ignores the rest you are in right now', () => {
+    const history = [w(1e9, 30, 10), w(2e9, 30, 10), w(3e9, 30, 10)];
+    const start = 5e9;
+    const done = Array.from({ length: 6 }, (_, i) => ({ ...set(60, 8), done: true, completedAt: start + (i + 1) * 5 * 60000 }));
+    const active: Workout = { id: 'a', name: 'A', startedAt: start, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: [...done, ...sets(4, false)] }] };
+    expect(minutesLeft(active, history, start + 90 * 60000)).toBe(16); // an hour of idling since the last set changes nothing
+  });
   it('falls back without history and is null when nothing is left', () => {
     const active: Workout = { id: 'a', name: 'A', startedAt: 1, exercises: [{ id: 'x', exerciseId: 'bench-press', sets: sets(4, false) }] };
     expect(minutesLeft(active, [])).toBe(10);

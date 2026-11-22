@@ -76,7 +76,7 @@ export default function ActiveWorkout() {
             <div className="tiny muted">
               {t('{done}/{total} sets', { done, total })}
               {(() => {
-                const m = minutesLeft(active, history);
+                const m = minutesLeft(active, history, now);
                 return m ? ` · ${t('~{n} min left', { n: m })}` : '';
               })()}
             </div>

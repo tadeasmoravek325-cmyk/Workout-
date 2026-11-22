@@ -306,6 +306,7 @@ function ExerciseCard({
     if (s.done) {
       upd((x) => {
         x.sets[idx].done = false;
+        x.sets[idx].completedAt = undefined;
       });
       return;
     }
@@ -317,6 +318,7 @@ function ExerciseCard({
       durationSec: s.durationSec ?? (hasTime(ex) ? ph.durationSec : undefined),
       distance: s.distance ?? (ex.type === 'distance_duration' ? ph.distance : undefined),
       done: true,
+      completedAt: Date.now(),
     };
     if (hasReps(ex) && !filled.reps) return toast(t('Enter your reps'));
     if (hasTime(ex) && !filled.durationSec) return toast(t('Enter a time'));

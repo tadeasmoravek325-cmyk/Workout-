@@ -71,6 +71,8 @@ export interface WorkoutSet {
   distance?: number;
   rpe?: number;
   done: boolean;
+  /** When the set was ticked off (ms). Lets the app measure today's real pace. Older sets have none. */
+  completedAt?: number;
 }
 
 export interface WorkoutExercise {

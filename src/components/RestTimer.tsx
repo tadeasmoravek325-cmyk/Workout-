@@ -42,7 +42,7 @@ export function RestTimerBar({ aboveNav }: { aboveNav: boolean }) {
       <div className="bar" style={{ width: `${pct * 100}%` }} />
       <div className="content">
         <Timer size={20} className="accent" />
-        <span className="time">{fmtClock(left)}</span>
+        <span className="time">{fmtClock(Math.ceil(left))}</span>
         <button className="btn sm" onClick={(e) => { e.stopPropagation(); adjust(-15); }}>
           −15
         </button>
