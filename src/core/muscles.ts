@@ -20,3 +20,23 @@ export function setsPerMuscle(workouts: Workout[], exMap: Map<string, Exercise>,
   }
   return out;
 }
+
+/**
+ * Fractional working sets done earlier in the same workout on the main muscles (load 0.75 or more) of the exercise
+ * at position `index`. Tells whether the lift was done fresh or after other work for the same muscle, for example
+ * incline press first versus after the bench press.
+ */
+export function priorTargetSets(ex: Exercise, w: Workout, index: number, exMap: Map<string, Exercise>): number {
+  const mine = muscleLoad(ex);
+  const targets = (Object.keys(mine) as Muscle[]).filter((m) => (mine[m] ?? 0) >= 0.75);
+  if (!targets.length) return 0;
+  let total = 0;
+  for (let i = 0; i < index; i++) {
+    const other = exMap.get(w.exercises[i].exerciseId);
+    if (!other) continue;
+    const load = muscleLoad(other);
+    const share = Math.max(...targets.map((m) => load[m] ?? 0));
+    total += countWorkingSets(w.exercises[i].sets) * share;
+  }
+  return total;
+}

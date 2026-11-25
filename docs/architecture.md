@@ -42,7 +42,7 @@ private/             Your real backup and reference numbers. Git-ignored. Never 
 
 ## Progress pipeline
 ```
-exerciseHistory ──► trendPoints ──► analyzeTrend ──┬─► progress engine ─► suggestNext ─► "Today" card
+exerciseHistory(+slot) ► trendPoints ► analyzeTrend ──┬─► progress engine ─► suggestNext ─► "Today" card
  (core/history)      (core/trend)    (core/trend)  ├─► progress panel (overload.ts)      (lib/calc.ts)
                                                    ├─► coach notes (insights.ts)
                                                    └─► deload advice inside suggestNext

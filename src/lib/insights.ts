@@ -44,7 +44,7 @@ export function coachInsights(workouts: Workout[], exMap: Map<string, Exercise>,
   for (const id of ids) {
     const ex = exMap.get(id);
     if (!ex || ex.type !== 'weight_reps') continue;
-    if (analyzeTrend(trendPoints(exerciseHistory(workouts, id))).state === 'stagnation') {
+    if (analyzeTrend(trendPoints(exerciseHistory(workouts, id, exMap))).state === 'stagnation') {
       out.push({ kind: 'stall', text: t('{name}: no new best in your last 3 sessions. Try adding a rep before adding weight, or take an easier week.', { name: ex.name }) });
       break;
     }

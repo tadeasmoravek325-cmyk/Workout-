@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { coachInsights } from '../lib/insights';
 import { overloadOverview } from '../lib/overload';
+import { defaultFocus, targetFor } from '../core/progress/engine';
+import { describeDelta } from '../components/OverloadPanel';
 import { BackLabel, Empty } from '../components/ui';
 import { t } from '../i18n';
 
@@ -12,7 +14,11 @@ export default function Coach() {
   const workouts = useStore((s) => s.workouts);
   const exMap = useExerciseMap();
   const insights = useMemo(() => coachInsights(workouts, exMap), [workouts, exMap]);
-  const overload = useMemo(() => overloadOverview(workouts, exMap), [workouts, exMap]);
+  const settings = useStore((s) => s.settings);
+  const overload = useMemo(
+    () => overloadOverview(workouts, exMap, (id) => targetFor(id, settings.exerciseTargets, defaultFocus(settings)).repMin),
+    [workouts, exMap, settings],
+  );
   const label = { up: t('Progressing'), flat: t('Plateau'), down: t('Going backwards'), new: '' } as const;
 
   return (
@@ -46,8 +52,7 @@ export default function Coach() {
             <Link key={r.exercise.id} to={`/exercises/${r.exercise.id}`} className="row between small" style={{ padding: '7px 0' }}>
               <span className="ellipsis">{r.exercise.name}</span>
               <span className={`overload-${r.state}`}>
-                {label[r.state]} {r.change > 0 ? '+' : ''}
-                {Math.round(r.change)}%
+                {label[r.state]} {r.moreWork ? t('more work') : describeDelta(r.delta, settings.unit)}
               </span>
             </Link>
           ))}

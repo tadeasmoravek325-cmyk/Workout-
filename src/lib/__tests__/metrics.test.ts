@@ -73,3 +73,24 @@ describe('workingSetCount', () => {
     expect(workingSetCount(w)).toBe(2);
   });
 });
+
+import { exerciseHistory } from '../../core/history';
+
+describe('position in the workout', () => {
+  const exMap = new Map(BUILTIN_EXERCISES.map((e) => [e.id, e]));
+  const wo = (order: string[]): Workout =>
+    ({ id: 'w' + order.join(), name: 'x', startedAt: 10, exercises: order.map((id, i) => ({ id: 'e' + i, exerciseId: id, sets: [s('normal', 60, 8), s('normal', 60, 8), s('normal', 60, 8)] })) }) as unknown as Workout;
+  it('knows incline press was done after the bench press', () => {
+    const after = exerciseHistory([wo(['bench-press', 'db-incline-press'])], 'db-incline-press', exMap)[0];
+    const first = exerciseHistory([wo(['db-incline-press', 'bench-press'])], 'db-incline-press', exMap)[0];
+    expect(after.priorSets).toBe(3);
+    expect(first.priorSets).toBe(0);
+  });
+  it('does not count work for other muscles as earlier fatigue', () => {
+    const w = wo(['squat', 'db-incline-press']);
+    expect(exerciseHistory([w], 'db-incline-press', exMap)[0].priorSets).toBe(0);
+  });
+  it('leaves position unknown without the catalogue', () => {
+    expect(exerciseHistory([wo(['bench-press', 'db-incline-press'])], 'db-incline-press')[0].priorSets).toBeUndefined();
+  });
+});

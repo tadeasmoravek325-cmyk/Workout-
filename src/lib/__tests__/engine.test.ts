@@ -57,6 +57,30 @@ describe('double progression engine', () => {
     const s = [2, 9, 16, 23, 30].map((d) => session(d, [set(100, 5), set(100, 5), set(100, 5)]));
     expect(evaluateExercise(bench, s, { ...target, repMin: 3, repMax: 6 }).state).toBe('stagnation');
   });
+  it('advises from sessions done in the same position as today', () => {
+    const fresh1 = { ...session(9, [set(60, 12, 8), set(60, 12, 8), set(60, 12, 8)]), priorSets: 0 };
+    const fresh2 = { ...session(23, [set(60, 10, 8), set(60, 10, 8), set(60, 9, 8)]), priorSets: 0 };
+    const tired1 = { ...session(2, [set(50, 8, 8), set(50, 8, 8), set(50, 8, 8)]), priorSets: 4 };
+    const tired2 = { ...session(16, [set(50, 8, 8), set(50, 8, 8), set(50, 8, 8)]), priorSets: 4 };
+    const hist = [tired1, fresh1, tired2, fresh2];
+    const first = evaluateExercise(bench, hist, target, { priorSets: 0 });
+    expect(first.state).toBe('ready'); // the newest session was a tired one, but today it is done first
+    expect(first.weight).toBe(62.5);
+    const after = evaluateExercise(bench, hist, target, { priorSets: 4 });
+    expect(after.state).toBe('building');
+    expect(after.weight).toBe(50);
+  });
+  it('warns and lowers confidence when it has to mix positions', () => {
+    const hist = [{ ...session(2, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(9, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(16, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(23, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 0 }];
+    const a = evaluateExercise(bench, hist, target, { priorSets: 0 });
+    expect(a.warnings.some((w) => /different position/.test(w))).toBe(true);
+    expect(a.confidence).not.toBe('high');
+  });
+  it('compares best sets, not estimates', () => {
+    // Same weight and reps, but the old engine would have seen a different 1RM estimate between 12 and 8 reps.
+    const hist = [2, 9, 16, 23, 30].map((d) => session(d, [set(100, 5), set(100, 5), set(100, 5)]));
+    expect(evaluateExercise(bench, hist, { ...target, repMin: 3, repMax: 6 }).state).toBe('stagnation');
+  });
   it('derives RIR from RPE only when logged', () => {
     expect(rirOf(8)).toBe(2);
     expect(rirOf(undefined)).toBeUndefined();

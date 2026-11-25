@@ -1,64 +1,55 @@
 import type { Exercise, Workout } from '../types';
-import { e1rm, e1rmReliable, isWorkingSet, workSetVolume } from '../core/metrics';
 import { exerciseHistory, type Session } from '../core/history';
-import { analyzeTrend } from '../core/progress/trend';
+import { analyzeTrend, trendPoints, type Slot, type TrendPoint } from '../core/progress/trend';
 
 export type OverloadState = 'up' | 'flat' | 'down' | 'new';
 
-export interface OverloadPoint {
-  date: number;
-  /** Best estimated 1RM of the session. */
-  e1rm: number;
-  /** Working reps × weight. */
-  volume: number;
-  /** Total working reps. */
-  reps: number;
-  /** False when the best estimate comes from a set with too many reps to trust. */
-  reliable: boolean;
+/** One session of a lift: the best set actually lifted, its volume and where in the workout it was done. */
+export type OverloadPoint = TrendPoint;
+
+/** Oldest first, the last `n` sessions. `repMin` is the bottom of the exercise's rep range. */
+export function overloadSeries(sessions: Session[], n = 11, repMin = 1): OverloadPoint[] {
+  return trendPoints(sessions.slice(0, n), repMin).reverse();
 }
 
-const point = (s: Session): OverloadPoint => {
-  const w = s.sets.filter(isWorkingSet);
-  const best = w.reduce((b, x) => (e1rm(x.weight ?? 0, x.reps ?? 0) > e1rm(b.weight ?? 0, b.reps ?? 0) ? x : b), w[0]);
-  return {
-    date: s.date,
-    e1rm: Math.max(0, ...w.map((x) => e1rm(x.weight ?? 0, x.reps ?? 0))),
-    volume: w.reduce((a, x) => a + workSetVolume(x), 0),
-    reps: w.reduce((a, x) => a + (x.reps ?? 0), 0),
-    reliable: !best || e1rmReliable(best.reps ?? 0),
-  };
-};
+const asTrend = (series: OverloadPoint[]): TrendPoint[] => [...series].reverse();
 
-/** Oldest first, the last `n` sessions. */
-export function overloadSeries(sessions: Session[], n = 11): OverloadPoint[] {
-  return sessions.slice(0, n).map(point).reverse();
+export interface OverloadResult {
+  state: OverloadState;
+  /** Recent best set minus the baseline best set: kg, and reps at the same weight. */
+  delta: { weight: number; reps: number } | null;
+  /** Only the work volume went up. */
+  moreWork: boolean;
+  slot?: Slot;
+  /** Too few sessions in the same position, so sessions from both positions were compared. */
+  mixed: boolean;
 }
 
 /**
- * State of a lift, from the single trend definition in `core/progress/trend`
- * (recent best against the best of the sessions just before; stuck only when neither strength nor work rose).
+ * State of a lift from the single trend definition in `core/progress/trend`: the best set actually lifted,
+ * recent sessions against the sessions before, compared within the same position in the workout.
  */
-export function overloadState(series: OverloadPoint[]): { state: OverloadState; change: number } {
-  const t = analyzeTrend([...series].reverse());
-  if (t.state === 'insufficient') return { state: 'new', change: 0 };
-  return { state: t.state === 'improving' ? 'up' : t.state === 'stagnation' ? 'flat' : 'down', change: t.change };
+export function overloadState(series: OverloadPoint[], slot?: Slot): OverloadResult {
+  const t = analyzeTrend(asTrend(series), { slot });
+  const state: OverloadState = t.state === 'insufficient' ? 'new' : t.state === 'improving' ? 'up' : t.state === 'stagnation' ? 'flat' : 'down';
+  return { state, delta: t.delta, moreWork: t.moreWork, slot: t.slot, mixed: t.mixed };
 }
 
-export interface OverloadRow {
+export interface OverloadRow extends OverloadResult {
   exercise: Exercise;
-  state: OverloadState;
-  change: number;
 }
 
-/** Lifts done at least 4 times, grouped by whether they are progressing. */
-export function overloadOverview(workouts: Workout[], exMap: Map<string, Exercise>): OverloadRow[] {
+const ORDER: Record<OverloadState, number> = { up: 0, flat: 1, down: 2, new: 3 };
+
+/** Weighted lifts with enough history, progressing ones first. `repMinOf` gives each exercise's bottom rep. */
+export function overloadOverview(workouts: Workout[], exMap: Map<string, Exercise>, repMinOf: (id: string) => number = () => 1): OverloadRow[] {
   const ids = new Set(workouts.flatMap((w) => w.exercises.map((e) => e.exerciseId)));
   const rows: OverloadRow[] = [];
   for (const id of ids) {
     const ex = exMap.get(id);
     if (!ex || ex.type !== 'weight_reps') continue;
-    const { state, change } = overloadState(overloadSeries(exerciseHistory(workouts, id)));
-    if (state !== 'new') rows.push({ exercise: ex, state, change });
+    const r = overloadState(overloadSeries(exerciseHistory(workouts, id, exMap), 11, repMinOf(id)));
+    if (r.state !== 'new') rows.push({ ...r, exercise: ex });
   }
-  return rows.sort((a, b) => b.change - a.change);
+  return rows.sort((a, b) => ORDER[a.state] - ORDER[b.state] || (b.delta?.weight ?? 0) - (a.delta?.weight ?? 0) || (b.delta?.reps ?? 0) - (a.delta?.reps ?? 0));
 }

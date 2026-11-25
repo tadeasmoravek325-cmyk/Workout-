@@ -2,27 +2,34 @@ import { describe, expect, it } from 'vitest';
 import { overloadState, type OverloadPoint } from '../overload';
 
 const DAY = 86_400_000;
-// Oldest first, like overloadSeries. One session per week.
-const series = (vals: [number, number][]): OverloadPoint[] => vals.map(([e, v], i) => ({ date: i * 7 * DAY, e1rm: e, volume: v, reps: 0, reliable: true }));
+type V = [weight: number, reps: number, volume?: number];
+// Oldest first, one session per week, like overloadSeries.
+const series = (vals: V[]): OverloadPoint[] => vals.map(([weight, reps, volume], i) => ({ date: i * 7 * DAY, best: { weight, reps }, volume: volume ?? weight * reps * 3, belowRange: false }));
+const flat = (n: number, w = 60, r = 8): V[] => Array.from({ length: n }, () => [w, r]);
 
-describe('overloadState (shared trend definition)', () => {
+describe('overloadState (best set, shared trend definition)', () => {
   it('needs enough sessions', () => {
-    expect(overloadState(series([[100, 1000]])).state).toBe('new');
+    expect(overloadState(series([[60, 8]])).state).toBe('new');
   });
-  it('detects progress', () => {
-    expect(overloadState(series([[100, 1000], [100, 1000], [100, 1000], [105, 1100], [106, 1100]])).state).toBe('up');
+  it('detects progress by weight and says by how much', () => {
+    const r = overloadState(series([...flat(3, 57.5), ...flat(3, 60), [62.5, 8]]));
+    expect(r.state).toBe('up');
+    expect(r.delta?.weight).toBe(2.5);
+  });
+  it('detects progress by reps at the same weight', () => {
+    const r = overloadState(series([...flat(3), [60, 9], [60, 10]]));
+    expect(r.state).toBe('up');
+    expect(r.delta).toEqual({ weight: 0, reps: 2 });
   });
   it('detects a plateau', () => {
-    expect(overloadState(series([[100, 1000], [100, 1000], [100, 1000], [100, 1000], [100, 1000]])).state).toBe('flat');
+    expect(overloadState(series(flat(5))).state).toBe('flat');
   });
   it('detects a decline', () => {
-    expect(overloadState(series([[110, 1100], [108, 1100], [106, 1000], [102, 1000], [98, 1000]])).state).toBe('down');
+    expect(overloadState(series([[62.5, 8], [62.5, 8], [60, 8], [57.5, 8], [55, 8]])).state).toBe('down');
   });
-  it('counts more work at the same strength as progress', () => {
-    expect(overloadState(series([[100, 1000], [100, 1000], [100, 1000], [100, 1200], [100, 1200]])).state).toBe('up');
-  });
-  it('does not call recovery after a dip a plateau', () => {
-    // The 120 peak is older than the 8 baseline sessions, so the climb back to 106 counts as progress.
-    expect(overloadState(series([[120, 1200], ...Array.from({ length: 8 }, () => [100, 1000] as [number, number]), [101, 1010], [103, 1030], [106, 1060]])).state).toBe('up');
+  it('never reports progress together with a drop', () => {
+    // The old estimate-based panel could say "Progressing -5%". The best set can only be better, equal or worse.
+    const r = overloadState(series([[60, 8], [60, 8], [60, 8], [57.5, 8], [57.5, 8], [57.5, 8]]));
+    expect(r.state === 'up' && (r.delta?.weight ?? 0) < 0).toBe(false);
   });
 });

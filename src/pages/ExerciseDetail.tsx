@@ -81,7 +81,7 @@ export default function ExerciseDetail() {
   const [metric, setMetric] = useState<Metric>(metrics[0] ?? 'e1rm');
   const [range, setRange] = useState<Range>('6m');
 
-  const sessions = useMemo(() => (ex ? exerciseHistory(workouts, ex.id) : []), [workouts, ex]);
+  const sessions = useMemo(() => (ex ? exerciseHistory(workouts, ex.id, exMap) : []), [workouts, ex, exMap]);
   const records = useMemo(() => computeRecords(sessions), [sessions]);
 
   if (!ex) return <Navigate to="/exercises" replace />;
@@ -162,7 +162,7 @@ export default function ExerciseDetail() {
 
       {tab === 'charts' && (
         <div className="mt-l">
-          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} />}
+          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} exerciseId={ex.id} />}
           {metrics.length > 1 && (
             <div className="chips">
               {metrics.map((m) => (

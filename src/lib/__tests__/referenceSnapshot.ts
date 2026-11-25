@@ -23,7 +23,7 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
   const ids = [...new Set(workouts.flatMap((w) => w.exercises.map((e) => e.exerciseId)))].sort();
   const perExercise = Object.fromEntries(
     ids.map((id) => {
-      const sessions = exerciseHistory(workouts, id);
+      const sessions = exerciseHistory(workouts, id, exMap);
       const r = computeRecords(sessions);
       const ex = exMap.get(id);
       const advice = ex ? evaluateExercise(ex, sessions, targetFor(id, undefined, 'both')).state : 'unknown';
@@ -37,7 +37,7 @@ export function computeReference(data: { workouts?: Workout[]; customExercises?:
     ids.flatMap((id) => {
       const ex = exMap.get(id);
       if (!ex) return [];
-      const g = suggestNext(ex, exerciseHistory(workouts, id), undefined, now);
+      const g = suggestNext(ex, exerciseHistory(workouts, id, exMap), undefined, now);
       return [[id, g ? `${g.kind} ${g.weight ?? '-'}x${g.reps ?? '-'}` : 'none']];
     }),
   );

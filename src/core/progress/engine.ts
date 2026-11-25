@@ -1,7 +1,7 @@
 import type { Exercise, ExerciseTarget, Focus } from '../../types';
 import { weightIncrement } from './increment';
-import { analyzeTrend, TREND, trendPoints } from './trend';
-import { e1rm, e1rmReliable, isLoggedWorkingSet } from '../metrics';
+import { analyzeTrend, slotOf, TREND, trendPoints, type BestSet } from './trend';
+import { isLoggedWorkingSet } from '../metrics';
 import type { Session } from '../history';
 import { t } from '../../i18n';
 
@@ -62,53 +62,79 @@ interface TopWork {
   weight: number;
   reps: number[];
   rirs: number[];
-  best1rm: number;
   date: number;
 }
 
-/** The working sets at the heaviest working weight of a session. */
-export function topWork(s: Session): TopWork | null {
+/**
+ * The working sets at the heaviest weight that reached the bottom of the rep range (all working sets if none did).
+ * Same idea as the best set in the trend: what was really lifted, not an estimate.
+ */
+export function topWork(s: Session, repMin = 1): TopWork | null {
   const work = s.sets.filter((x) => isLoggedWorkingSet(x) && (x.reps ?? 0) > 0);
   if (!work.length) return null;
-  const weight = Math.max(...work.map((x) => x.weight ?? 0));
-  const at = work.filter((x) => (x.weight ?? 0) === weight);
+  const inRange = work.filter((x) => (x.reps ?? 0) >= repMin);
+  const pool = inRange.length ? inRange : work;
+  const weight = Math.max(...pool.map((x) => x.weight ?? 0));
+  const at = pool.filter((x) => (x.weight ?? 0) === weight);
   return {
     weight,
     reps: at.map((x) => x.reps ?? 0),
     rirs: at.map((x) => rirOf(x.rpe)).filter((v): v is number => v !== undefined),
-    best1rm: Math.max(...work.map((x) => e1rm(x.weight ?? 0, x.reps ?? 0))),
     date: s.date,
   };
 }
 
 const MIN_SESSIONS = 2;
+const fmtBest = (b: BestSet) => `${b.weight} kg × ${b.reps}`;
 
-/** Evaluates one weighted exercise. Only `weight_reps` style lifts are supported; others return `insufficient`. */
-export function evaluateExercise(ex: Exercise, sessions: Session[], target: ExerciseTarget): ProgressAdvice {
+/**
+ * Evaluates one weighted exercise. Only `weight_reps` style lifts are supported; others return `insufficient`.
+ * `ctx.priorSets` is the work already done today on the same muscles: sessions are compared with sessions done in the
+ * same position (first work for the muscle, or after other work for it) when there are enough of them.
+ */
+export function evaluateExercise(ex: Exercise, sessions: Session[], target: ExerciseTarget, ctx: { priorSets?: number } = {}): ProgressAdvice {
   const base: ProgressAdvice = { state: 'insufficient', confidence: 'low', reasons: [], warnings: [], sessionsUsed: 0 };
   if (ex.type !== 'weight_reps') return { ...base, reasons: [t('Progression advice covers weight and reps exercises.')] };
 
-  const tops = sessions.map(topWork).filter((x): x is TopWork => x !== null && x.weight > 0);
+  const slot = slotOf(ctx.priorSets);
+  const all = sessions.map((s) => ({ s, top: topWork(s, target.repMin) })).filter((x): x is { s: Session; top: TopWork } => x.top !== null && x.top.weight > 0);
+  let pool = all;
+  let mixed = false;
+  if (slot) {
+    const same = all.filter((x) => slotOf(x.s.priorSets) === slot);
+    if (same.length >= MIN_SESSIONS) pool = same;
+    else mixed = all.some((x) => slotOf(x.s.priorSets) !== undefined && slotOf(x.s.priorSets) !== slot);
+  }
+  const tops = pool.map((x) => x.top);
   if (tops.length < MIN_SESSIONS) {
     return { ...base, sessionsUsed: tops.length, reasons: [t('Needs at least {n} logged sessions of this exercise.', { n: MIN_SESSIONS })] };
   }
   const last = tops[0];
-  const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence: confidenceOf(tops.length, last.rirs.length > 0) };
-  const warnings = out.warnings;
   const hasRir = last.rirs.length > 0;
+  let confidence = confidenceOf(tops.length, hasRir);
+  if (mixed) confidence = confidence === 'high' ? 'medium' : 'low';
+  const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence };
+  const warnings = out.warnings;
   if (!hasRir) warnings.push(t('RIR was not logged, so the advice is less certain.'));
-  if (last.reps.some((r) => !e1rmReliable(r))) warnings.push(t('Sets above 12 reps make the 1RM estimate unreliable.'));
+  if (mixed) warnings.push(t('Earlier sessions were done in a different position in the workout, so they compare less well.'));
 
-  const trend = analyzeTrend(trendPoints(sessions));
-  if (trend.state === 'decline') {
+  const trend = analyzeTrend(trendPoints(sessions, target.repMin), { slot });
+  const where =
+    trend.mixed || !trend.slot
+      ? ''
+      : trend.slot === 'fresh'
+        ? t('Compared with sessions where you did it before other work for this muscle.')
+        : t('Compared with sessions where you did it after other work for this muscle.');
+  if (trend.state === 'decline' && trend.recentBest && trend.baselineBest) {
     return {
       ...out,
       state: 'decline',
       weight: last.weight,
       reps: Math.min(...last.reps),
       reasons: [
-        t('Estimated 1RM fell in 3 sessions in a row ({from} → {to} kg).', { from: Math.round(trend.baselineBest), to: Math.round(trend.recentBest) }),
+        t('Your best set got worse in 3 sessions in a row ({from} → {to}).', { from: fmtBest(trend.baselineBest), to: fmtBest(trend.recentBest) }),
         t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
+        ...(where ? [where] : []),
       ],
     };
   }
@@ -120,8 +146,9 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
       weight: last.weight,
       reps: Math.min(...last.reps),
       reasons: [
-        t('No new best estimated 1RM in the last {n} sessions (over {d} days).', { n: TREND.recent, d: Math.round(trend.spanDays) }),
+        t('No better set than before in the last {n} sessions (over {d} days). Best: {best}.', { n: TREND.recent, d: Math.round(trend.spanDays), best: trend.recentBest ? fmtBest(trend.recentBest) : '–' }),
         t('A single weak session does not count. This is repeated exposure without progress.'),
+        ...(where ? [where] : []),
       ],
     };
   }

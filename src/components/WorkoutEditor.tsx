@@ -257,10 +257,10 @@ function ExerciseCard({
   const setExerciseNote = useStore((s) => s.setExerciseNote);
   const [pinDraft, setPinDraft] = useState('');
 
-  const sessions: Session[] = useMemo(() => exerciseHistory(history, ex.id), [history, ex.id]);
+  const exMap = useExerciseMap();
+  const sessions: Session[] = useMemo(() => exerciseHistory(history, ex.id, exMap), [history, ex.id, exMap]);
   const prev = sessions[0];
   const records = useMemo(() => computeRecords(sessions), [sessions]);
-  const exMap = useExerciseMap();
   // Hard sets already done on this exercise's muscles: in the last 3 days, and earlier in this workout.
   const recentSets = useMemo(
     () => targetSets(ex, history, exMap, workout.startedAt - 72 * 3_600_000),
