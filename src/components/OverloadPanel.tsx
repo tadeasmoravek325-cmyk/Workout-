@@ -57,18 +57,12 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
   const verdict = overloadSeries(sessions, 11, repMin);
   const hasBoth = series.some((p) => p.slot === 'fatigued') && series.some((p) => p.slot !== 'fatigued');
   const result = overloadState(verdict, hasBoth ? (focus === 'after' ? 'fatigued' : 'fresh') : undefined);
-  const { delta, moreWork, slot, mixed } = result;
+  const { delta, moreWork, mixed } = result;
   // When you pick an order that has too few sessions, do not quietly judge it from the other order.
   const state = hasBoth && mixed ? 'new' : result.state;
   const Icon = state === 'up' ? TrendingUp : state === 'down' ? TrendingDown : Minus;
   const label = state === 'up' ? t('Progressing') : state === 'down' ? t('Going backwards') : state === 'flat' ? t('Plateau') : t('Collecting data');
   const change = moreWork ? t('more work') : describeDelta(delta, unit);
-  const where =
-    slot === undefined || mixed
-      ? ''
-      : slot === 'fresh'
-        ? t('Compared with sessions where you did it before other work for this muscle.')
-        : t('Compared with sessions where you did it after other work for this muscle.');
   const inFocus = hasBoth ? series.filter((p) => (p.slot === 'fatigued') === (focus === 'after')) : series;
   const shown = [...inFocus].slice(-6).reverse();
 
@@ -81,11 +75,11 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
           <span className="bold small">{change && state !== 'new' ? `${label} ${change}` : label}</span>
         </div>
       </div>
-      <div className="small muted" style={{ margin: '4px 0 8px' }}>
-        {t('Based on your best set: the heaviest weight with at least {n} reps, then the most reps. Last 3 sessions against the 8 before.', { n: repMin })}{' '}
-        {where}
-        {mixed && ` ${hasBoth ? t('Too few sessions in this order to judge yet.') : t('Too few sessions in the same position, so all sessions are compared.')}`}
-      </div>
+      {mixed && (
+        <div className="small muted" style={{ margin: '4px 0 8px' }}>
+          {hasBoth ? t('Too few sessions in this order to judge yet.') : t('Too few sessions in the same position, so all sessions are compared.')}
+        </div>
+      )}
       <div className="chips" style={{ marginBottom: 8 }}>
         {RANGES.map((n) => (
           <button key={n} className={`chip ${range === n ? 'on' : ''}`} onClick={() => pick(n)}>
@@ -132,7 +126,6 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-      <div className="tiny muted" style={{ margin: '4px 0' }}>{t('Line: weight of the best set (left). Bars: its reps (right).')}</div>
       {hasBoth && (
         <div className="chips" style={{ margin: '8px 0' }}>
           <button className={`chip ${focus === 'first' ? 'on' : ''}`} onClick={() => setFocus('first')}>
