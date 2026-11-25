@@ -35,7 +35,7 @@ export interface ProgressAdvice {
 export const DEFAULT_TARGETS: Record<Focus, Omit<ExerciseTarget, 'focus'>> = {
   strength: { repMin: 3, repMax: 6, sets: 4, rir: 2 },
   hypertrophy: { repMin: 8, repMax: 12, sets: 3, rir: 2 },
-  both: { repMin: 6, repMax: 10, sets: 3, rir: 2 },
+  both: { repMin: 5, repMax: 10, sets: 3, rir: 2 },
 };
 
 /** How sure the advice is: more logged sessions and a logged RIR raise it. Missing RIR is never guessed. */

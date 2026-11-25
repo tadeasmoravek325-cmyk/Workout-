@@ -211,7 +211,7 @@ export default function SettingsPage() {
           >
             <option value="strength">{t('Strength (3–6 reps)')}</option>
             <option value="hypertrophy">{t('Muscle (8–12 reps)')}</option>
-            <option value="both">{t('Both (6–10 reps)')}</option>
+            <option value="both">{t('Both (5–10 reps)')}</option>
           </select>
         </Row>
         <Row title={t('Log RPE')} desc={t('How hard a set felt (6–10). The coach uses it as reps in reserve; without it, advice is less certain.')}>

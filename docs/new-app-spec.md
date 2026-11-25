@@ -266,7 +266,7 @@ Základ je již napsaný a otestovaný ve stávající aplikaci (`src/lib/progre
 - Nad 12 opakování upozornit na nespolehlivé e1RM.
 - **Prahy (3 %, 14 dní, 5 expozic) jsou heuristiky**, ne publikované standardy. V UI i dokumentaci je tak označit.
 
-**Cíle:** globální (síla / hypertrofie / kombinace) určuje výchozí rozsahy (síla 3–6, hypertrofie 8–12, kombinace 6–10); každý cvik může mít vlastní rozsah, počet sérií, cílové RIR a prioritu.
+**Cíle:** globální (síla / hypertrofie / kombinace) určuje výchozí rozsahy (síla 3–6, hypertrofie 8–12, kombinace 5–10); každý cvik může mít vlastní rozsah, počet sérií, cílové RIR a prioritu.
 
 **Navíc oproti stávající aplikaci:**
 - Zohlednit pořadí cviku v tréninku a únavu na stejný sval (stávající `suggestNext` to už dělá; sjednotit do jednoho modulu).

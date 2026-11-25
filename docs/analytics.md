@@ -53,7 +53,7 @@ Result:
 The change is reported as what really changed, for example "+2.5 kg" or "+1 rep", never as a percentage of an estimate. A single weak session never produces a verdict. A decline is not attributed to overtraining; the advice lists possible factors only. All thresholds are **heuristic**. The estimated 1RM is still shown elsewhere (exercise charts, records) but is not used to judge progress.
 
 ## Double progression (`core/progress/engine.ts`)
-Target per exercise: rep range, number of sets, target RIR. Defaults follow the training focus: strength 3–6 reps × 4, muscle 8–12 × 3, both 6–10 × 3, RIR 2. The default focus comes from the profile goal unless chosen in Settings. A per-exercise target overrides it.
+Target per exercise: rep range, number of sets, target RIR. Defaults follow the training focus: strength 3–6 reps × 4, muscle 8–12 × 3, both 5–10 × 3, RIR 2. The default focus comes from the profile goal unless chosen in Settings. A per-exercise target overrides it.
 
 Looking at the most recent session in the same slot as today's workout (at least 2 such sessions, otherwise all sessions), and its sets at the heaviest weight that reached the bottom of the rep range:
 1. Needs at least 2 sessions, otherwise "insufficient".

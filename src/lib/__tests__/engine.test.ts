@@ -87,6 +87,7 @@ describe('double progression engine', () => {
   });
   it('uses focus defaults and per-exercise overrides', () => {
     expect(targetFor('x', undefined, 'strength').repMax).toBe(6);
+    expect(targetFor('x', undefined, 'both').repMin).toBe(5);
     expect(targetFor('x', { x: { repMin: 5, repMax: 8, sets: 5 } }, 'strength').sets).toBe(5);
   });
 });
