@@ -41,6 +41,7 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
   const settings = useStore((s) => s.settings);
   const unit = settings.unit;
   const [range, setRange] = useState(load);
+  const [view, setView] = useState<'both' | 'first' | 'after'>('both');
   const repMin = targetFor(exerciseId, settings.exerciseTargets, defaultFocus(settings)).repMin;
   const pick = (n: number) => {
     setRange(n);
@@ -103,14 +104,22 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
               contentStyle={{ background: 'var(--card-2)', border: 'none', borderRadius: 8 }}
               formatter={(v, name, item) => [`${v} ${unit} × ${(item.payload as { reps: number }).reps}`, name === 'after' ? t('After other work') : t('Best set')]}
             />
-            <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={2} dot={series.length <= 24} connectNulls />
-            <Line type="stepAfter" dataKey="after" stroke="var(--muted)" strokeWidth={2} strokeDasharray="4 3" dot={series.length <= 24} connectNulls />
+            {view !== 'after' && <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={2} dot={series.length <= 24} connectNulls />}
+            {view !== 'first' && <Line type="stepAfter" dataKey="after" stroke="var(--muted)" strokeWidth={2} strokeDasharray="4 3" dot={series.length <= 24} connectNulls />}
           </LineChart>
         </ResponsiveContainer>
       </div>
       {series.some((p) => p.slot === 'fatigued') && (
-        <div className="tiny muted" style={{ margin: '4px 0' }}>
-          <span className="accent">━</span> {t('Best set, done first')} · <span>┅</span> {t('after other work for the muscle')}
+        <div className="chips" style={{ margin: '8px 0' }}>
+          <button className={`chip ${view === 'both' ? 'on' : ''}`} onClick={() => setView('both')}>
+            {t('Both')}
+          </button>
+          <button className={`chip ${view === 'first' ? 'on' : ''}`} onClick={() => setView('first')}>
+            <span className="accent">━</span> {t('Done first')}
+          </button>
+          <button className={`chip ${view === 'after' ? 'on' : ''}`} onClick={() => setView('after')}>
+            <span>┅</span> {t('After other work')}
+          </button>
         </div>
       )}
       {shown.map((p, i) => {
