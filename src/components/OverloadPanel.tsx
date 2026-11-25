@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import type { Session } from '../core/history';
 import { compareBest, slotOf } from '../core/progress/trend';
@@ -95,17 +95,21 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
       </div>
       <div style={{ height: 150 }}>
         <ResponsiveContainer>
-          <LineChart
+          <ComposedChart
             data={series.map((p) => {
               const w = toDisplayWeight(p.best.weight, unit) ?? 0;
               // Two lines: the same lift done first versus after other work for the muscle never share a line.
-              return { d: fmtDate(p.date), first: p.slot === 'fatigued' ? null : w, after: p.slot === 'fatigued' ? w : null, reps: p.best.reps };
+              const inFocusRow = !hasBoth || (p.slot === 'fatigued') === (focus === 'after');
+              return { d: fmtDate(p.date), first: p.slot === 'fatigued' ? null : w, after: p.slot === 'fatigued' ? w : null, reps: p.best.reps, repsBar: inFocusRow ? p.best.reps : null };
             })}
-            margin={{ top: 6, right: 6, left: -18, bottom: 0 }}
+            margin={{ top: 6, right: -10, left: -18, bottom: 0 }}
           >
             <CartesianGrid stroke="var(--line)" vertical={false} />
             <XAxis dataKey="d" tick={{ fontSize: 10, fill: 'var(--muted)' }} interval="preserveStartEnd" />
-            <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: 'var(--muted)' }} />
+            <YAxis yAxisId="w" domain={['auto', 'auto']} tick={{ fontSize: 10, fill: 'var(--muted)' }} />
+            <YAxis yAxisId="r" orientation="right" domain={[0, (max: number) => Math.max(12, Math.ceil(max * 1.6))]} tick={{ fontSize: 10, fill: 'var(--muted)' }} width={34} />
+            {/* Bars: reps of the best set, so 15 kg × 13 stands taller than 15 kg × 11 at the same weight. */}
+            <Bar yAxisId="r" dataKey="repsBar" fill="var(--accent)" fillOpacity={0.35} barSize={8} radius={[3, 3, 0, 0]} />
             {/* Only points of the order selected below the chart answer a tap; the faded line is for orientation. */}
             <Tooltip
               content={({ active, payload, label }) => {
@@ -123,11 +127,12 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
                 );
               }}
             />
-            <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={!hasBoth || focus === 'first' ? 2.5 : 1.5} strokeOpacity={!hasBoth || focus === 'first' ? 1 : 0.25} dot={series.length <= 24 && (!hasBoth || focus === 'first')} activeDot={!hasBoth || focus === 'first'} connectNulls />
-            <Line type="stepAfter" dataKey="after" stroke={focus === 'after' ? 'var(--accent)' : 'var(--muted)'} strokeWidth={focus === 'after' ? 2.5 : 1.5} strokeOpacity={focus === 'after' ? 1 : 0.25} strokeDasharray="4 3" dot={series.length <= 24 && focus === 'after'} activeDot={focus === 'after'} connectNulls />
-          </LineChart>
+            <Line yAxisId="w" type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={!hasBoth || focus === 'first' ? 2.5 : 1.5} strokeOpacity={!hasBoth || focus === 'first' ? 1 : 0.25} dot={series.length <= 24 && (!hasBoth || focus === 'first') ? { r: 3, fill: 'var(--card)', stroke: 'var(--accent)', strokeWidth: 2 } : false} activeDot={!hasBoth || focus === 'first' ? { r: 5 } : false} connectNulls />
+            <Line yAxisId="w" type="stepAfter" dataKey="after" stroke={focus === 'after' ? 'var(--accent)' : 'var(--muted)'} strokeWidth={focus === 'after' ? 2.5 : 1.5} strokeOpacity={focus === 'after' ? 1 : 0.25} strokeDasharray="4 3" dot={series.length <= 24 && focus === 'after' ? { r: 3, fill: 'var(--card)', stroke: 'var(--accent)', strokeWidth: 2 } : false} activeDot={focus === 'after' ? { r: 5 } : false} connectNulls />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <div className="tiny muted" style={{ margin: '4px 0' }}>{t('Line: weight of the best set (left). Bars: its reps (right).')}</div>
       {hasBoth && (
         <div className="chips" style={{ margin: '8px 0' }}>
           <button className={`chip ${focus === 'first' ? 'on' : ''}`} onClick={() => setFocus('first')}>
