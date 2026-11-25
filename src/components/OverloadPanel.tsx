@@ -106,12 +106,25 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
             <CartesianGrid stroke="var(--line)" vertical={false} />
             <XAxis dataKey="d" tick={{ fontSize: 10, fill: 'var(--muted)' }} interval="preserveStartEnd" />
             <YAxis domain={['auto', 'auto']} tick={{ fontSize: 10, fill: 'var(--muted)' }} />
+            {/* Only points of the order selected below the chart answer a tap; the faded line is for orientation. */}
             <Tooltip
-              contentStyle={{ background: 'var(--card-2)', border: 'none', borderRadius: 8 }}
-              formatter={(v, name, item) => [`${v} ${unit} × ${(item.payload as { reps: number }).reps}`, name === 'after' ? t('After other work') : t('Best set')]}
+              content={({ active, payload, label }) => {
+                const row = payload?.[0]?.payload as { first: number | null; after: number | null; reps: number } | undefined;
+                const key = !hasBoth || focus === 'first' ? 'first' : 'after';
+                const v = row?.[key];
+                if (!active || !row || v == null) return null;
+                return (
+                  <div style={{ background: 'var(--card-2)', borderRadius: 8, padding: '6px 10px', fontSize: 12 }}>
+                    <div className="muted">{label}</div>
+                    <div className="bold">
+                      {v} {unit} × {row.reps}
+                    </div>
+                  </div>
+                );
+              }}
             />
-            <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={!hasBoth || focus === 'first' ? 2.5 : 1.5} strokeOpacity={!hasBoth || focus === 'first' ? 1 : 0.25} dot={series.length <= 24 && (!hasBoth || focus === 'first')} connectNulls />
-            <Line type="stepAfter" dataKey="after" stroke={focus === 'after' ? 'var(--accent)' : 'var(--muted)'} strokeWidth={focus === 'after' ? 2.5 : 1.5} strokeOpacity={focus === 'after' ? 1 : 0.25} strokeDasharray="4 3" dot={series.length <= 24 && focus === 'after'} connectNulls />
+            <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={!hasBoth || focus === 'first' ? 2.5 : 1.5} strokeOpacity={!hasBoth || focus === 'first' ? 1 : 0.25} dot={series.length <= 24 && (!hasBoth || focus === 'first')} activeDot={!hasBoth || focus === 'first'} connectNulls />
+            <Line type="stepAfter" dataKey="after" stroke={focus === 'after' ? 'var(--accent)' : 'var(--muted)'} strokeWidth={focus === 'after' ? 2.5 : 1.5} strokeOpacity={focus === 'after' ? 1 : 0.25} strokeDasharray="4 3" dot={series.length <= 24 && focus === 'after'} activeDot={focus === 'after'} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>
