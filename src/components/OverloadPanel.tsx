@@ -41,7 +41,7 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
   const settings = useStore((s) => s.settings);
   const unit = settings.unit;
   const [range, setRange] = useState(load);
-  // Which order the chart emphasises and the verdict is about. Tap the chart to switch.
+  // Which order the chart emphasises and the verdict is about. Switched with the buttons under the chart.
   const [focus, setFocus] = useState<'first' | 'after'>('first');
   const repMin = targetFor(exerciseId, settings.exerciseTargets, defaultFocus(settings)).repMin;
   const pick = (n: number) => {
@@ -93,7 +93,7 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
           </button>
         ))}
       </div>
-      <div style={{ height: 150, cursor: hasBoth ? 'pointer' : undefined }} onClick={() => hasBoth && setFocus((f) => (f === 'first' ? 'after' : 'first'))} role={hasBoth ? 'button' : undefined} aria-label={hasBoth ? t('Tap to switch between sessions done first and after other work') : undefined}>
+      <div style={{ height: 150 }}>
         <ResponsiveContainer>
           <LineChart
             data={series.map((p) => {
@@ -116,9 +116,13 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
         </ResponsiveContainer>
       </div>
       {hasBoth && (
-        <div className="tiny muted" style={{ margin: '6px 0' }}>
-          <span className={focus === 'first' ? 'accent bold' : ''}>━ {t('Done first')}</span> ·{' '}
-          <span className={focus === 'after' ? 'accent bold' : ''}>┅ {t('After other work for the muscle')}</span> · {t('tap the chart to switch')}
+        <div className="chips" style={{ margin: '8px 0' }}>
+          <button className={`chip ${focus === 'first' ? 'on' : ''}`} onClick={() => setFocus('first')}>
+            <span aria-hidden="true">━</span> {t('Done first')}
+          </button>
+          <button className={`chip ${focus === 'after' ? 'on' : ''}`} onClick={() => setFocus('after')}>
+            <span aria-hidden="true">┅</span> {t('After other work')}
+          </button>
         </div>
       )}
       {shown.map((p, i) => {
