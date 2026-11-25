@@ -41,7 +41,8 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
   const settings = useStore((s) => s.settings);
   const unit = settings.unit;
   const [range, setRange] = useState(load);
-  const [view, setView] = useState<'both' | 'first' | 'after'>('both');
+  // Which order the chart emphasises and the verdict is about. Tap the chart to switch.
+  const [focus, setFocus] = useState<'first' | 'after'>('first');
   const repMin = targetFor(exerciseId, settings.exerciseTargets, defaultFocus(settings)).repMin;
   const pick = (n: number) => {
     setRange(n);
@@ -54,7 +55,11 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
   const series = overloadSeries(sessions, range || sessions.length, repMin);
   if (series.length < 2) return null;
   const verdict = overloadSeries(sessions, 11, repMin);
-  const { state, delta, moreWork, slot, mixed } = overloadState(verdict);
+  const hasBoth = series.some((p) => p.slot === 'fatigued') && series.some((p) => p.slot !== 'fatigued');
+  const result = overloadState(verdict, hasBoth ? (focus === 'after' ? 'fatigued' : 'fresh') : undefined);
+  const { delta, moreWork, slot, mixed } = result;
+  // When you pick an order that has too few sessions, do not quietly judge it from the other order.
+  const state = hasBoth && mixed ? 'new' : result.state;
   const Icon = state === 'up' ? TrendingUp : state === 'down' ? TrendingDown : Minus;
   const label = state === 'up' ? t('Progressing') : state === 'down' ? t('Going backwards') : state === 'flat' ? t('Plateau') : t('Collecting data');
   const change = moreWork ? t('more work') : describeDelta(delta, unit);
@@ -64,7 +69,8 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
       : slot === 'fresh'
         ? t('Compared with sessions where you did it before other work for this muscle.')
         : t('Compared with sessions where you did it after other work for this muscle.');
-  const shown = [...series].slice(-6).reverse();
+  const inFocus = hasBoth ? series.filter((p) => (p.slot === 'fatigued') === (focus === 'after')) : series;
+  const shown = [...inFocus].slice(-6).reverse();
 
   return (
     <div className="card mt">
@@ -78,7 +84,7 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
       <div className="small muted" style={{ margin: '4px 0 8px' }}>
         {t('Based on your best set: the heaviest weight with at least {n} reps, then the most reps. Last 3 sessions against the 8 before.', { n: repMin })}{' '}
         {where}
-        {mixed && ` ${t('Too few sessions in the same position, so all sessions are compared.')}`}
+        {mixed && ` ${hasBoth ? t('Too few sessions in this order to judge yet.') : t('Too few sessions in the same position, so all sessions are compared.')}`}
       </div>
       <div className="chips" style={{ marginBottom: 8 }}>
         {RANGES.map((n) => (
@@ -87,7 +93,7 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
           </button>
         ))}
       </div>
-      <div style={{ height: 150 }}>
+      <div style={{ height: 150, cursor: hasBoth ? 'pointer' : undefined }} onClick={() => hasBoth && setFocus((f) => (f === 'first' ? 'after' : 'first'))} role={hasBoth ? 'button' : undefined} aria-label={hasBoth ? t('Tap to switch between sessions done first and after other work') : undefined}>
         <ResponsiveContainer>
           <LineChart
             data={series.map((p) => {
@@ -104,22 +110,15 @@ export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; e
               contentStyle={{ background: 'var(--card-2)', border: 'none', borderRadius: 8 }}
               formatter={(v, name, item) => [`${v} ${unit} × ${(item.payload as { reps: number }).reps}`, name === 'after' ? t('After other work') : t('Best set')]}
             />
-            {view !== 'after' && <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={2} dot={series.length <= 24} connectNulls />}
-            {view !== 'first' && <Line type="stepAfter" dataKey="after" stroke="var(--muted)" strokeWidth={2} strokeDasharray="4 3" dot={series.length <= 24} connectNulls />}
+            <Line type="stepAfter" dataKey="first" stroke="var(--accent)" strokeWidth={!hasBoth || focus === 'first' ? 2.5 : 1.5} strokeOpacity={!hasBoth || focus === 'first' ? 1 : 0.25} dot={series.length <= 24 && (!hasBoth || focus === 'first')} connectNulls />
+            <Line type="stepAfter" dataKey="after" stroke={focus === 'after' ? 'var(--accent)' : 'var(--muted)'} strokeWidth={focus === 'after' ? 2.5 : 1.5} strokeOpacity={focus === 'after' ? 1 : 0.25} strokeDasharray="4 3" dot={series.length <= 24 && focus === 'after'} connectNulls />
           </LineChart>
         </ResponsiveContainer>
       </div>
-      {series.some((p) => p.slot === 'fatigued') && (
-        <div className="chips" style={{ margin: '8px 0' }}>
-          <button className={`chip ${view === 'both' ? 'on' : ''}`} onClick={() => setView('both')}>
-            {t('Both')}
-          </button>
-          <button className={`chip ${view === 'first' ? 'on' : ''}`} onClick={() => setView('first')}>
-            <span className="accent">━</span> {t('Done first')}
-          </button>
-          <button className={`chip ${view === 'after' ? 'on' : ''}`} onClick={() => setView('after')}>
-            <span>┅</span> {t('After other work')}
-          </button>
+      {hasBoth && (
+        <div className="tiny muted" style={{ margin: '6px 0' }}>
+          <span className={focus === 'first' ? 'accent bold' : ''}>━ {t('Done first')}</span> ·{' '}
+          <span className={focus === 'after' ? 'accent bold' : ''}>┅ {t('After other work for the muscle')}</span> · {t('tap the chart to switch')}
         </div>
       )}
       {shown.map((p, i) => {
