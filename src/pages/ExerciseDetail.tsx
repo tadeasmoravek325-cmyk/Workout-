@@ -18,7 +18,7 @@ import { PlayCircle } from 'lucide-react';
 import { t, tn } from '../i18n';
 import type { Exercise } from '../types';
 
-type Tab = 'about' | 'history' | 'charts' | 'records';
+type Tab = 'about' | 'history' | 'charts' | 'records' | 'target';
 type Metric = 'e1rm' | 'weight' | 'volume' | 'reps' | 'duration' | 'distance';
 type Range = '3m' | '6m' | '1y' | 'all';
 
@@ -110,6 +110,7 @@ export default function ExerciseDetail() {
     { value: 'charts', label: t('Charts') },
     { value: 'history', label: t('History') },
     { value: 'records', label: t('PRs') },
+    ...(ex.type === 'weight_reps' ? [{ value: 'target' as Tab, label: t('Target') }] : []),
     { value: 'about', label: t('About') },
   ];
 
@@ -324,11 +325,16 @@ export default function ExerciseDetail() {
         </div>
       )}
 
+      {tab === 'target' && ex.type === 'weight_reps' && (
+        <div className="mt-l">
+          <TargetEditor ex={ex} />
+        </div>
+      )}
+
       {tab === 'about' && (() => {
         const load = muscleLoad(ex);
         return (
         <div className="mt-l stack">
-          {ex.type === 'weight_reps' && <TargetEditor ex={ex} />}
           <a className="btn primary block" href={youtubeSearchUrl(ex)} target="_blank" rel="noreferrer">
             <PlayCircle size={18} /> {t('Watch how to do it')}
           </a>
