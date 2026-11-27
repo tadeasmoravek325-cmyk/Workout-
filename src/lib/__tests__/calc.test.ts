@@ -179,10 +179,44 @@ describe('suggestNext (smart coach)', () => {
     expect(suggestNext(bench, hist)?.kind).not.toBe('deload');
   });
 
-  it('adds a rep for reps-only exercises', () => {
+  it('builds reps on bodyweight exercises, then says to make it harder', () => {
     const pushUp = exMap.get('push-up')!;
-    const s = suggestNext(pushUp, exerciseHistory([workout(1, 'push-up', [{ id: 'x', type: 'normal', reps: 20, done: true }])], 'push-up'));
-    expect(s?.reps).toBe(21);
+    const rep = (n: number) => ({ id: String(Math.random()), type: 'normal', reps: n, done: true }) as WorkoutSet;
+    const target = { repMin: 8, repMax: 15, sets: 3, rir: 2 };
+    const mid = suggestNext(pushUp, exerciseHistory([workout(1, 'push-up', [rep(12), rep(11), rep(10)])], 'push-up'), undefined, Date.now(), target);
+    expect(mid?.weight).toBeUndefined();
+    expect(mid?.setReps).toEqual([13, 12, 11]);
+    const top = suggestNext(pushUp, exerciseHistory([workout(1, 'push-up', [rep(15), rep(15), rep(16)])], 'push-up'), undefined, Date.now(), target);
+    expect(top?.kind).toBe('increase');
+    expect(top?.reason).toMatch(/harder/);
+  });
+
+  it('progresses weighted bodyweight lifts even with no added weight', () => {
+    const backExt = exMap.get('back-extension')!;
+    const target = { repMin: 8, repMax: 12, sets: 3, rir: 2 };
+    const h = exerciseHistory([workout(1, 'back-extension', [set(0, 12), set(0, 12), set(0, 12)])], 'back-extension');
+    const s = suggestNext(backExt, h, undefined, Date.now(), target);
+    expect(s?.kind).toBe('increase');
+    expect(s?.weight).toBe(2.5);
+  });
+
+  it('asks for less assistance when assisted reps reach the top', () => {
+    const assisted = exMap.get('assisted-pull-up')!;
+    const target = { repMin: 6, repMax: 10, sets: 3, rir: 2 };
+    const h = exerciseHistory([workout(1, 'assisted-pull-up', [set(30, 10), set(30, 10), set(30, 10)])], 'assisted-pull-up');
+    const s = suggestNext(assisted, h, undefined, Date.now(), target);
+    expect(s?.kind).toBe('increase');
+    expect(s?.weight).toBe(27.5);
+  });
+
+  it('builds hold times in seconds', () => {
+    const plank = exMap.get('plank')!;
+    const hold = (sec: number) => ({ id: String(Math.random()), type: 'normal', durationSec: sec, done: true }) as WorkoutSet;
+    const target = { repMin: 30, repMax: 60, sets: 3, increment: 5 };
+    const s = suggestNext(plank, exerciseHistory([workout(1, 'plank', [hold(40), hold(40), hold(35)])], 'plank'), undefined, Date.now(), target);
+    expect(s?.durationSec).toBe(45);
+    const top = suggestNext(plank, exerciseHistory([workout(1, 'plank', [hold(60), hold(60), hold(60)])], 'plank'), undefined, Date.now(), target);
+    expect(top?.reason).toMatch(/harder/);
   });
 
   it('returns null without history', () => expect(suggestNext(bench, [])).toBeNull());

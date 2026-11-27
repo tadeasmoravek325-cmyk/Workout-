@@ -8,8 +8,8 @@ export type OverloadState = 'up' | 'flat' | 'down' | 'new';
 export type OverloadPoint = TrendPoint;
 
 /** Oldest first, the last `n` sessions. `repMin` is the bottom of the exercise's rep range. */
-export function overloadSeries(sessions: Session[], n = 11, repMin = 1): OverloadPoint[] {
-  return trendPoints(sessions.slice(0, n), repMin).reverse();
+export function overloadSeries(sessions: Session[], n = 11, repMin = 1, zeroWeight = false): OverloadPoint[] {
+  return trendPoints(sessions.slice(0, n), repMin, { zeroWeight }).reverse();
 }
 
 const asTrend = (series: OverloadPoint[]): TrendPoint[] => [...series].reverse();

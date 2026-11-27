@@ -68,6 +68,13 @@ The engine looks at the most recent session in the same position as today's work
 
 Technique is not recorded in the app, so it cannot be part of the rule.
 
+**Other exercise types** (every type except distance and cardio has a Target tab):
+- **Weighted bodyweight** (pull-up, dip, back extension): the same rules, the weight is the added load and may be zero. Reaching the top with no added weight advises adding the increment.
+- **Reps only** (push-up, crunch, sit-up): the same rules without a load. At the top of the range on every set the advice is to make it harder (add weight or a harder variation) and start the range again; below the minimum twice in a row it advises an easier variation. No start weight or increment.
+- **Assisted** (assisted pull-up): the weight is the assistance. Reaching the top asks for less assistance (the assistance step is the increment); falling below the minimum twice in a row asks for more.
+- **Holds** (plank): the range is in seconds (default 30–60) with a step (default 5 s). Each set aims a step higher than last time, capped at the top; at the top of every set the advice is to make it harder.
+- The trend (stagnation, decline) is not applied to assisted lifts; the other rules apply to all of them.
+
 Overlays that turn an increase into "repeat the weight at the top of the range" are described under "Suggestion for the next workout". **RIR** is `10 − RPE` when RPE was logged; missing RIR is never guessed and lowers confidence and adds a warning. **Confidence:** one point for 5 or more sessions, one for a logged RIR; 2 points high, 1 medium, 0 low (one level lower when there is no session in the same position).
 
 **During the workout** (`core/progress/live.ts`) each finished working set is judged against the range (below, inside, top; reserve against the target; failure) and the exercise as a whole gets one sentence: a set below the minimum, a set to failure, top of the range on every set with the target reserve ("add weight next time"), or how many sets are left. Reps below the minimum are shown in red and reps at the top in the accent colour. Nothing is written; the suggested reps for each set are placeholders you can apply.

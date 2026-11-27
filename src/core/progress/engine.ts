@@ -97,7 +97,8 @@ export function topWork(s: Session, repMin = 1): TopWork | null {
 }
 
 const MIN_SESSIONS = 1;
-const fmtBest = (b: BestSet) => `${b.weight} kg × ${b.reps}`;
+const REP_TYPES = ['weight_reps', 'weighted_bodyweight', 'assisted_bodyweight', 'reps_only'];
+const fmtBest = (b: BestSet) => (b.weight > 0 ? `${b.weight} kg × ${b.reps}` : `${b.reps} reps`);
 
 /**
  * Evaluates one weighted exercise. Only `weight_reps` style lifts are supported; others return `insufficient`.
@@ -106,10 +107,14 @@ const fmtBest = (b: BestSet) => `${b.weight} kg × ${b.reps}`;
  */
 export function evaluateExercise(ex: Exercise, sessions: Session[], target: ExerciseTarget, ctx: { priorSets?: number } = {}): ProgressAdvice {
   const base: ProgressAdvice = { state: 'insufficient', confidence: 'low', reasons: [], warnings: [], sessionsUsed: 0 };
-  if (ex.type !== 'weight_reps') return { ...base, reasons: [t('Progression advice covers weight and reps exercises.')] };
+  if (!REP_TYPES.includes(ex.type)) return { ...base, reasons: [t('Progression advice covers exercises counted in reps.')] };
+  // Bodyweight lifts can have no added weight; assisted lifts progress by needing less help.
+  const zeroOk = ex.type !== 'weight_reps';
+  const assisted = ex.type === 'assisted_bodyweight';
+  const repsOnly = ex.type === 'reps_only';
 
   const slot = slotOf(ctx.priorSets);
-  const all = sessions.map((s) => ({ s, top: topWork(s, target.repMin) })).filter((x): x is { s: Session; top: TopWork } => x.top !== null && x.top.weight > 0);
+  const all = sessions.map((s) => ({ s, top: topWork(s, target.repMin) })).filter((x): x is { s: Session; top: TopWork } => x.top !== null && (x.top.weight > 0 || zeroOk));
   let pool = all;
   let mixed = false;
   if (slot) {
@@ -126,6 +131,8 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   const hasRir = last.rirs.length > 0;
   const targetRir = target.rir ?? 2;
   const inc = target.increment ?? weightIncrement(ex);
+  // Reps-only lifts have no load to name.
+  const W = (w: number) => (repsOnly ? t('the same load') : `${w} kg`);
   let confidence = confidenceOf(tops.length, hasRir);
   if (mixed) confidence = confidence === 'high' ? 'medium' : 'low';
   const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence };
@@ -142,17 +149,18 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   const keep = (): number[] => perSet((r) => r);
   const plus = (): number[] => perSet((r) => Math.min(target.repMax, Math.max(target.repMin, r + 1)));
   const asText = (a: number[]) => a.join(' / ');
-  const answer = (state: ProgressState, weight: number, setReps: number[], reasons: string[], extra: Partial<ProgressAdvice> = {}): ProgressAdvice => ({
+  const answer = (state: ProgressState, weight: number | undefined, setReps: number[], reasons: string[], extra: Partial<ProgressAdvice> = {}): ProgressAdvice => ({
     ...out,
     state,
-    weight,
+    weight: repsOnly ? undefined : weight,
     reps: setReps[0],
     setReps,
     reasons,
     ...extra,
   });
 
-  const trend = analyzeTrend(trendPoints(sessions, target.repMin), { slot });
+  // Assisted lifts get better with a lower number, which the trend does not model, so they are judged set by set only.
+  const trend = assisted ? analyzeTrend([]) : analyzeTrend(trendPoints(sessions, target.repMin, { zeroWeight: zeroOk }), { slot });
   const where =
     trend.mixed || !trend.slot
       ? ''
@@ -184,7 +192,7 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   if (failures >= 2) {
     warnings.push(t('High training intensity: {n} of your last {m} sessions went to failure.', { n: failures, m: Math.min(3, tops.length) }));
     return answer('hold', last.weight, keep(), [
-      t('You reached failure in {n} of the last {m} sessions. Keep {w} kg for now and stop one or two reps short of failure.', { n: failures, m: Math.min(3, tops.length), w: last.weight }),
+      t('You reached failure in {n} of the last {m} sessions. Keep {w} for now and stop one or two reps short of failure.', { n: failures, m: Math.min(3, tops.length), w: W(last.weight) }),
       t('Check recovery first: sleep, food, and how hard the other workouts for this muscle were.'),
     ], { intensityHigh: true });
   }
@@ -192,8 +200,17 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   // Situation C: below the minimum reps, or a clear drop since last time. Never raised automatically.
   const lowNow = weakest < target.repMin;
   const lowBefore = !!prev && prev.weight === last.weight && Math.min(...prev.reps) < target.repMin;
+  if (lowNow && lowBefore && repsOnly) {
+    // No load to lower: use an easier variation, then build back up.
+    const reps = perSet(() => Math.min(target.repMax, target.repMin + 1));
+    return answer('reduce', undefined, reps, [
+      t('Below {min} reps in two sessions in a row. Use an easier variation or an assisted version and aim for {reps}.', { min: target.repMin, reps: asText(reps) }),
+      t('Possible fatigue or too hard for now. Check sleep and recovery.'),
+    ], { fatigue: true });
+  }
   if (lowNow && lowBefore) {
-    const lighter = Math.max(0, last.weight - inc);
+    // Lighter load; for assisted lifts that means more help.
+    const lighter = assisted ? last.weight + inc : Math.max(0, last.weight - inc);
     const reps = perSet(() => Math.min(target.repMax, target.repMin + 1));
     return answer('reduce', lighter, reps, [
       t('Below {min} reps at {w} kg in two sessions in a row. Try {lighter} kg and aim for {reps}.', { min: target.repMin, w: last.weight, lighter, reps: asText(reps) }),
@@ -206,8 +223,8 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
     if (dropped) warnings.push(t('Total reps fell clearly since last time. Possible fatigue.'));
     return answer('hold', last.weight, reps, [
       lowNow
-        ? t('Weakest set was {n} reps, below the {min} rep target. Stay at {w} kg and aim for {reps}.', { n: weakest, min: target.repMin, w: last.weight, reps: asText(reps) })
-        : t('Reps dropped clearly since last time. Stay at {w} kg and aim for {reps}.', { w: last.weight, reps: asText(reps) }),
+        ? t('Weakest set was {n} reps, below the {min} rep target. Stay at {w} and aim for {reps}.', { n: weakest, min: target.repMin, w: W(last.weight), reps: asText(reps) })
+        : t('Reps dropped clearly since last time. Stay at {w} and aim for {reps}.', { w: W(last.weight), reps: asText(reps) }),
     ], { fatigue: true });
   }
 
@@ -215,13 +232,25 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   if (topReached) {
     if (minRir !== undefined && minRir < targetRir) {
       return answer('hold', last.weight, keep(), [
-        t('All sets reached {n} reps, but with less in reserve than your target (RIR {r}, target {target}). Repeat {w} kg and finish with the target reserve before adding weight.', { n: target.repMax, r: minRir, target: targetRir, w: last.weight }),
+        t('All sets reached {n} reps, but with less in reserve than your target (RIR {r}, target {target}). Repeat {w} and finish with the target reserve before adding weight.', { n: target.repMax, r: minRir, target: targetRir, w: W(last.weight) }),
       ]);
     }
     // Three or more reps beyond the target reserve: the weight was easy, take a double step.
     const easy = minRir !== undefined && minRir >= Math.max(3, targetRir + 1);
     const step = inc * (easy ? 2 : 1);
     const range: [number, number] = [target.repMin, Math.min(target.repMax, target.repMin + 2)];
+    if (repsOnly) {
+      // No load to add: make it harder yourself (weight, a slower tempo, a harder variation) and start the range again.
+      return answer('ready', undefined, perSet(() => range[0]), [
+        t('All {sets} sets reached {n} reps. Make it harder (add weight or a harder variation) and aim for {a}–{b} reps.', { sets: last.reps.length, n: target.repMax, a: range[0], b: range[1] }),
+      ], { nextRange: range });
+    }
+    if (assisted) {
+      const less = Math.max(0, last.weight - step);
+      return answer('ready', less, perSet(() => range[0]), [
+        t('All {sets} sets reached {n} reps with {w} kg of assistance. Use {less} kg and aim for {a}–{b} reps.', { sets: last.reps.length, n: target.repMax, w: last.weight, less, a: range[0], b: range[1] }),
+      ], { nextRange: range });
+    }
     return answer('ready', last.weight + step, perSet(() => range[0]), [
       t('All {sets} sets reached {n} reps at {w} kg{rir}. Add {inc} kg and aim for {a}–{b} reps.', {
         sets: last.reps.length,
@@ -237,5 +266,5 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
 
   // Situation A: not at the top on every set. Same weight, one more rep on each set.
   const reps = plus();
-  return answer('building', last.weight, reps, [t('Stay at {w} kg and aim for {reps}. Add weight once every set reaches {max}.', { w: last.weight, reps: asText(reps), max: target.repMax })]);
+  return answer('building', last.weight, reps, [t('Stay at {w} and aim for {reps}. Add {what} once every set reaches {max}.', { w: W(last.weight), what: repsOnly ? t('difficulty') : t('weight'), reps: asText(reps), max: target.repMax })]);
 }

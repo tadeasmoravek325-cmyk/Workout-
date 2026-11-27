@@ -53,9 +53,10 @@ export function OverloadPanel({ sessions, ex }: { sessions: Session[]; ex: Exerc
       /* storage unavailable */
     }
   };
-  const series = overloadSeries(sessions, range || sessions.length, repMin);
+  const zero = ex.type === 'weighted_bodyweight';
+  const series = overloadSeries(sessions, range || sessions.length, repMin, zero);
   if (series.length < 2) return null;
-  const verdict = overloadSeries(sessions, 11, repMin);
+  const verdict = overloadSeries(sessions, 11, repMin, zero);
   const hasBoth = series.some((p) => p.slot === 'fatigued') && series.some((p) => p.slot !== 'fatigued');
   const result = overloadState(verdict, hasBoth ? (focus === 'after' ? 'fatigued' : 'fresh') : undefined);
   const { delta, moreWork, mixed } = result;

@@ -78,3 +78,21 @@ describe('targetForExercise', () => {
     expect([t.repMin, t.repMax, t.sets]).toEqual([5, 7, 5]);
   });
 });
+
+describe('ranges for bodyweight and timed exercises', () => {
+  const anyEx = (id: string) => BUILTIN_EXERCISES.find((e) => e.id === id)!;
+  it('gives every rep-based type a target', () => {
+    for (const id of ['push-up', 'back-extension', 'assisted-pull-up', 'plank']) {
+      const t = targetForExercise(anyEx(id), { goal: 'muscle' });
+      expect(t.repMin).toBeGreaterThan(0);
+      expect(t.repMax).toBeGreaterThan(t.repMin);
+    }
+  });
+  it('uses seconds for holds and no cut shift for reps-only exercises', () => {
+    const plank = targetForExercise(anyEx('plank'), { goal: 'muscle' });
+    expect([plank.repMin, plank.repMax, plank.increment]).toEqual([30, 60, 5]);
+    const bulk = targetForExercise(anyEx('push-up'), { goal: 'muscle', phase: 'bulk' });
+    const cut = targetForExercise(anyEx('push-up'), { goal: 'muscle', phase: 'cut' });
+    expect([cut.repMin, cut.repMax]).toEqual([bulk.repMin, bulk.repMax]);
+  });
+});

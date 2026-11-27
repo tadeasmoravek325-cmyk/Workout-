@@ -73,16 +73,27 @@ export interface RangeSuggestion {
   reason: string;
 }
 
+/** Rep ranges for bodyweight exercises without added load. */
+const BODYWEIGHT_REPS: Record<Focus, [number, number]> = { strength: [6, 10], both: [8, 15], hypertrophy: [10, 20] };
+
 export function suggestTarget(ex: Exercise, ctx: { focus: Focus; phase?: Phase; plannedSets?: number }): RangeSuggestion {
   const phase: Phase = ctx.phase ?? 'maintain';
   const kind = exerciseKind(ex);
+  const sets = ctx.plannedSets && ctx.plannedSets > 0 ? ctx.plannedSets : DEFAULT_TARGETS[ctx.focus].sets;
+  // Time-based holds (plank): a range in seconds, built up in small steps.
+  if (ex.type === 'duration') {
+    return { target: { repMin: 30, repMax: 60, sets, increment: 5, focus: ctx.focus }, kind, reason: 'Holds: build the time in small steps.' };
+  }
+  // Without added load there is no weight to keep when cutting, so the range stays the same in every body goal.
+  if (ex.type === 'reps_only') {
+    const [lo, hi] = BODYWEIGHT_REPS[ctx.focus];
+    return { target: { repMin: lo, repMax: hi, sets, rir: 2, focus: ctx.focus }, kind, reason: 'Bodyweight: add reps, then make it harder.' };
+  }
   let [lo, hi] = BASE[ctx.focus][kind];
   if (phase === 'cut') {
     lo = Math.max(MIN_REPS, lo - CUT_SHIFT);
     hi = Math.max(lo + 2, hi - CUT_SHIFT);
   }
-  // Number of sets follows the user's own plan when there is one; otherwise the usual default.
-  const sets = ctx.plannedSets && ctx.plannedSets > 0 ? ctx.plannedSets : DEFAULT_TARGETS[ctx.focus].sets;
   // Close to failure either way; a little further from it on heavy barbell lifts and when cutting (recovery).
   const rir = phase === 'bulk' && kind !== 'heavy' ? 1 : 2;
   const why: Record<Phase, string> = {

@@ -1,6 +1,6 @@
 import type { Exercise, ExerciseTarget, Focus, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
 import { muscleLoad } from '../data/exercises';
-import { t, tn } from '../i18n';
+import { t } from '../i18n';
 export * from '../core/metrics';
 export * from '../core/history';
 export * from '../core/records';
@@ -226,11 +226,27 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue,
   return s;
 }
 
+function fromEngine(ex: Exercise, history: Session[], target: ExerciseTarget, priorSets: number | undefined, top?: number): Suggestion | null {
+  const a = evaluateExercise(ex, history, target, { priorSets });
+  if (a.state === 'insufficient') return null;
+  const advice = { state: a.state, confidence: a.confidence, warnings: a.warnings, sessionsUsed: a.sessionsUsed, intensityHigh: a.intensityHigh, fatigue: a.fatigue };
+  return {
+    kind: a.state === 'ready' ? 'increase' : a.state === 'reduce' ? 'deload' : 'repeat',
+    weight: a.weight,
+    reps: a.reps,
+    setReps: a.setReps,
+    nextRange: a.nextRange,
+    from: a.state === 'ready' ? top : undefined,
+    reason: a.reasons[0] ?? '',
+    advice,
+  };
+}
+
 function baseSuggestion(ex: Exercise, history: Session[], now: number, target: ExerciseTarget, priorSets?: number): Suggestion | null {
   const last = history[0];
   if (!last) {
     // Nothing done yet: use the starting weight you set for this exercise, if any.
-    if (ex.type === 'weight_reps' && target.startWeight) {
+    if ((ex.type === 'weight_reps' || ex.type === 'weighted_bodyweight' || ex.type === 'assisted_bodyweight') && target.startWeight) {
       return { kind: 'start', weight: target.startWeight, reps: target.repMin, setReps: Array.from({ length: target.sets }, () => target.repMin), reason: t('Your starting weight. Aim for {a}–{b} reps on each set.', { a: target.repMin, b: Math.min(target.repMax, target.repMin + 2) }) };
     }
     return null;
@@ -238,13 +254,18 @@ function baseSuggestion(ex: Exercise, history: Session[], now: number, target: E
   const working = last.sets.filter(isWorkingSet);
   if (!working.length) return null;
 
-  if (ex.type === 'reps_only') {
-    const best = Math.max(...working.map((s) => s.reps ?? 0));
-    return { kind: 'increase', reps: best + 1, reason: tn(best, 'Last time you hit {n} rep. Go for one more.', 'Last time you hit {n} reps. Go for one more.') };
-  }
+  // Bodyweight reps and assisted lifts: double progression without a load to add (or with less help).
+  if (ex.type === 'reps_only' || ex.type === 'assisted_bodyweight') return fromEngine(ex, history, target, priorSets);
   if (ex.type === 'duration') {
-    const best = Math.max(...working.map((s) => s.durationSec ?? 0));
-    return { kind: 'increase', durationSec: best + 5, reason: t('Add 5 seconds to your best set.') };
+    // Holds: the range is in seconds. Each set aims for a few seconds more than last time, up to the top.
+    const inc = target.increment ?? 5;
+    const secs = working.map((s) => s.durationSec ?? 0).filter((x) => x > 0);
+    if (!secs.length) return null;
+    if (secs.length >= target.sets && secs.every((x) => x >= target.repMax)) {
+      return { kind: 'repeat', durationSec: target.repMax, reason: t('Every set reached {n} s. Make it harder (a variation or added load), then start again from {min} s.', { n: target.repMax, min: target.repMin }) };
+    }
+    const next = secs.map((x) => Math.min(target.repMax, Math.max(target.repMin, x + inc)));
+    return { kind: 'increase', durationSec: next[0], reason: t('Aim for {reps} seconds on each set.', { reps: next.join(' / ') }) };
   }
   if (ex.type === 'distance_duration') return null;
 
@@ -266,13 +287,6 @@ function baseSuggestion(ex: Exercise, history: Session[], now: number, target: E
     return { kind: 'repeat', weight: top, reps: firstReps, reason: t('{n} weeks since you last did this. Repeat the weight before adding more.', { n: Math.round(daysOff / 7) }) };
   }
 
-  if (ex.type === 'assisted_bodyweight') {
-    if (held && !hardRpe) {
-      return { kind: 'increase', weight: Math.max(0, top - inc), reps: firstReps, reason: t('You nailed every set. Use less assistance.') };
-    }
-    return { kind: 'repeat', weight: top, reps: firstReps, reason: t('Keep the same assistance and match your reps.') };
-  }
-
   // Stalled or sliding: the shared trend definition decides, so this agrees with the progress panel and the engine.
   const trend = analyzeTrend(trendPoints(history, target.repMin), { slot: slotOf(priorSets) }).state;
   if ((trend === 'stagnation' || trend === 'decline') && !held) {
@@ -285,21 +299,9 @@ function baseSuggestion(ex: Exercise, history: Session[], now: number, target: E
   }
 
   // Weighted lifts follow double progression inside the user's rep range (the progression engine).
-  if (ex.type === 'weight_reps') {
-    const a = evaluateExercise(ex, history, target, { priorSets });
-    if (a.state !== 'insufficient' && a.weight !== undefined) {
-      const advice = { state: a.state, confidence: a.confidence, warnings: a.warnings, sessionsUsed: a.sessionsUsed, intensityHigh: a.intensityHigh, fatigue: a.fatigue };
-      return {
-        kind: a.state === 'ready' ? 'increase' : a.state === 'reduce' ? 'deload' : 'repeat',
-        weight: a.weight,
-        reps: a.reps,
-        setReps: a.setReps,
-        nextRange: a.nextRange,
-        from: a.state === 'ready' ? top : undefined,
-        reason: a.reasons[0] ?? '',
-        advice,
-      };
-    }
+  if (ex.type === 'weight_reps' || ex.type === 'weighted_bodyweight') {
+    const a = fromEngine(ex, history, target, priorSets, top);
+    if (a) return a;
   }
 
   if (held && !hardRpe) {

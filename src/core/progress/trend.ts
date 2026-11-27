@@ -80,10 +80,10 @@ export interface Trend {
  * Session points, newest first. `repMin` is the bottom of the target rep range: a set only counts as the best
  * set when it reached it (a heavy single is not "the working set" of a 8 to 12 rep exercise).
  */
-export function trendPoints(sessions: Session[], repMin = 1): TrendPoint[] {
+export function trendPoints(sessions: Session[], repMin = 1, opts: { zeroWeight?: boolean } = {}): TrendPoint[] {
   const out: TrendPoint[] = [];
   for (const s of sessions) {
-    const work = s.sets.filter((x) => isLoggedWorkingSet(x) && (x.reps ?? 0) > 0 && (x.weight ?? 0) > 0);
+    const work = s.sets.filter((x) => isLoggedWorkingSet(x) && (x.reps ?? 0) > 0 && ((x.weight ?? 0) > 0 || opts.zeroWeight));
     if (!work.length) continue;
     const inRange = work.filter((x) => (x.reps ?? 0) >= repMin);
     const pool = inRange.length ? inRange : work;

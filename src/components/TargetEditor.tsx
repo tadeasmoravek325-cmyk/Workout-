@@ -16,6 +16,9 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
   const custom = settings.exerciseTargets?.[ex.id];
   const eff = targetForExercise(ex, settings);
   const defaultInc = weightIncrement(ex);
+  const isTime = ex.type === 'duration';
+  const hasLoad = ex.type === 'weight_reps' || ex.type === 'weighted_bodyweight' || ex.type === 'assisted_bodyweight';
+  const assisted = ex.type === 'assisted_bodyweight';
 
   const save = (patch: Partial<ExerciseTarget>) => {
     const next: ExerciseTarget = { ...eff, ...patch };
@@ -62,14 +65,17 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
       </div>
       <div className="row" style={{ gap: 8 }}>
         {num(t('Sets'), eff.sets, 1, 10, (v) => save({ sets: v }))}
-        {num(t('Min reps'), eff.repMin, 1, 30, (v) => save({ repMin: v }))}
-        {num(t('Max reps'), eff.repMax, 1, 40, (v) => save({ repMax: v }))}
-        {num(t('Target RIR'), eff.rir ?? 2, 0, 5, (v) => save({ rir: v }))}
+        {num(isTime ? t('Min (s)') : t('Min reps'), eff.repMin, 1, isTime ? 600 : 30, (v) => save({ repMin: v }))}
+        {num(isTime ? t('Max (s)') : t('Max reps'), eff.repMax, 1, isTime ? 1800 : 40, (v) => save({ repMax: v }))}
+        {!isTime && num(t('Target RIR'), eff.rir ?? 2, 0, 5, (v) => save({ rir: v }))}
+        {isTime && num(t('Step (s)'), eff.increment ?? 5, 1, 60, (v) => save({ increment: v }))}
       </div>
-      <div className="row" style={{ gap: 8, marginTop: 8 }}>
-        {kg(`${t('Start weight')} (${unit})`, eff.startWeight, undefined, (v) => save({ startWeight: v }))}
-        {kg(`${t('Increment')} (${unit})`, eff.increment, defaultInc, (v) => save({ increment: v }))}
-      </div>
+      {hasLoad && (
+        <div className="row" style={{ gap: 8, marginTop: 8 }}>
+          {kg(`${assisted ? t('Start assistance') : ex.type === 'weighted_bodyweight' ? t('Added weight') : t('Start weight')} (${unit})`, eff.startWeight, undefined, (v) => save({ startWeight: v }))}
+          {kg(`${assisted ? t('Assistance step') : t('Increment')} (${unit})`, eff.increment, defaultInc, (v) => save({ increment: v }))}
+        </div>
+      )}
       {custom && (
         <button className="btn ghost sm" style={{ marginTop: 8 }} onClick={reset}>
           {t('Use training focus')}

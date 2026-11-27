@@ -110,7 +110,7 @@ export default function ExerciseDetail() {
     { value: 'charts', label: t('Charts') },
     { value: 'history', label: t('History') },
     { value: 'records', label: t('PRs') },
-    ...(ex.type === 'weight_reps' ? [{ value: 'target' as Tab, label: t('Target') }] : []),
+    ...(ex.type !== 'distance_duration' ? [{ value: 'target' as Tab, label: t('Target') }] : []),
     { value: 'about', label: t('About') },
   ];
 
@@ -163,7 +163,7 @@ export default function ExerciseDetail() {
 
       {tab === 'charts' && (
         <div className="mt-l">
-          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} ex={ex} />}
+          {(ex.type === 'weight_reps' || ex.type === 'weighted_bodyweight') && <OverloadPanel sessions={sessions} ex={ex} />}
           {metrics.length > 1 && (
             <div className="chips">
               {metrics.map((m) => (
@@ -325,7 +325,7 @@ export default function ExerciseDetail() {
         </div>
       )}
 
-      {tab === 'target' && ex.type === 'weight_reps' && (
+      {tab === 'target' && ex.type !== 'distance_duration' && (
         <div className="mt-l">
           <TargetEditor ex={ex} />
         </div>
