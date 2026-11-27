@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useStore } from '../store/store';
 import { KIND_LABEL, exerciseKind, profileFor, targetForExercise } from '../core/progress/ranges';
 import { weightIncrement } from '../core/progress/increment';
@@ -32,12 +33,9 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
     void _drop;
     update({ exerciseTargets: rest });
   };
-  const num = (label: string, value: number, min: number, max: number, on: (v: number) => void) => (
-    <label className="stack" style={{ gap: 4, flex: 1 }}>
-      <span className="tiny muted">{label}</span>
-      <input type="number" inputMode="numeric" min={min} max={max} value={value} onChange={(e) => on(Math.max(min, Math.min(max, Number(e.target.value) || min)))} />
-    </label>
-  );
+  // Whole-number fields keep what you type while you type, so they can be emptied and retyped. A value is only saved
+  // when it is usable (at least `min`, no upper limit); leaving the field shows the saved value again.
+  const num = (label: string, value: number, min: number, on: (v: number) => void) => <NumField label={label} value={value} min={min} on={on} />;
   const kg = (label: string, valueKg: number | undefined, placeholderKg: number | undefined, on: (kg: number | undefined) => void) => (
     <label className="stack" style={{ gap: 4, flex: 1 }}>
       <span className="tiny muted">{label}</span>
@@ -65,11 +63,11 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
         {custom ? t('Your own range. The coach adds weight once every set reaches the top of it.') : `${profileFor(ex)?.why ?? t('Recommended from your training focus, body goal and this exercise.')} ${t('It is a guide: going a rep or two outside it is fine. Change a value to set your own.')}`}
       </div>
       <div className="row" style={{ gap: 8 }}>
-        {num(t('Sets'), eff.sets, 1, 10, (v) => save({ sets: v }))}
-        {num(isTime ? t('Min (s)') : t('Min reps'), eff.repMin, 1, isTime ? 600 : 30, (v) => save({ repMin: v }))}
-        {num(isTime ? t('Max (s)') : t('Max reps'), eff.repMax, 1, isTime ? 1800 : 40, (v) => save({ repMax: v }))}
-        {!isTime && num(t('Target RIR'), eff.rir ?? 2, 0, 5, (v) => save({ rir: v }))}
-        {isTime && num(t('Step (s)'), eff.increment ?? 5, 1, 60, (v) => save({ increment: v }))}
+        {num(t('Sets'), eff.sets, 1, (v) => save({ sets: v }))}
+        {num(isTime ? t('Min (s)') : t('Min reps'), eff.repMin, 1, (v) => save({ repMin: v }))}
+        {num(isTime ? t('Max (s)') : t('Max reps'), eff.repMax, 1, (v) => save({ repMax: v }))}
+        {!isTime && num(t('Target RIR'), eff.rir ?? 2, 0, (v) => save({ rir: v }))}
+        {isTime && num(t('Step (s)'), eff.increment ?? 5, 1, (v) => save({ increment: v }))}
       </div>
       {hasLoad && (
         <div className="row" style={{ gap: 8, marginTop: 8 }}>
@@ -83,5 +81,28 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
         </button>
       )}
     </div>
+  );
+}
+
+function NumField({ label, value, min, on }: { label: string; value: number; min: number; on: (v: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <label className="stack" style={{ gap: 4, flex: 1 }}>
+      <span className="tiny muted">{label}</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        value={draft ?? String(value)}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => {
+          const raw = e.target.value.replace(/[^0-9]/g, '');
+          setDraft(raw);
+          const v = Number(raw);
+          if (raw !== '' && Number.isFinite(v) && v >= min) on(v);
+        }}
+        onBlur={() => setDraft(null)}
+      />
+    </label>
   );
 }
