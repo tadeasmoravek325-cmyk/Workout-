@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useExerciseMap, useStore } from '../store/store';
-import { defaultFocus, targetFor } from '../core/progress/engine';
-import { suggestTarget } from '../core/progress/ranges';
+import { defaultFocus } from '../core/progress/engine';
+import { suggestTarget, targetForExercise } from '../core/progress/ranges';
 import { confirmDialog, toast } from './ui';
 import type { ExerciseTarget, Phase } from '../types';
 import { t } from '../i18n';
@@ -9,7 +9,8 @@ import { t } from '../i18n';
 const PHASE_LABEL: Record<Phase, string> = { cut: 'Cutting', maintain: 'Maintaining', bulk: 'Bulking' };
 const FOCUS_LABEL = { strength: 'Strength', hypertrophy: 'Muscle', both: 'Both' } as const;
 
-const same = (a: ExerciseTarget, b: ExerciseTarget) => a.repMin === b.repMin && a.repMax === b.repMax && a.sets === b.sets && (a.rir ?? 2) === (b.rir ?? 2);
+// Only the rep range and RIR decide whether a suggestion differs: the number of sets always follows your routine.
+const same = (a: ExerciseTarget, b: ExerciseTarget) => a.repMin === b.repMin && a.repMax === b.repMax && (a.rir ?? 2) === (b.rir ?? 2);
 const fmt = (x: ExerciseTarget) => `${x.repMin}–${x.repMax} reps × ${x.sets}, RIR ${x.rir ?? 2}`;
 
 const SOURCES = [
@@ -51,7 +52,7 @@ export function RangeSuggestions() {
         const ex = exMap.get(id);
         if (!ex || ex.type !== 'weight_reps') return null;
         const sug = suggestTarget(ex, { focus, phase, plannedSets: p.sets });
-        const now = targetFor(id, settings.exerciseTargets, focus);
+        const now = targetForExercise(ex, settings);
         const custom = !!settings.exerciseTargets?.[id];
         const plan = p.reps.length ? `${Math.min(...p.reps)}${Math.max(...p.reps) !== Math.min(...p.reps) ? `–${Math.max(...p.reps)}` : ''}` : null;
         return { id, ex, sug, now, custom, plan, upToDate: same(sug.target, now) };

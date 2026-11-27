@@ -1,4 +1,4 @@
-import type { Exercise, ExerciseTarget, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
+import type { Exercise, ExerciseTarget, Focus, Muscle, Routine, Settings, Workout, WorkoutSet } from '../types';
 import { muscleLoad } from '../data/exercises';
 import { t, tn } from '../i18n';
 export * from '../core/metrics';
@@ -156,6 +156,8 @@ export interface Fatigue {
   session: number;
   /** How many exercises come before this one in the workout (0 = first). */
   position?: number;
+  /** Training focus. Exercise order is only taken into account when strength is a goal. */
+  focus?: Focus;
 }
 
 const FATIGUE_RECENT = 14;
@@ -198,8 +200,9 @@ export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue,
     return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
   }
   // Order effect: strength gains are larger for lifts done early in the session (Nunes et al. 2020; Avelar 2019),
-  // so a compound lift buried late in the workout adds a rep instead of load. Hypertrophy is unaffected by order.
-  if (fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex) && s.weight !== undefined && s.reps !== undefined) {
+  // so a compound lift buried late in the workout adds a rep instead of load. Hypertrophy is unaffected by order,
+  // so with a pure muscle focus the weight is not held back for being late in the workout.
+  if (fatigue.focus !== 'hypertrophy' && fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex) && s.weight !== undefined && s.reps !== undefined) {
     return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps + 1, reason: t('Exercise number {n} of the workout. Keep the weight and add one rep instead of load.', { n: fatigue.position + 1 }) };
   }
   if (fatigue.recent >= FATIGUE_RECENT) {

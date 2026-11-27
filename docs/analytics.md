@@ -53,7 +53,7 @@ Result:
 The change is reported as what really changed, for example "+2.5 kg" or "+1 rep", never as a percentage of an estimate. A single weak session never produces a verdict. A decline is not attributed to overtraining; the advice lists possible factors only. All thresholds are **heuristic**. The estimated 1RM is still shown elsewhere (exercise charts, records) but is not used to judge progress.
 
 ## Double progression (`core/progress/engine.ts`)
-Target per exercise: rep range, number of sets, target RIR. Defaults follow the training focus: strength 3–6 reps × 4, muscle 8–12 × 3, both 5–10 × 3, RIR 2. The default focus comes from the profile goal unless chosen in Settings. A per-exercise target overrides it.
+Target per exercise: rep range, number of sets, target RIR. Unless you set your own, the target is the range that follows your **training focus**, **body goal** and the **kind of exercise** (`targetForExercise`, table in "Rep range suggestions"). Changing the focus or the body goal changes the advice at once. The default focus comes from the profile goal unless chosen in Settings. A per-exercise target you set yourself overrides it.
 
 Looking at the most recent session in the same slot as today's workout (at least 2 such sessions, otherwise all sessions), and its sets at the heaviest weight that reached the bottom of the rep range:
 1. Needs at least 2 sessions, otherwise "insufficient".
@@ -95,15 +95,15 @@ Order of checks for a weight-and-reps exercise:
 3. Stagnation or decline by the trend (judged in today's slot) and the last session did not hold its reps: deload to 90 %.
 4. Otherwise the double progression result above.
 
-Then overlays that turn an increase into "repeat":
+Then overlays that turn an increase into "repeat" (the training focus matters here too):
 - 8 or more weighted sets already done earlier today on the same muscle;
-- the exercise is the 4th or later in the workout and a compound lift: keep the weight and add one rep (strength gains are reported to be larger for exercises done earlier; hypertrophy appears not to depend on order, so this is an approximation);
+- the exercise is the 4th or later in the workout and a compound lift: keep the weight and add one rep. Strength gains are reported to be larger for exercises done earlier, hypertrophy appears not to depend on order, so this rule is **skipped when the focus is muscle (hypertrophy)** and applies for strength and both;
 - 14 or more weighted sets for the muscle in the previous 72 hours.
 
 Bodyweight-only, duration and assisted exercises have their own simple rules (one more rep, 5 more seconds, less assistance).
 
 ## Reports and insights
-- **Coach notes** (`lib/insights.ts`, up to 3): muscles trained regularly (at least 6 weighted sets a week over 4 weeks) but under 10 in the last 7 days; one muscle above 20 in 7 days; one stagnating exercise from the trend. About 10 weighted sets a week per muscle is a common orientation for growth, with diminishing returns beyond roughly 20. These are orientations, not personal targets.
+- **Coach notes** (`lib/insights.ts`, up to 3): muscles trained regularly (at least 6 weighted sets a week over 4 weeks) but under 10 in the last 7 days; one muscle above 20 in 7 days; one stagnating exercise from the trend. About 10 weighted sets a week per muscle is a common orientation for growth, with diminishing returns beyond roughly 20; with a **strength focus** the floor is lowered to 6 (heuristic). These are orientations, not personal targets.
 - **Progress panel** (`lib/overload.ts`, `components/OverloadPanel.tsx`): state from the trend, change as kilograms or reps, a chart of the best set with separate lines for sessions done first and after other work, and the best set of the last sessions.
 - Not implemented yet: weekly and monthly reports, an AI explanation layer.
 

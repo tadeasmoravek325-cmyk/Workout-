@@ -1,4 +1,4 @@
-import type { Exercise, Muscle, Workout } from '../types';
+import type { Exercise, Focus, Muscle, Workout } from '../types';
 import { exerciseHistory, setsPerMuscle } from './calc';
 import { analyzeTrend, trendPoints } from '../core/progress/trend';
 import { MUSCLE_LABELS } from '../data/exercises';
@@ -12,6 +12,7 @@ export interface Insight {
 const DAY = 86_400_000;
 /** ~10 weighted sets per muscle per week is the minimum for reliable growth (Schoenfeld 2017); returns shrink past ~20. */
 export const WEEKLY_MIN = 10;
+export const WEEKLY_MIN_STRENGTH = 6;
 export const WEEKLY_MAX = 20;
 
 /**
@@ -19,9 +20,11 @@ export const WEEKLY_MAX = 20;
  * them in the past four weeks, so nobody gets nagged about a muscle they skip on purpose. Plateau detection is a
  * heuristic, not a published threshold.
  */
-export function coachInsights(workouts: Workout[], exMap: Map<string, Exercise>, now = Date.now()): Insight[] {
+export function coachInsights(workouts: Workout[], exMap: Map<string, Exercise>, now = Date.now(), focus: Focus = 'both'): Insight[] {
   const out: Insight[] = [];
   if (workouts.length < 3) return out;
+  // Weekly sets matter most for muscle growth. For a strength focus a lower floor is used (heuristic).
+  const weeklyMin = focus === 'strength' ? WEEKLY_MIN_STRENGTH : WEEKLY_MIN;
 
   const week = setsPerMuscle(workouts, exMap, now - 7 * DAY);
   const month = setsPerMuscle(workouts, exMap, now - 28 * DAY);
@@ -30,11 +33,11 @@ export function coachInsights(workouts: Workout[], exMap: Map<string, Exercise>,
     const entries = (Object.entries(month) as [Muscle, number][]).filter(([, v]) => v / 4 >= 6);
     const low = entries
       .map(([m]) => [m, week[m] ?? 0] as const)
-      .filter(([, v]) => v < WEEKLY_MIN)
+      .filter(([, v]) => v < weeklyMin)
       .sort((a, b) => a[1] - b[1])
       .slice(0, 2);
     for (const [m, v] of low)
-      out.push({ kind: 'low', text: t('{muscle}: {n} sets in the last 7 days. About {min} or more a week is where growth is reliable.', { muscle: MUSCLE_LABELS[m], n: Math.round(v), min: WEEKLY_MIN }) });
+      out.push({ kind: 'low', text: t('{muscle}: {n} sets in the last 7 days. About {min} or more a week is where growth is reliable.', { muscle: MUSCLE_LABELS[m], n: Math.round(v), min: weeklyMin }) });
     const high = (Object.entries(week) as [Muscle, number][]).filter(([, v]) => v > WEEKLY_MAX).sort((a, b) => b[1] - a[1])[0];
     if (high) out.push({ kind: 'high', text: t('{muscle}: {n} sets in 7 days. Gains flatten above roughly {max}, so you can hold here.', { muscle: MUSCLE_LABELS[high[0]], n: Math.round(high[1]), max: WEEKLY_MAX }) });
   }

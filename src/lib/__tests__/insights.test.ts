@@ -20,4 +20,10 @@ describe('coachInsights', () => {
     const list = coachInsights([w(1, 8), w(3, 8), w(10, 8), w(17, 8)], exMap, NOW);
     expect(list.filter((i) => i.kind === 'low')).toHaveLength(0);
   });
+  it('asks for fewer weekly sets with a strength focus', () => {
+    // 8 sets in the last 7 days: thin for muscle growth, enough for strength.
+    const ws = [w(2, 8), w(10, 12), w(17, 12), w(24, 12)];
+    expect(coachInsights(ws, exMap, NOW, 'hypertrophy').some((i) => i.kind === 'low')).toBe(true);
+    expect(coachInsights(ws, exMap, NOW, 'strength').some((i) => i.kind === 'low')).toBe(false);
+  });
 });

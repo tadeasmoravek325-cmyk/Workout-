@@ -162,7 +162,7 @@ export default function ExerciseDetail() {
 
       {tab === 'charts' && (
         <div className="mt-l">
-          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} exerciseId={ex.id} />}
+          {ex.type === 'weight_reps' && <OverloadPanel sessions={sessions} ex={ex} />}
           {metrics.length > 1 && (
             <div className="chips">
               {metrics.map((m) => (

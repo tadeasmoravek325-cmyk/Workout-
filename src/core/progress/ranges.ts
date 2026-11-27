@@ -1,6 +1,6 @@
 import type { Exercise, ExerciseTarget, Focus, Phase } from '../../types';
 import { muscleLoad } from '../../data/exercises';
-import { DEFAULT_TARGETS } from './engine';
+import { DEFAULT_TARGETS, defaultFocus } from './engine';
 
 /**
  * Suggested rep range, sets and reps in reserve for an exercise, from the exercise type, the training focus and the
@@ -68,4 +68,15 @@ export function suggestTarget(ex: Exercise, ctx: { focus: Focus; phase?: Phase; 
     cut: 'Cutting: heavier, lower reps to keep the load that protects muscle. Holding your weights counts as progress.',
   };
   return { target: { repMin: lo, repMax: hi, sets, rir, focus: ctx.focus }, kind, reason: why[phase] };
+}
+
+/**
+ * The target the app actually uses for an exercise: your own range if you set one, otherwise the range that follows
+ * your training focus and body goal for this kind of exercise. Changing the focus or the body goal therefore changes
+ * the advice at once, without applying anything.
+ */
+export function targetForExercise(ex: Exercise, settings: { exerciseTargets?: Record<string, ExerciseTarget>; trainingFocus?: Focus; goal: string; phase?: Phase }): ExerciseTarget {
+  const own = settings.exerciseTargets?.[ex.id];
+  const base = suggestTarget(ex, { focus: defaultFocus(settings), phase: settings.phase }).target;
+  return own ? { ...base, ...own } : base;
 }

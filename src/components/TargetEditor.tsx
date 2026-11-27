@@ -1,5 +1,5 @@
 import { useStore } from '../store/store';
-import { defaultFocus, targetFor } from '../core/progress/engine';
+import { targetForExercise } from '../core/progress/ranges';
 import type { Exercise } from '../types';
 import { t } from '../i18n';
 
@@ -8,7 +8,7 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
   const settings = useStore((s) => s.settings);
   const update = useStore((s) => s.updateSettings);
   const custom = settings.exerciseTargets?.[ex.id];
-  const eff = targetFor(ex.id, settings.exerciseTargets, defaultFocus(settings));
+  const eff = targetForExercise(ex, settings);
 
   const save = (patch: Partial<typeof eff>) => {
     const next = { ...eff, ...patch };

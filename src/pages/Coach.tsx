@@ -2,8 +2,9 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useExerciseMap, useStore } from '../store/store';
 import { coachInsights } from '../lib/insights';
+import { defaultFocus } from '../core/progress/engine';
 import { overloadOverview } from '../lib/overload';
-import { defaultFocus, targetFor } from '../core/progress/engine';
+import { targetForExercise } from '../core/progress/ranges';
 import { describeDelta } from '../components/OverloadPanel';
 import { RangeSuggestions } from '../components/RangeSuggestions';
 import { BackLabel, Empty } from '../components/ui';
@@ -14,10 +15,10 @@ export default function Coach() {
   const navigate = useNavigate();
   const workouts = useStore((s) => s.workouts);
   const exMap = useExerciseMap();
-  const insights = useMemo(() => coachInsights(workouts, exMap), [workouts, exMap]);
   const settings = useStore((s) => s.settings);
+  const insights = useMemo(() => coachInsights(workouts, exMap, Date.now(), defaultFocus(settings)), [workouts, exMap, settings]);
   const overload = useMemo(
-    () => overloadOverview(workouts, exMap, (id) => targetFor(id, settings.exerciseTargets, defaultFocus(settings)).repMin),
+    () => overloadOverview(workouts, exMap, (id) => { const e = exMap.get(id); return e ? targetForExercise(e, settings).repMin : 1; }),
     [workouts, exMap, settings],
   );
   const label = { up: t('Progressing'), flat: t('Plateau'), down: t('Going backwards'), new: '' } as const;

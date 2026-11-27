@@ -117,6 +117,14 @@ describe('suggestNext (smart coach)', () => {
     expect(build?.reps).toBe(9);
   });
 
+  it('holds back a late compound lift for strength but not for a pure muscle focus', () => {
+    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press');
+    const late = { recent: 0, session: 0, position: 4 };
+    expect(suggestNext(bench, h, { ...late, focus: 'strength' })?.kind).toBe('repeat');
+    expect(suggestNext(bench, h, { ...late, focus: 'both' })?.kind).toBe('repeat');
+    expect(suggestNext(bench, h, { ...late, focus: 'hypertrophy' })?.kind).toBe('increase');
+  });
+
   it('restarts lighter after a long break', () => {
     const s = suggestNext(bench, exerciseHistory([workout(40, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press'));
     expect(s?.kind).toBe('deload');

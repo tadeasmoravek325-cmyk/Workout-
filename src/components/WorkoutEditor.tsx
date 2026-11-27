@@ -27,7 +27,8 @@ import { PlateVisual } from './PlateVisual';
 import { ExerciseAvatar, ExercisePicker } from './ExercisePicker';
 import { NumInput, Sheet, toast, undoToast } from './ui';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS, youtubeSearchUrl } from '../data/exercises';
-import { defaultFocus, targetFor } from '../core/progress/engine';
+import { defaultFocus } from '../core/progress/engine';
+import { targetForExercise } from '../core/progress/ranges';
 import { t, tn } from '../i18n';
 
 type Mutate = (fn: (w: Workout) => void) => void;
@@ -269,8 +270,8 @@ function ExerciseCard({
   const sessionSets = targetSets(ex, [workout], exMap, -Infinity, we.id);
   const position = workout.exercises.findIndex((x) => x.id === we.id);
   const suggestion: Suggestion | null = useMemo(
-    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets, position }, Date.now(), targetFor(ex.id, settings.exerciseTargets, defaultFocus(settings))) : null),
-    [live, settings.smartCoach, settings.exerciseTargets, settings.trainingFocus, settings.goal, ex, sessions, recentSets, sessionSets, position],
+    () => (live && settings.smartCoach ? suggestNext(ex, sessions, { recent: recentSets, session: sessionSets, position, focus: defaultFocus(settings) }, Date.now(), targetForExercise(ex, settings)) : null),
+    [live, settings.smartCoach, settings.exerciseTargets, settings.trainingFocus, settings.goal, settings.phase, ex, sessions, recentSets, sessionSets, position],
   );
 
   const unit = settings.unit;

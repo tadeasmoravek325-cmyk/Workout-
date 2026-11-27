@@ -3,7 +3,8 @@ import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, 
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import type { Session } from '../core/history';
 import { compareBest, slotOf } from '../core/progress/trend';
-import { defaultFocus, targetFor } from '../core/progress/engine';
+import { targetForExercise } from '../core/progress/ranges';
+import type { Exercise } from '../types';
 import { overloadSeries, overloadState } from '../lib/overload';
 import { fmtDate, fmtNum, toDisplayWeight } from '../lib/format';
 import { useStore } from '../store/store';
@@ -37,13 +38,13 @@ export function describeDelta(d: { weight: number; reps: number } | null, unit: 
  * reached the bottom of the rep range, then most reps). Sessions are compared with sessions done in the same position in
  * the workout, so incline press done first is not judged against incline press done after the bench press.
  */
-export function OverloadPanel({ sessions, exerciseId }: { sessions: Session[]; exerciseId: string }) {
+export function OverloadPanel({ sessions, ex }: { sessions: Session[]; ex: Exercise }) {
   const settings = useStore((s) => s.settings);
   const unit = settings.unit;
   const [range, setRange] = useState(load);
   // Which order the chart emphasises and the verdict is about. Switched with the buttons under the chart.
   const [focus, setFocus] = useState<'first' | 'after'>('first');
-  const repMin = targetFor(exerciseId, settings.exerciseTargets, defaultFocus(settings)).repMin;
+  const repMin = targetForExercise(ex, settings).repMin;
   const pick = (n: number) => {
     setRange(n);
     try {

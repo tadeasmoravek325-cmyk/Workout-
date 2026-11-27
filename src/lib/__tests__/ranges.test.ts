@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { exerciseKind, suggestTarget } from '../../core/progress/ranges';
+import { exerciseKind, suggestTarget, targetForExercise } from '../../core/progress/ranges';
 import { BUILTIN_EXERCISES } from '../../data/exercises';
 
 const ex = (id: string) => BUILTIN_EXERCISES.find((e) => e.id === id)!;
@@ -47,5 +47,23 @@ describe('suggestTarget', () => {
   it('asks for strength-focused heavy lifts in a low range', () => {
     const t = suggestTarget(ex('bench-press'), { focus: 'strength', phase: 'maintain' }).target;
     expect([t.repMin, t.repMax]).toEqual([3, 6]);
+  });
+});
+
+describe('targetForExercise', () => {
+  const base = { goal: 'muscle' };
+  it('follows training focus and body goal without applying anything', () => {
+    const lat = ex('lateral-raise');
+    expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy' }).repMin).toBe(10);
+    expect(targetForExercise(lat, { ...base, trainingFocus: 'strength' }).repMin).toBe(8);
+    expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy', phase: 'cut' }).repMin).toBe(8);
+  });
+  it('uses the profile goal when no focus was chosen', () => {
+    expect(targetForExercise(ex('bench-press'), { goal: 'strength' }).repMax).toBe(6);
+    expect(targetForExercise(ex('bench-press'), { goal: 'muscle' }).repMax).toBe(10);
+  });
+  it('lets your own range win', () => {
+    const t = targetForExercise(ex('bench-press'), { ...base, exerciseTargets: { 'bench-press': { repMin: 5, repMax: 7, sets: 5, rir: 1 } } });
+    expect([t.repMin, t.repMax, t.sets]).toEqual([5, 7, 5]);
   });
 });
