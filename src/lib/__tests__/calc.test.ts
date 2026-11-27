@@ -84,22 +84,25 @@ describe('records and PRs', () => {
   });
 });
 
+const top8 = { repMin: 5, repMax: 8, sets: 3, rir: 2 };
+
 describe('suggestNext (smart coach)', () => {
-  it('adds weight when all sets held their reps', () => {
-    const s = suggestNext(bench, exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press'));
+  it('adds weight when every set reached the top of the range', () => {
+    const s = suggestNext(bench, exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press'), undefined, Date.now(), top8);
     expect(s?.kind).toBe('increase');
     expect(s?.weight).toBe(82.5);
-    expect(s?.reps).toBe(8);
+    expect(s?.reps).toBe(5);
+    expect(s?.nextRange).toEqual([5, 7]);
   });
 
-  it('adds a rep instead of load for a compound lift late in the workout', () => {
-    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press');
-    const early = suggestNext(bench, h, { recent: 0, session: 0, position: 0 });
-    const late = suggestNext(bench, h, { recent: 0, session: 0, position: 4 });
+  it('keeps the load of a compound lift late in the workout', () => {
+    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press');
+    const early = suggestNext(bench, h, { recent: 0, session: 0, position: 0 }, Date.now(), top8);
+    const late = suggestNext(bench, h, { recent: 0, session: 0, position: 4 }, Date.now(), top8);
     expect(early?.weight).toBe(82.5);
     expect(late?.kind).toBe('repeat');
     expect(late?.weight).toBe(80);
-    expect(late?.reps).toBe(9);
+    expect(late?.reps).toBe(8);
   });
 
   it('follows double progression inside the rep range once there is history', () => {
@@ -114,15 +117,16 @@ describe('suggestNext (smart coach)', () => {
     const build = suggestNext(bench, partial, undefined, Date.now(), target);
     expect(build?.kind).toBe('repeat');
     expect(build?.weight).toBe(70);
-    expect(build?.reps).toBe(9);
+    expect(build?.reps).toBe(11);
+    expect(build?.setReps).toEqual([11, 10, 9]); // 10 / 9 / 8 last time: each set one more rep
   });
 
   it('holds back a late compound lift for strength but not for a pure muscle focus', () => {
-    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8)])], 'bench-press');
+    const h = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press');
     const late = { recent: 0, session: 0, position: 4 };
-    expect(suggestNext(bench, h, { ...late, focus: 'strength' })?.kind).toBe('repeat');
-    expect(suggestNext(bench, h, { ...late, focus: 'both' })?.kind).toBe('repeat');
-    expect(suggestNext(bench, h, { ...late, focus: 'hypertrophy' })?.kind).toBe('increase');
+    expect(suggestNext(bench, h, { ...late, focus: 'strength' }, Date.now(), top8)?.kind).toBe('repeat');
+    expect(suggestNext(bench, h, { ...late, focus: 'both' }, Date.now(), top8)?.kind).toBe('repeat');
+    expect(suggestNext(bench, h, { ...late, focus: 'hypertrophy' }, Date.now(), top8)?.kind).toBe('increase');
   });
 
   it('restarts lighter after a long break', () => {
@@ -133,7 +137,7 @@ describe('suggestNext (smart coach)', () => {
 
   it('adds 5 kg on lower-body barbell lifts', () => {
     const squat = exMap.get('squat')!;
-    const s = suggestNext(squat, exerciseHistory([workout(2, 'squat', [set(100, 5), set(100, 5)])], 'squat'));
+    const s = suggestNext(squat, exerciseHistory([workout(2, 'squat', [set(100, 5), set(100, 5)])], 'squat'), undefined, Date.now(), { repMin: 3, repMax: 5, sets: 2, rir: 2 });
     expect(s?.weight).toBe(105);
   });
 
@@ -145,11 +149,11 @@ describe('suggestNext (smart coach)', () => {
 
   it('holds the weight when the muscle already did many hard sets', () => {
     const hist = exerciseHistory([workout(2, 'bench-press', [set(80, 8), set(80, 8), set(80, 8)])], 'bench-press');
-    expect(suggestNext(bench, hist, { recent: 3, session: 2 })?.kind).toBe('increase');
-    const today = suggestNext(bench, hist, { recent: 3, session: 9 });
+    expect(suggestNext(bench, hist, { recent: 3, session: 2 }, Date.now(), top8)?.kind).toBe('increase');
+    const today = suggestNext(bench, hist, { recent: 3, session: 9 }, Date.now(), top8);
     expect(today?.kind).toBe('repeat');
     expect(today?.weight).toBe(80);
-    expect(suggestNext(bench, hist, { recent: 15, session: 0 })?.weight).toBe(80);
+    expect(suggestNext(bench, hist, { recent: 15, session: 0 }, Date.now(), top8)?.weight).toBe(80);
   });
 
   it('does not add weight after an RPE 10 set', () => {

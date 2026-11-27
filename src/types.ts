@@ -167,6 +167,10 @@ export interface ExerciseTarget {
   sets: number;
   /** Target reps in reserve on the last set. */
   rir?: number;
+  /** Starting working weight in kg, used when the exercise has no history yet. */
+  startWeight?: number;
+  /** Load added when the top of the range is reached, in kg. Default depends on the exercise. */
+  increment?: number;
   focus?: Focus;
 }
 

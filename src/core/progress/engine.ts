@@ -14,7 +14,7 @@ import { t } from '../../i18n';
  * RPE field (RIR = 10 − RPE). When it was not logged the engine does not guess it and lowers its confidence.
  */
 
-export type ProgressState = 'ready' | 'building' | 'hold' | 'stagnation' | 'decline' | 'insufficient';
+export type ProgressState = 'ready' | 'building' | 'hold' | 'reduce' | 'stagnation' | 'decline' | 'insufficient';
 export type Confidence = 'low' | 'medium' | 'high';
 
 export interface ProgressAdvice {
@@ -23,6 +23,14 @@ export interface ProgressAdvice {
   weight?: number;
   /** Rep goal for the first working set. */
   reps?: number;
+  /** Rep goal for each working set in order, e.g. 11 / 10 / 9. */
+  setReps?: number[];
+  /** After a weight increase: the rep range to aim for at the new weight. */
+  nextRange?: [number, number];
+  /** Repeated sets to failure: weight is deliberately not raised. */
+  intensityHigh?: boolean;
+  /** Performance fell, possibly from fatigue. */
+  fatigue?: boolean;
   confidence: Confidence;
   /** Plain-language reasons shown to the user. */
   reasons: string[];
@@ -60,31 +68,35 @@ export function rirOf(rpe: number | undefined): number | undefined {
 
 interface TopWork {
   weight: number;
+  /** Reps of every working set at that weight, in order (sets below the rep range included). */
   reps: number[];
   rirs: number[];
+  /** Any working set of the session went to failure (RIR 0, or a set marked as failure). */
+  failure: boolean;
   date: number;
 }
 
 /**
- * The working sets at the heaviest weight that reached the bottom of the rep range (all working sets if none did).
+ * The working weight of a session: the heaviest weight that reached the bottom of the rep range (the heaviest overall if
+ * none did). `reps` are all working sets at that weight, so a set that fell below the range is still seen.
  * Same idea as the best set in the trend: what was really lifted, not an estimate.
  */
 export function topWork(s: Session, repMin = 1): TopWork | null {
   const work = s.sets.filter((x) => isLoggedWorkingSet(x) && (x.reps ?? 0) > 0);
   if (!work.length) return null;
   const inRange = work.filter((x) => (x.reps ?? 0) >= repMin);
-  const pool = inRange.length ? inRange : work;
-  const weight = Math.max(...pool.map((x) => x.weight ?? 0));
-  const at = pool.filter((x) => (x.weight ?? 0) === weight);
+  const weight = Math.max(...(inRange.length ? inRange : work).map((x) => x.weight ?? 0));
+  const at = work.filter((x) => (x.weight ?? 0) === weight);
   return {
     weight,
     reps: at.map((x) => x.reps ?? 0),
     rirs: at.map((x) => rirOf(x.rpe)).filter((v): v is number => v !== undefined),
+    failure: work.some((x) => x.type === 'failure' || rirOf(x.rpe) === 0),
     date: s.date,
   };
 }
 
-const MIN_SESSIONS = 2;
+const MIN_SESSIONS = 1;
 const fmtBest = (b: BestSet) => `${b.weight} kg × ${b.reps}`;
 
 /**
@@ -110,13 +122,35 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
     return { ...base, sessionsUsed: tops.length, reasons: [t('Needs at least {n} logged sessions of this exercise.', { n: MIN_SESSIONS })] };
   }
   const last = tops[0];
+  const prev = tops[1];
   const hasRir = last.rirs.length > 0;
+  const targetRir = target.rir ?? 2;
+  const inc = target.increment ?? weightIncrement(ex);
   let confidence = confidenceOf(tops.length, hasRir);
   if (mixed) confidence = confidence === 'high' ? 'medium' : 'low';
   const out: ProgressAdvice = { ...base, sessionsUsed: tops.length, confidence };
   const warnings = out.warnings;
   if (!hasRir) warnings.push(t('RIR was not logged, so the advice is less certain.'));
   if (mixed) warnings.push(t('Earlier sessions were done in a different position in the workout, so they compare less well.'));
+
+  // Rep goal for each working set: from last time's reps, kept inside the range, always one entry per target set.
+  const perSet = (f: (r: number, i: number) => number): number[] => {
+    const base = last.reps.slice(0, Math.max(target.sets, 1));
+    while (base.length < target.sets) base.push(last.reps[last.reps.length - 1]);
+    return base.map(f);
+  };
+  const keep = (): number[] => perSet((r) => r);
+  const plus = (): number[] => perSet((r) => Math.min(target.repMax, Math.max(target.repMin, r + 1)));
+  const asText = (a: number[]) => a.join(' / ');
+  const answer = (state: ProgressState, weight: number, setReps: number[], reasons: string[], extra: Partial<ProgressAdvice> = {}): ProgressAdvice => ({
+    ...out,
+    state,
+    weight,
+    reps: setReps[0],
+    setReps,
+    reasons,
+    ...extra,
+  });
 
   const trend = analyzeTrend(trendPoints(sessions, target.repMin), { slot });
   const where =
@@ -125,73 +159,83 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
       : trend.slot === 'fresh'
         ? t('Compared with sessions where you did it before other work for this muscle.')
         : t('Compared with sessions where you did it after other work for this muscle.');
-  if (trend.state === 'decline' && trend.recentBest && trend.baselineBest) {
-    return {
-      ...out,
-      state: 'decline',
-      weight: last.weight,
-      reps: Math.min(...last.reps),
-      reasons: [
-        t('Your best set got worse in 3 sessions in a row ({from} → {to}).', { from: fmtBest(trend.baselineBest), to: fmtBest(trend.recentBest) }),
-        t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
-        ...(where ? [where] : []),
-      ],
-    };
-  }
-  const reachedTop = last.reps.every((r) => r >= target.repMax) && last.reps.length >= target.sets;
-  if (trend.state === 'stagnation' && !reachedTop) {
-    return {
-      ...out,
-      state: 'stagnation',
-      weight: last.weight,
-      reps: Math.min(...last.reps),
-      reasons: [
-        t('No better set than before in the last {n} sessions (over {d} days). Best: {best}.', { n: TREND.recent, d: Math.round(trend.spanDays), best: trend.recentBest ? fmtBest(trend.recentBest) : '–' }),
-        t('A single weak session does not count. This is repeated exposure without progress.'),
-        ...(where ? [where] : []),
-      ],
-    };
-  }
-
   const topReached = last.reps.length >= target.sets && last.reps.every((r) => r >= target.repMax);
+  const weakest = Math.min(...last.reps);
   const minRir = hasRir ? Math.min(...last.rirs) : undefined;
-  if (topReached) {
-    if (minRir !== undefined && minRir < 1) {
-      return {
-        ...out,
-        state: 'hold',
-        weight: last.weight,
-        reps: target.repMax,
-        reasons: [t('All sets reached {n} reps, but the last set was at or near failure (RIR {r}). Repeat once with a rep in reserve before adding weight.', { n: target.repMax, r: minRir })],
-      };
-    }
-    // Three or more reps in reserve on every set: the weight was easy, take a double step.
-    const easy = minRir !== undefined && minRir >= 3;
-    const inc = weightIncrement(ex) * (easy ? 2 : 1);
-    return {
-      ...out,
-      state: 'ready',
-      weight: last.weight + inc,
-      reps: target.repMin,
-      reasons: [t('All {sets} sets reached {n} reps at {w} kg. Add {inc} kg and restart at {min} reps.', { sets: last.reps.length, n: target.repMax, w: last.weight, inc, min: target.repMin })],
-    };
+
+  // Situation C (part): the best set got worse in three sessions in a row.
+  if (trend.state === 'decline' && trend.recentBest && trend.baselineBest) {
+    return answer('decline', last.weight, keep(), [
+      t('Your best set got worse in 3 sessions in a row ({from} → {to}).', { from: fmtBest(trend.baselineBest), to: fmtBest(trend.recentBest) }),
+      t('Possible factors: fatigue, sleep or recovery, a change in plan or exercise order. The data alone cannot say which.'),
+      ...(where ? [where] : []),
+    ], { fatigue: true });
+  }
+  if (trend.state === 'stagnation' && !topReached) {
+    return answer('stagnation', last.weight, keep(), [
+      t('No better set than before in the last {n} sessions (over {d} days). Best: {best}.', { n: TREND.recent, d: Math.round(trend.spanDays), best: trend.recentBest ? fmtBest(trend.recentBest) : '–' }),
+      t('A single weak session does not count. This is repeated exposure without progress.'),
+      ...(where ? [where] : []),
+    ]);
   }
 
-  const weakest = Math.min(...last.reps);
-  if (weakest < target.repMin) {
-    return {
-      ...out,
-      state: 'hold',
-      weight: last.weight,
-      reps: target.repMin,
-      reasons: [t('Weakest set was {n} reps, below the {min} rep target. Stay at {w} kg until every set reaches {min}.', { n: weakest, min: target.repMin, w: last.weight })],
-    };
+  // Situation D: repeated sets to failure. The weight is deliberately not raised.
+  const failures = tops.slice(0, 3).filter((x) => x.failure).length;
+  if (failures >= 2) {
+    warnings.push(t('High training intensity: {n} of your last {m} sessions went to failure.', { n: failures, m: Math.min(3, tops.length) }));
+    return answer('hold', last.weight, keep(), [
+      t('You reached failure in {n} of the last {m} sessions. Keep {w} kg for now and stop one or two reps short of failure.', { n: failures, m: Math.min(3, tops.length), w: last.weight }),
+      t('Check recovery first: sleep, food, and how hard the other workouts for this muscle were.'),
+    ], { intensityHigh: true });
   }
-  return {
-    ...out,
-    state: 'building',
-    weight: last.weight,
-    reps: Math.min(target.repMax, weakest + 1),
-    reasons: [t('Stay at {w} kg and aim for {n} reps on every set. Add weight once all sets reach {max}.', { w: last.weight, n: Math.min(target.repMax, weakest + 1), max: target.repMax })],
-  };
+
+  // Situation C: below the minimum reps, or a clear drop since last time. Never raised automatically.
+  const lowNow = weakest < target.repMin;
+  const lowBefore = !!prev && prev.weight === last.weight && Math.min(...prev.reps) < target.repMin;
+  if (lowNow && lowBefore) {
+    const lighter = Math.max(0, last.weight - inc);
+    const reps = perSet(() => Math.min(target.repMax, target.repMin + 1));
+    return answer('reduce', lighter, reps, [
+      t('Below {min} reps at {w} kg in two sessions in a row. Try {lighter} kg and aim for {reps}.', { min: target.repMin, w: last.weight, lighter, reps: asText(reps) }),
+      t('Possible fatigue or too much load for now. Check sleep and recovery.'),
+    ], { fatigue: true });
+  }
+  const dropped = !!prev && prev.weight === last.weight && last.reps.reduce((a, b) => a + b, 0) < 0.8 * prev.reps.reduce((a, b) => a + b, 0);
+  if (lowNow || dropped) {
+    const reps = lowNow ? plus() : keep();
+    if (dropped) warnings.push(t('Total reps fell clearly since last time. Possible fatigue.'));
+    return answer('hold', last.weight, reps, [
+      lowNow
+        ? t('Weakest set was {n} reps, below the {min} rep target. Stay at {w} kg and aim for {reps}.', { n: weakest, min: target.repMin, w: last.weight, reps: asText(reps) })
+        : t('Reps dropped clearly since last time. Stay at {w} kg and aim for {reps}.', { w: last.weight, reps: asText(reps) }),
+    ], { fatigue: true });
+  }
+
+  // Situation B: top of the range on every set, with the target reserve. Add load and go back down the range.
+  if (topReached) {
+    if (minRir !== undefined && minRir < targetRir) {
+      return answer('hold', last.weight, keep(), [
+        t('All sets reached {n} reps, but with less in reserve than your target (RIR {r}, target {target}). Repeat {w} kg and finish with the target reserve before adding weight.', { n: target.repMax, r: minRir, target: targetRir, w: last.weight }),
+      ]);
+    }
+    // Three or more reps beyond the target reserve: the weight was easy, take a double step.
+    const easy = minRir !== undefined && minRir >= Math.max(3, targetRir + 1);
+    const step = inc * (easy ? 2 : 1);
+    const range: [number, number] = [target.repMin, Math.min(target.repMax, target.repMin + 2)];
+    return answer('ready', last.weight + step, perSet(() => range[0]), [
+      t('All {sets} sets reached {n} reps at {w} kg{rir}. Add {inc} kg and aim for {a}–{b} reps.', {
+        sets: last.reps.length,
+        n: target.repMax,
+        w: last.weight,
+        rir: minRir !== undefined ? ` with RIR ${minRir} or more` : '',
+        inc: step,
+        a: range[0],
+        b: range[1],
+      }),
+    ], { nextRange: range });
+  }
+
+  // Situation A: not at the top on every set. Same weight, one more rep on each set.
+  const reps = plus();
+  return answer('building', last.weight, reps, [t('Stay at {w} kg and aim for {reps}. Add weight once every set reaches {max}.', { w: last.weight, reps: asText(reps), max: target.repMax })]);
 }

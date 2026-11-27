@@ -29,6 +29,7 @@ import { NumInput, Sheet, toast, undoToast } from './ui';
 import { BODY_PART_COLORS, BODY_PART_LABELS, EQUIPMENT_LABELS, youtubeSearchUrl } from '../data/exercises';
 import { defaultFocus } from '../core/progress/engine';
 import { targetForExercise } from '../core/progress/ranges';
+import { repStatus, reviewSets } from '../core/progress/live';
 import { t, tn } from '../i18n';
 
 type Mutate = (fn: (w: Workout) => void) => void;
@@ -290,7 +291,7 @@ function ExerciseCard({
     if (suggestion && isWorkingSet(s) && s.type === 'normal') {
       return {
         weight: suggestion.weight ?? prevSame?.weight,
-        reps: suggestion.reps ?? prevSame?.reps,
+        reps: suggestion.setReps?.[working] ?? suggestion.reps ?? prevSame?.reps,
         durationSec: suggestion.durationSec ?? prevSame?.durationSec,
         distance: prevSame?.distance,
       };
@@ -354,14 +355,21 @@ function ExerciseCard({
   const applySuggestion = () => {
     if (!suggestion) return;
     upd((x) => {
+      let n = -1;
       for (const s of x.sets) {
+        if (s.type === 'normal') n++;
         if (s.done || s.type !== 'normal') continue;
         if (suggestion.weight !== undefined) s.weight = suggestion.weight;
-        if (suggestion.reps !== undefined) s.reps = suggestion.reps;
+        const reps = suggestion.setReps?.[n] ?? suggestion.reps;
+        if (reps !== undefined) s.reps = reps;
         if (suggestion.durationSec !== undefined) s.durationSec = suggestion.durationSec;
       }
     });
   };
+
+  const target = targetForExercise(ex, settings);
+  const review = useMemo(() => reviewSets(we.sets, target), [we.sets, target]);
+  const repOf = (s: WorkoutSet) => (s.reps ? repStatus(s.reps, target) : 'in');
 
   const workingWeight =
     we.sets.find((s) => s.type === 'normal' && s.weight)?.weight ?? suggestion?.weight ?? prev?.sets.find(isWorkingSet)?.weight ?? 0;
@@ -738,7 +746,7 @@ function ExerciseCard({
                   </td>
                 )}
                 {hasReps(ex) && (
-                  <td>
+                  <td className={live && s.done && isWorkingSet(s) ? `rep-${repOf(s)}` : undefined}>
                     <NumInput
                       ariaLabel={t('Reps')}
                       keypad={{ kind: 'reps', step: 1, rpe: s.rpe, onRpe: (v) => setField({ rpe: v }) }}
@@ -784,6 +792,11 @@ function ExerciseCard({
           })}
         </tbody>
       </table>
+      {live && review.message && (
+        <div className={`tiny ${review.topOnEverySet ? 'accent' : 'muted'}`} style={{ margin: '6px 4px 0' }}>
+          {review.message}
+        </div>
+      )}
       {swipe && swipe.dx < -4 && (
         <div
           className={`swipe-del ${swipe.armed ? 'armed' : ''}`}

@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ChartColumn, Dumbbell, ChevronRight, FileSpreadsheet, Ruler, Settings } from 'lucide-react';
+import { ChartColumn, Dumbbell, SlidersHorizontal, ChevronRight, FileSpreadsheet, Ruler, Settings } from 'lucide-react';
 import { useExerciseMap, useStore } from '../store/store';
 import { saveCsvFile } from '../lib/backup';
 import { t } from '../i18n';
 
 const ITEMS = [
+  { to: '/progression', icon: SlidersHorizontal, title: 'Progression targets', desc: 'Sets, rep range, RIR, start weight and increment per exercise' },
   { to: '/coach', icon: Dumbbell, title: 'Coach', desc: 'Progressive overload and training advice' },
   { to: '/stats', icon: ChartColumn, title: 'Stats', desc: 'Volume per muscle, weekly overview, big 3' },
   { to: '/measure', icon: Ruler, title: 'Body measurements', desc: 'Weight, body fat, circumferences and trends' },

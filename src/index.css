@@ -2300,3 +2300,6 @@ html[data-bg='topo'] .ex-card {
 .overload-up{color:var(--ok)}
 .overload-down{color:var(--danger)}
 .overload-flat,.overload-new{color:var(--muted)}
+
+.set-table td.rep-below input{color:var(--danger)}
+.set-table td.rep-top input{color:var(--accent)}

@@ -53,20 +53,24 @@ Result:
 The change is reported as what really changed, for example "+2.5 kg" or "+1 rep", never as a percentage of an estimate. A single weak session never produces a verdict. A decline is not attributed to overtraining; the advice lists possible factors only. All thresholds are **heuristic**. The estimated 1RM is still shown elsewhere (exercise charts, records) but is not used to judge progress.
 
 ## Double progression (`core/progress/engine.ts`)
-Target per exercise: rep range, number of sets, target RIR. Unless you set your own, the target is the range that follows your **training focus**, **body goal** and the **kind of exercise** (`targetForExercise`, table in "Rep range suggestions"). Changing the focus or the body goal changes the advice at once. The default focus comes from the profile goal unless chosen in Settings. A per-exercise target you set yourself overrides it.
+Settings per exercise (More → Progression targets, or the exercise's About tab): working **sets**, **min** and **max** reps, **target RIR**, **start weight** and **increment** (kg). Exercises you do not change follow the training focus, body goal and exercise type (see "Rep range suggestions"); the increment defaults by exercise (5 kg barbell leg lifts and deadlifts, 2 kg dumbbells, 4 kg kettlebells, 2.5 kg otherwise). The start weight is used as the first suggestion when an exercise has no history.
 
-Looking at the most recent session in the same slot as today's workout (at least 2 such sessions, otherwise all sessions), and its sets at the heaviest weight that reached the bottom of the rep range:
-1. Needs at least 2 sessions, otherwise "insufficient".
-2. Decline or stagnation from the trend (stagnation is ignored when every set already reached the top of the range).
-3. **ready:** at least the target number of sets, every set at the top of the range. Add the increment and restart at the bottom of the range. If the last set was at or near failure (RIR below 1) the advice is to hold once instead. If every set had 3 or more reps in reserve the step is doubled.
-4. **hold:** the weakest set is below the bottom of the range, stay at the weight until every set reaches it.
-5. **building:** otherwise stay at the weight and aim for one more rep on every set (never above the top of the range).
+The engine looks at the most recent session in the same position as today's workout, at its working weight (the heaviest weight that reached the bottom of the range, with every working set at that weight, including sets below the range). It works from a single session; confidence is low when there is little history or no RIR. Checks run in this order and the first that applies decides:
 
-Increment (`weightIncrement`): 5 kg for barbell leg lifts and deadlifts, 2 kg dumbbells, 4 kg kettlebells, 2.5 kg otherwise.
+1. **Decline** (best set worse three sessions in a row, see trend): keep the weight, warn of possible fatigue.
+2. **Stagnation** (no better set for 5+ sessions over 14+ days, unless the top was just reached): keep the weight.
+3. **D – repeated failure:** two or more of the last three sessions had a set to failure (RIR 0 or a set marked failure): keep the weight, flag high intensity, point to recovery (sleep, food, the other workouts for the muscle). No automatic increase.
+4. **C – too little:**
+   - below the minimum reps in two sessions in a row at the same weight: suggest the weight lowered by one increment and aim for min+1 reps (state `reduce`), warn of fatigue;
+   - below the minimum once, or total reps fell by more than 20 % since the last session at the same weight: keep the weight, aim for one more rep on each set, warn of fatigue.
+5. **B – top of the range:** every target set reached the top (at least the target number of sets). If RIR was logged and the lowest is below the target RIR, repeat the weight; otherwise add the increment (double when every set had 3 or more reps in reserve and more than the target) and aim for the bottom of the range, e.g. 8–10 of 8–12. Without RIR the increase is still advised, with lower confidence.
+6. **A – not at the top on every set:** keep the weight and aim for one more rep on **each** set, within the range: 10 / 9 / 8 becomes 11 / 10 / 9.
 
-**RIR** is `10 − RPE` when RPE was logged. Missing RIR is never guessed; it lowers the confidence and adds a warning.
+Technique is not recorded in the app, so it cannot be part of the rule.
 
-**Confidence:** one point for 5 or more sessions, one for a logged RIR. 2 points high, 1 medium, 0 low.
+Overlays that turn an increase into "repeat the weight at the top of the range" are described under "Suggestion for the next workout". **RIR** is `10 − RPE` when RPE was logged; missing RIR is never guessed and lowers confidence and adds a warning. **Confidence:** one point for 5 or more sessions, one for a logged RIR; 2 points high, 1 medium, 0 low (one level lower when there is no session in the same position).
+
+**During the workout** (`core/progress/live.ts`) each finished working set is judged against the range (below, inside, top; reserve against the target; failure) and the exercise as a whole gets one sentence: a set below the minimum, a set to failure, top of the range on every set with the target reserve ("add weight next time"), or how many sets are left. Reps below the minimum are shown in red and reps at the top in the accent colour. Nothing is written; the suggested reps for each set are placeholders you can apply.
 
 ## Rep range suggestions (`core/progress/ranges.ts`)
 Settings → **Body goal** (cutting, maintaining, bulking) and **Training focus** (strength, muscle, both). **More → Coach → Rep ranges for your routines** lists every weighted exercise in your routines with a suggested range, sets and RIR; you tick the ones to apply and confirm. Ranges you set yourself are left alone unless you tick them. Nothing is applied automatically, and the number of sets follows your own routine.
@@ -98,14 +102,15 @@ These sources were read as abstracts and summaries, not in full. The specific ra
 
 ## Suggestion for the next workout (`suggestNext` in `lib/calc.ts`)
 Order of checks for a weight-and-reps exercise:
+0. No history: the start weight you set, if any.
 1. Not done for more than 28 days: restart at 90 % (heuristic).
 2. 14–28 days off, sets held and not a grind: repeat the weight (heuristic).
 3. Stagnation or decline by the trend (judged in today's slot) and the last session did not hold its reps: deload to 90 %.
 4. Otherwise the double progression result above.
 
-Then overlays that turn an increase into "repeat" (the training focus matters here too):
+Then overlays that turn an increase into "repeat the weight at the top of the range" (the training focus matters here too):
 - 8 or more weighted sets already done earlier today on the same muscle;
-- the exercise is the 4th or later in the workout and a compound lift: keep the weight and add one rep. Strength gains are reported to be larger for exercises done earlier, hypertrophy appears not to depend on order, so this rule is **skipped when the focus is muscle (hypertrophy)** and applies for strength and both;
+- the exercise is the 4th or later in the workout and a compound lift: keep the weight and repeat the top reps. Strength gains are reported to be larger for exercises done earlier, hypertrophy appears not to depend on order, so this rule is **skipped when the focus is muscle (hypertrophy)** and applies for strength and both;
 - 14 or more weighted sets for the muscle in the previous 72 hours.
 
 Bodyweight-only, duration and assisted exercises have their own simple rules (one more rep, 5 more seconds, less assistance).

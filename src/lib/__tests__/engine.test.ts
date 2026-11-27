@@ -10,7 +10,7 @@ const target = { repMin: 8, repMax: 12, sets: 3, rir: 2 };
 
 describe('double progression engine', () => {
   it('needs history', () => {
-    expect(evaluateExercise(bench, [session(1, [set(70, 8)])], target).state).toBe('insufficient');
+    expect(evaluateExercise(bench, [], target).state).toBe('insufficient');
   });
   it('adds weight after reaching the top of the range on every set', () => {
     const a = evaluateExercise(bench, [session(2, [set(70, 12, 8), set(70, 12, 8), set(70, 12, 8)]), session(9, [set(70, 10), set(70, 10), set(70, 9)])], target);
@@ -42,7 +42,8 @@ describe('double progression engine', () => {
     const a = evaluateExercise(bench, [session(2, [set(70, 10), set(70, 9), set(70, 8)]), session(9, [set(70, 8), set(70, 8), set(70, 8)])], target);
     expect(a.state).toBe('building');
     expect(a.weight).toBe(70);
-    expect(a.reps).toBe(9);
+    expect(a.reps).toBe(11);
+    expect(a.setReps).toEqual([11, 10, 9]); // 10 / 9 / 8 last time: one more rep on each set
   });
   it('does not call one bad session a stagnation or decline', () => {
     const a = evaluateExercise(bench, [session(2, [set(70, 8), set(70, 8), set(70, 8)]), session(9, [set(70, 10), set(70, 9), set(70, 9)]), session(16, [set(70, 9), set(70, 9), set(70, 8)])], target);
@@ -70,8 +71,8 @@ describe('double progression engine', () => {
     expect(after.state).toBe('building');
     expect(after.weight).toBe(50);
   });
-  it('warns and lowers confidence when it has to mix positions', () => {
-    const hist = [{ ...session(2, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(9, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(16, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }, { ...session(23, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 0 }];
+  it('warns and lowers confidence when it has no session in the same position', () => {
+    const hist = [2, 9, 16, 23].map((d) => ({ ...session(d, [set(60, 8, 8), set(60, 8, 8)]), priorSets: 4 }));
     const a = evaluateExercise(bench, hist, target, { priorSets: 0 });
     expect(a.warnings.some((w) => /different position/.test(w))).toBe(true);
     expect(a.confidence).not.toBe('high');
@@ -89,5 +90,65 @@ describe('double progression engine', () => {
     expect(targetFor('x', undefined, 'strength').repMax).toBe(6);
     expect(targetFor('x', undefined, 'both').repMin).toBe(5);
     expect(targetFor('x', { x: { repMin: 5, repMax: 8, sets: 5 } }, 'strength').sets).toBe(5);
+  });
+
+  // The four situations of double progression.
+  describe('situations A to D', () => {
+    const t3 = { repMin: 8, repMax: 12, sets: 3, rir: 2 };
+    const prior = session(9, [set(70, 9, 8), set(70, 9, 8), set(70, 8, 8)]);
+    it('A: not at the top on every set keeps the weight and adds a rep on each set', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 10, 8), set(70, 9, 8), set(70, 8, 8)]), prior], t3);
+      expect(a.state).toBe('building');
+      expect(a.weight).toBe(70);
+      expect(a.setReps).toEqual([11, 10, 9]);
+    });
+    it('B: top of the range with the target RIR adds the increment and returns to the lower part of the range', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 12, 8), set(70, 12, 8), set(70, 12, 8)]), prior], { ...t3, increment: 2.5 });
+      expect(a.state).toBe('ready');
+      expect(a.weight).toBe(72.5);
+      expect(a.nextRange).toEqual([8, 10]);
+      expect(a.setReps).toEqual([8, 8, 8]);
+    });
+    it('B: uses your own increment', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 12, 8), set(70, 12, 8), set(70, 12, 8)]), prior], { ...t3, increment: 5 });
+      expect(a.weight).toBe(75);
+    });
+    it('B: does not add weight when the reserve was below the target', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 12, 9), set(70, 12, 9), set(70, 12, 9)]), prior], t3); // RIR 1, target 2
+      expect(a.state).toBe('hold');
+      expect(a.weight).toBe(70);
+    });
+    it('C: below the minimum once holds the weight and warns of fatigue', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 8, 8), set(70, 7, 8), set(70, 6, 8)]), session(9, [set(70, 10, 8), set(70, 9, 8), set(70, 9, 8)])], t3);
+      expect(a.state).toBe('hold');
+      expect(a.weight).toBe(70);
+      expect(a.fatigue).toBe(true);
+    });
+    it('C: below the minimum twice in a row suggests a lower weight', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 8, 8), set(70, 7, 8), set(70, 6, 8)]), session(9, [set(70, 8, 8), set(70, 7, 8), set(70, 7, 8)])], { ...t3, increment: 2.5 });
+      expect(a.state).toBe('reduce');
+      expect(a.weight).toBe(67.5);
+      expect(a.fatigue).toBe(true);
+    });
+    it('C: a clear drop in total reps is not met with a heavier weight', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 8, 8), set(70, 8, 8), set(70, 8, 8)]), session(9, [set(70, 11, 8), set(70, 11, 8), set(70, 11, 8)])], t3);
+      expect(a.state).toBe('hold');
+      expect(a.warnings.some((w) => /fell clearly/.test(w))).toBe(true);
+    });
+    it('D: repeated failure keeps the weight and flags high intensity', () => {
+      const f = (d: number) => session(d, [set(70, 12, 10), set(70, 12, 8), set(70, 12, 8)]); // RIR 0 on one set
+      const a = evaluateExercise(bench, [f(2), f(9), f(16)], t3);
+      expect(a.state).toBe('hold');
+      expect(a.intensityHigh).toBe(true);
+      expect(a.weight).toBe(70);
+      expect(a.warnings.some((w) => /failure/.test(w))).toBe(true);
+    });
+    it('D: a single set to failure is not yet a pattern', () => {
+      const a = evaluateExercise(bench, [session(2, [set(70, 12, 10), set(70, 12, 8), set(70, 12, 8)]), prior], t3);
+      expect(a.intensityHigh).toBeUndefined();
+    });
+    it('works from a single session', () => {
+      expect(evaluateExercise(bench, [session(2, [set(70, 10, 8), set(70, 9, 8), set(70, 8, 8)])], t3).state).toBe('building');
+    });
   });
 });

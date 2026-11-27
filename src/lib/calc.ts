@@ -138,8 +138,12 @@ export interface Suggestion {
   /** The weight last time, when the suggestion adds to it. */
   from?: number;
   reason: string;
+  /** Rep goal for each working set in order, when the progression engine gave one (e.g. 11 / 10 / 9). */
+  setReps?: number[];
+  /** After a weight increase: the rep range to aim for at the new weight. */
+  nextRange?: [number, number];
   /** Set when the progression engine produced the advice: state, how sure it is, caveats. */
-  advice?: { state: ProgressState; confidence: Confidence; warnings: string[]; sessionsUsed: number };
+  advice?: { state: ProgressState; confidence: Confidence; warnings: string[]; sessionsUsed: number; intensityHigh?: boolean; fatigue?: boolean };
 }
 
 /**
@@ -194,26 +198,43 @@ export function targetSets(ex: Exercise, workouts: Workout[], exMap: Map<string,
  * three days or earlier in this workout) holds its weight instead of adding more.
  */
 export function suggestNext(ex: Exercise, history: Session[], fatigue?: Fatigue, now = Date.now(), target?: ExerciseTarget): Suggestion | null {
-  const s = baseSuggestion(ex, history, now, target ?? targetFor(ex.id, undefined, 'both'), fatigue?.session);
+  const tgt = target ?? targetFor(ex.id, undefined, 'both');
+  const s = baseSuggestion(ex, history, now, tgt, fatigue?.session);
   if (!s || !fatigue || s.kind !== 'increase') return s;
+  // A planned increase is turned into "repeat the weight at the top of the range" when the muscle is already loaded.
+  const hold = (reason: string): Suggestion => ({
+    ...s,
+    kind: 'repeat',
+    weight: s.from ?? s.weight,
+    reps: tgt.repMax,
+    setReps: Array.from({ length: tgt.sets }, () => tgt.repMax),
+    nextRange: undefined,
+    reason,
+  });
   if (fatigue.session >= FATIGUE_SESSION) {
-    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps, reason: t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }) };
+    return hold(t('Already {n} hard sets for this muscle today. Keep the same weight.', { n: Math.round(fatigue.session) }));
   }
   // Order effect: strength gains are larger for lifts done early in the session (Nunes et al. 2020; Avelar 2019),
-  // so a compound lift buried late in the workout adds a rep instead of load. Hypertrophy is unaffected by order,
+  // so a compound lift buried late in the workout keeps its load. Hypertrophy is unaffected by order,
   // so with a pure muscle focus the weight is not held back for being late in the workout.
-  if (fatigue.focus !== 'hypertrophy' && fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex) && s.weight !== undefined && s.reps !== undefined) {
-    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reps: s.reps + 1, reason: t('Exercise number {n} of the workout. Keep the weight and add one rep instead of load.', { n: fatigue.position + 1 }) };
+  if (fatigue.focus !== 'hypertrophy' && fatigue.position !== undefined && fatigue.position >= LATE_POSITION && isCompound(ex)) {
+    return hold(t('Exercise number {n} of the workout. Keep the weight and repeat the top reps instead of adding load.', { n: fatigue.position + 1 }));
   }
   if (fatigue.recent >= FATIGUE_RECENT) {
-    return { ...s, kind: 'repeat', weight: s.from ?? s.weight, reason: t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }) };
+    return hold(t('This muscle did {n} hard sets in the last 3 days. Keep the same weight and recover.', { n: Math.round(fatigue.recent) }));
   }
   return s;
 }
 
 function baseSuggestion(ex: Exercise, history: Session[], now: number, target: ExerciseTarget, priorSets?: number): Suggestion | null {
   const last = history[0];
-  if (!last) return null;
+  if (!last) {
+    // Nothing done yet: use the starting weight you set for this exercise, if any.
+    if (ex.type === 'weight_reps' && target.startWeight) {
+      return { kind: 'start', weight: target.startWeight, reps: target.repMin, setReps: Array.from({ length: target.sets }, () => target.repMin), reason: t('Your starting weight. Aim for {a}–{b} reps on each set.', { a: target.repMin, b: Math.min(target.repMax, target.repMin + 2) }) };
+    }
+    return null;
+  }
   const working = last.sets.filter(isWorkingSet);
   if (!working.length) return null;
 
@@ -267,11 +288,13 @@ function baseSuggestion(ex: Exercise, history: Session[], now: number, target: E
   if (ex.type === 'weight_reps') {
     const a = evaluateExercise(ex, history, target, { priorSets });
     if (a.state !== 'insufficient' && a.weight !== undefined) {
-      const advice = { state: a.state, confidence: a.confidence, warnings: a.warnings, sessionsUsed: a.sessionsUsed };
+      const advice = { state: a.state, confidence: a.confidence, warnings: a.warnings, sessionsUsed: a.sessionsUsed, intensityHigh: a.intensityHigh, fatigue: a.fatigue };
       return {
-        kind: a.state === 'ready' ? 'increase' : 'repeat',
+        kind: a.state === 'ready' ? 'increase' : a.state === 'reduce' ? 'deload' : 'repeat',
         weight: a.weight,
         reps: a.reps,
+        setReps: a.setReps,
+        nextRange: a.nextRange,
         from: a.state === 'ready' ? top : undefined,
         reason: a.reasons[0] ?? '',
         advice,
