@@ -7,7 +7,7 @@ export type RepStatus = 'below' | 'in' | 'top';
 
 /** Where one set's reps sit against the target range. */
 export function repStatus(reps: number, target: ExerciseTarget): RepStatus {
-  return reps < target.repMin ? 'below' : reps >= target.repMax ? 'top' : 'in';
+  return reps < target.repMin - (target.tolerance ?? 0) ? 'below' : reps >= target.repMax ? 'top' : 'in';
 }
 
 export interface SetReview {

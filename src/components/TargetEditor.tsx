@@ -1,5 +1,5 @@
 import { useStore } from '../store/store';
-import { KIND_LABEL, exerciseKind, targetForExercise } from '../core/progress/ranges';
+import { KIND_LABEL, exerciseKind, profileFor, targetForExercise } from '../core/progress/ranges';
 import { weightIncrement } from '../core/progress/increment';
 import { fmtNum, fromDisplayWeight, toDisplayWeight } from '../lib/format';
 import type { Exercise, ExerciseTarget } from '../types';
@@ -21,7 +21,8 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
   const assisted = ex.type === 'assisted_bodyweight';
 
   const save = (patch: Partial<ExerciseTarget>) => {
-    const next: ExerciseTarget = { ...eff, ...patch };
+    // Saving makes the range yours, and yours is strict: no tolerance.
+    const next: ExerciseTarget = { ...eff, ...patch, tolerance: undefined };
     // Keep the range valid: the top can never sit below the bottom.
     if (next.repMax < next.repMin) next.repMax = next.repMin;
     update({ exerciseTargets: { ...(settings.exerciseTargets ?? {}), [ex.id]: next } });
@@ -61,7 +62,7 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
         {t('Progression target')} <span className="tiny muted">· {t(KIND_LABEL[exerciseKind(ex)])}</span>
       </div>
       <div className="small muted" style={{ margin: '4px 0 10px' }}>
-        {custom ? t('Set for this exercise. The coach adds weight once every set reaches the top of the range.') : t('Using your training focus. Change a value to set it for this exercise.')}
+        {custom ? t('Your own range. The coach adds weight once every set reaches the top of it.') : `${profileFor(ex)?.why ?? t('Recommended from your training focus, body goal and this exercise.')} ${t('It is a guide: going a rep or two outside it is fine. Change a value to set your own.')}`}
       </div>
       <div className="row" style={{ gap: 8 }}>
         {num(t('Sets'), eff.sets, 1, 10, (v) => save({ sets: v }))}

@@ -64,10 +64,10 @@ describe('suggestTarget', () => {
 describe('targetForExercise', () => {
   const base = { goal: 'muscle' };
   it('follows training focus and body goal without applying anything', () => {
-    const lat = ex('triceps-pushdown');
-    expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy' }).repMin).toBe(10);
-    expect(targetForExercise(lat, { ...base, trainingFocus: 'strength' }).repMin).toBe(8);
-    expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy', phase: 'cut' }).repMin).toBe(8);
+    const press = ex('db-incline-press');
+    expect(targetForExercise(press, { ...base, trainingFocus: 'hypertrophy' }).repMin).toBe(8);
+    expect(targetForExercise(press, { ...base, trainingFocus: 'strength' }).repMin).toBe(5);
+    expect(targetForExercise(press, { ...base, trainingFocus: 'hypertrophy', phase: 'cut' }).repMin).toBe(6);
   });
   it('uses the profile goal when no focus was chosen', () => {
     expect(targetForExercise(ex('bench-press'), { goal: 'strength' }).repMax).toBe(6);
@@ -94,5 +94,31 @@ describe('ranges for bodyweight and timed exercises', () => {
     const bulk = targetForExercise(anyEx('push-up'), { goal: 'muscle', phase: 'bulk' });
     const cut = targetForExercise(anyEx('push-up'), { goal: 'muscle', phase: 'cut' });
     expect([cut.repMin, cut.repMax]).toEqual([bulk.repMin, bulk.repMax]);
+  });
+});
+
+describe('the focus is a recommendation, not a rule', () => {
+  const find = (re: RegExp) => BUILTIN_EXERCISES.find((e) => re.test(e.name))!;
+  it('keeps the deadlift low-rep and calves high-rep whatever the focus', () => {
+    const dead = find(/^Deadlift \(Barbell\)/);
+    const calf = find(/Standing Calf/);
+    for (const focus of ['strength', 'both', 'hypertrophy'] as const) {
+      const d = targetForExercise(dead, { goal: 'muscle', trainingFocus: focus });
+      expect(d.repMax).toBeLessThanOrEqual(7);
+      const c = targetForExercise(calf, { goal: 'muscle', trainingFocus: focus });
+      expect(c.repMin).toBeGreaterThanOrEqual(11);
+      expect(c.repMax).toBeGreaterThanOrEqual(19);
+    }
+  });
+  it('only nudges a natural range by a rep', () => {
+    const calf = find(/Standing Calf/);
+    expect(targetForExercise(calf, { goal: 'muscle', trainingFocus: 'both' }).repMin).toBe(12);
+    expect(targetForExercise(calf, { goal: 'muscle', trainingFocus: 'hypertrophy' }).repMin).toBe(13);
+    expect(targetForExercise(calf, { goal: 'muscle', trainingFocus: 'strength' }).repMin).toBe(11);
+  });
+  it('treats a recommended range as a guide and your own as strict', () => {
+    const press = ex('db-incline-press');
+    expect(targetForExercise(press, { goal: 'muscle' }).tolerance).toBe(1);
+    expect(targetForExercise(press, { goal: 'muscle', exerciseTargets: { 'db-incline-press': { repMin: 8, repMax: 12, sets: 3 } } }).tolerance).toBeUndefined();
   });
 });

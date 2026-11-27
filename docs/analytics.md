@@ -98,6 +98,10 @@ Multi-joint is read from the muscle loads: three or more muscles at half load or
 
 The higher reps for small muscles are practice (light loads, little systemic fatigue), not a finding of the studies below.
 
+**The focus is a recommendation, not a rule.** Some exercises have a natural range of their own that the focus does not override: deadlifts stay at 3–6 reps, romanian deadlifts and good mornings at 6–10, hip thrusts 6–12, calves 12–20, shrugs 8–15, side and rear delts and face pulls 12–20, forearms 12–20, leg extension and leg curl 10–15, flyes and pullovers 10–15, arm isolation 8–15, core 10–20. For these the focus only nudges the range by one rep (lower for strength, higher for muscle) and the body goal shifts it as below. These ranges are common practice, not findings of the studies cited below.
+
+A recommended range is also a guide: a set one rep under the bottom still counts as inside it (`tolerance` 1). A range you set yourself in the exercise's Target tab is strict. The Target tab explains why an exercise has the range it has.
+
 Body goal: bulking and maintaining use the table as is; **cutting moves both ends down by 2 reps** (never below 3). RIR target 2, except 1 for non-heavy lifts when bulking.
 
 What the evidence says, and how far it goes:

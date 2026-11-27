@@ -10,6 +10,8 @@ describe('reviewSets', () => {
     expect(repStatus(7, target)).toBe('below');
     expect(repStatus(10, target)).toBe('in');
     expect(repStatus(12, target)).toBe('top');
+    expect(repStatus(7, { ...target, tolerance: 1 })).toBe('in');
+    expect(repStatus(6, { ...target, tolerance: 1 })).toBe('below');
   });
   it('reports a set below the minimum', () => {
     const r = reviewSets([set(10), set(7)], target);

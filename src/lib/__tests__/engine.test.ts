@@ -151,4 +151,12 @@ describe('double progression engine', () => {
       expect(evaluateExercise(bench, [session(2, [set(70, 10, 8), set(70, 9, 8), set(70, 8, 8)])], t3).state).toBe('building');
     });
   });
+
+  it('a recommended range tolerates a rep under it, your own range does not', () => {
+    const hist = [session(2, [set(70, 10, 8), set(70, 9, 8), set(70, 7, 8)]), session(9, [set(70, 10, 8), set(70, 9, 8), set(70, 9, 8)])];
+    const guide = evaluateExercise(bench, hist, { repMin: 8, repMax: 12, sets: 3, rir: 2, tolerance: 1 });
+    const strict = evaluateExercise(bench, hist, { repMin: 8, repMax: 12, sets: 3, rir: 2 });
+    expect(guide.state).toBe('building');
+    expect(strict.state).toBe('hold');
+  });
 });

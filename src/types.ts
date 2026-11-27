@@ -171,6 +171,8 @@ export interface ExerciseTarget {
   startWeight?: number;
   /** Load added when the top of the range is reached, in kg. Default depends on the exercise. */
   increment?: number;
+  /** Reps below the bottom of the range that still count as inside it. Used for recommended ranges; your own are strict. */
+  tolerance?: number;
   focus?: Focus;
 }
 

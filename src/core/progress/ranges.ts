@@ -56,6 +56,39 @@ export const KIND_LABEL: Record<ExerciseKind, string> = {
   small: 'Small-muscle isolation',
 };
 
+/**
+ * Exercises whose natural rep range differs from what the training focus alone would say. The focus is a recommendation,
+ * not a rule: a deadlift stays low-rep and calves stay high-rep whatever the focus, and the focus only nudges the range
+ * by a rep. These ranges are common practice, not findings of the studies cited in the docs.
+ */
+interface Profile {
+  match: RegExp;
+  range: [number, number];
+  why: string;
+}
+const PROFILES: Profile[] = [
+  { match: /romanian deadlift|stiff.?leg|good morning/i, range: [6, 10], why: 'Hip hinges are usually trained in a moderate range.' },
+  { match: /\b(sumo )?deadlift\b(?! \(dumbbell\))|trap bar|rack pull/i, range: [3, 6], why: 'Heavy deadlifts are usually done in low reps; high reps cost a lot of recovery.' },
+  { match: /hip thrust/i, range: [6, 12], why: 'Hip thrusts work across a moderate range.' },
+  { match: /calf/i, range: [12, 20], why: 'Calves are usually trained with higher reps and a full range.' },
+  { match: /shrug/i, range: [8, 15], why: 'Shrugs are done with a moderate to high range.' },
+  { match: /lateral raise|rear delt|reverse fly|reverse pec|face pull/i, range: [12, 20], why: 'Delt raises are light-load movements, usually done in higher reps.' },
+  { match: /wrist curl|reverse curl|forearm/i, range: [12, 20], why: 'Forearms are usually trained with higher reps.' },
+  { match: /crunch|sit.?up|leg raise|knee raise|ab wheel|russian twist|woodchop/i, range: [10, 20], why: 'Core exercises are usually done in higher reps.' },
+  { match: /leg extension|leg curl|hamstring curl|hip abduct|hip adduct|glute kickback/i, range: [10, 15], why: 'Machine single-joint leg work sits in a moderate to high range.' },
+  { match: /pull.?over|chest fly|cable crossover|pec deck|straight arm/i, range: [10, 15], why: 'Stretch-focused isolation work usually sits in a moderate to high range.' },
+  { match: /curl|triceps|pushdown|skullcrusher|kickback/i, range: [8, 15], why: 'Arm isolation work is flexible: 8 to 15 reps all work.' },
+];
+
+/** The natural range of this exercise, when it has one that differs from the generic table. */
+export function profileFor(ex: Exercise): { range: [number, number]; why: string } | undefined {
+  const hit = PROFILES.find((p) => p.match.test(ex.name));
+  return hit ? { range: hit.range, why: hit.why } : undefined;
+}
+
+/** The focus nudges a natural range by one rep: lower for strength, higher for muscle. */
+const FOCUS_NUDGE: Record<Focus, number> = { strength: -1, both: 0, hypertrophy: 1 };
+
 const BASE: Record<Focus, Record<ExerciseKind, [number, number]>> = {
   strength: { heavy: [3, 6], compound: [5, 8], isolation: [8, 12], small: [8, 12] },
   both: { heavy: [4, 8], compound: [6, 10], isolation: [8, 12], small: [10, 15] },
@@ -89,7 +122,13 @@ export function suggestTarget(ex: Exercise, ctx: { focus: Focus; phase?: Phase; 
     const [lo, hi] = BODYWEIGHT_REPS[ctx.focus];
     return { target: { repMin: lo, repMax: hi, sets, rir: 2, focus: ctx.focus }, kind, reason: 'Bodyweight: add reps, then make it harder.' };
   }
+  const profile = profileFor(ex);
   let [lo, hi] = BASE[ctx.focus][kind];
+  if (profile) {
+    const n = FOCUS_NUDGE[ctx.focus];
+    lo = Math.max(MIN_REPS, profile.range[0] + n);
+    hi = Math.max(lo + 2, profile.range[1] + n);
+  }
   if (phase === 'cut') {
     lo = Math.max(MIN_REPS, lo - CUT_SHIFT);
     hi = Math.max(lo + 2, hi - CUT_SHIFT);
@@ -101,7 +140,7 @@ export function suggestTarget(ex: Exercise, ctx: { focus: Focus; phase?: Phase; 
     maintain: 'Maintaining: moderate range; keep the load and the habit, small steady progress is enough.',
     cut: 'Cutting: heavier, lower reps to keep the load that protects muscle. Holding your weights counts as progress.',
   };
-  return { target: { repMin: lo, repMax: hi, sets, rir, focus: ctx.focus }, kind, reason: why[phase] };
+  return { target: { repMin: lo, repMax: hi, sets, rir, focus: ctx.focus }, kind, reason: profile ? `${profile.why} ${why[phase]}` : why[phase] };
 }
 
 /**
@@ -112,5 +151,6 @@ export function suggestTarget(ex: Exercise, ctx: { focus: Focus; phase?: Phase; 
 export function targetForExercise(ex: Exercise, settings: { exerciseTargets?: Record<string, ExerciseTarget>; trainingFocus?: Focus; goal: string; phase?: Phase }): ExerciseTarget {
   const own = settings.exerciseTargets?.[ex.id];
   const base = suggestTarget(ex, { focus: defaultFocus(settings), phase: settings.phase }).target;
-  return own ? { ...base, ...own } : base;
+  // A recommended range is a guide: a rep under it still counts as inside. A range you set yourself is strict.
+  return own ? { ...base, ...own, tolerance: own.tolerance } : { ...base, tolerance: 1 };
 }

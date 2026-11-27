@@ -130,6 +130,7 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   const prev = tops[1];
   const hasRir = last.rirs.length > 0;
   const targetRir = target.rir ?? 2;
+  const lowest = target.repMin - (target.tolerance ?? 0);
   const inc = target.increment ?? weightIncrement(ex);
   // Reps-only lifts have no load to name.
   const W = (w: number) => (repsOnly ? t('the same load') : `${w} kg`);
@@ -198,8 +199,8 @@ export function evaluateExercise(ex: Exercise, sessions: Session[], target: Exer
   }
 
   // Situation C: below the minimum reps, or a clear drop since last time. Never raised automatically.
-  const lowNow = weakest < target.repMin;
-  const lowBefore = !!prev && prev.weight === last.weight && Math.min(...prev.reps) < target.repMin;
+  const lowNow = weakest < lowest;
+  const lowBefore = !!prev && prev.weight === last.weight && Math.min(...prev.reps) < lowest;
   if (lowNow && lowBefore && repsOnly) {
     // No load to lower: use an easier variation, then build back up.
     const reps = perSet(() => Math.min(target.repMax, target.repMin + 1));
