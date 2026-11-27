@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useExerciseMap, useStore } from '../store/store';
 import { defaultFocus } from '../core/progress/engine';
-import { suggestTarget, targetForExercise } from '../core/progress/ranges';
+import { KIND_LABEL, suggestTarget, targetForExercise } from '../core/progress/ranges';
 import { confirmDialog, toast } from './ui';
 import type { ExerciseTarget, Phase } from '../types';
 import { t } from '../i18n';
@@ -86,9 +86,9 @@ export function RangeSuggestions() {
         <label key={r.id} className="row" style={{ gap: 10, padding: '7px 0', alignItems: 'flex-start' }}>
           <input type="checkbox" disabled={r.upToDate} checked={checked(r)} onChange={() => toggle(r)} style={{ width: 20, height: 20, flex: 'none', marginTop: 2 }} />
           <span className="grow">
-            <span className="small bold">{r.ex.name}</span>
+            <span className="small bold">{r.ex.name}</span> <span className="tiny muted">· {t(KIND_LABEL[r.sug.kind])}</span>
             <span className="tiny muted" style={{ display: 'block' }}>
-              {r.upToDate ? t('Already set: {x}', { x: fmt(r.now) }) : `${t('Now')}: ${r.now.repMin}–${r.now.repMax}${r.custom ? ` (${t('yours')})` : ''} → ${fmt(r.sug.target)}`}
+              {r.upToDate ? t('Following your settings: {x}', { x: fmt(r.now) }) : `${t('Now')}: ${r.now.repMin}–${r.now.repMax}${r.custom ? ` (${t('yours')})` : ''} → ${fmt(r.sug.target)}`}
               {r.plan && ` · ${t('routine plans {n}', { n: r.plan })}`}
             </span>
           </span>

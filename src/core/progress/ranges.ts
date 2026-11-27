@@ -16,27 +16,50 @@ import { DEFAULT_TARGETS, defaultFocus } from './engine';
  * The numbers below are practical heuristics built on that, not published prescriptions.
  */
 
-export type ExerciseKind = 'heavy' | 'compound' | 'isolation';
+export type ExerciseKind = 'heavy' | 'compound' | 'isolation' | 'small';
+
+/** Exercises the muscle loads classify wrongly. */
+const KIND_OVERRIDE: Record<string, ExerciseKind> = {
+  'decline-bench-press': 'heavy',
+};
+
+/** Muscles that are trained with light loads and higher reps: shoulders' side and rear, calves, forearms, core. */
+const SMALL_MUSCLES = new Set(['sideDelts', 'rearDelts', 'calves', 'forearms', 'abs', 'obliques']);
 
 /**
- * Heavy: barbell multi-joint lift. Compound: other multi-joint lift. Isolation: one main muscle.
- * Multi-joint is read from the muscle loads: three or more muscles carry at least half the load (forearms do not
- * count, they only grip), or two muscles carry at least three quarters, or it is a leg exercise with two big muscles.
+ * What kind of exercise it is, because that decides how heavy it makes sense to train it.
+ * - heavy: barbell multi-joint lift (squat, bench, deadlift, row, press, hip thrust)
+ * - compound: other multi-joint lift (dumbbell, machine, cable presses, rows, pulldowns, leg press, lunges)
+ * - isolation: one joint, a big muscle (curls, extensions, leg curl, flyes, pushdowns, hip abduction)
+ * - small: one joint, a small or light-load muscle (side and rear delts, calves, forearms, core), done with higher reps
+ * Multi-joint is read from the muscle loads: three or more muscles at half load or more (forearms do not count, they
+ * only grip), or two at three quarters, or a leg exercise with two big muscles.
  */
 export function exerciseKind(ex: Exercise): ExerciseKind {
+  const override = KIND_OVERRIDE[ex.id];
+  if (override) return override;
   const load = muscleLoad(ex);
-  const loads = (Object.entries(load) as [string, number][]).filter(([m]) => m !== 'forearms').map(([, v]) => v);
+  const entries = Object.entries(load) as [string, number][];
+  const loads = entries.filter(([m]) => m !== 'forearms').map(([, v]) => v);
   const half = loads.filter((v) => v >= 0.5).length;
   const strong = loads.filter((v) => v >= 0.75).length;
   const multi = half >= 3 || strong >= 2 || (half >= 2 && ex.bodyPart === 'legs');
-  if (!multi) return 'isolation';
-  return ex.equipment === 'barbell' ? 'heavy' : 'compound';
+  if (multi) return ex.equipment === 'barbell' ? 'heavy' : 'compound';
+  const main = entries.reduce((a, b) => (b[1] > a[1] ? b : a), ['', 0])[0];
+  return SMALL_MUSCLES.has(main) ? 'small' : 'isolation';
 }
 
+export const KIND_LABEL: Record<ExerciseKind, string> = {
+  heavy: 'Heavy barbell lift',
+  compound: 'Compound lift',
+  isolation: 'Isolation',
+  small: 'Small-muscle isolation',
+};
+
 const BASE: Record<Focus, Record<ExerciseKind, [number, number]>> = {
-  strength: { heavy: [3, 6], compound: [5, 8], isolation: [8, 12] },
-  both: { heavy: [4, 8], compound: [6, 10], isolation: [8, 12] },
-  hypertrophy: { heavy: [6, 10], compound: [8, 12], isolation: [10, 15] },
+  strength: { heavy: [3, 6], compound: [5, 8], isolation: [8, 12], small: [8, 12] },
+  both: { heavy: [4, 8], compound: [6, 10], isolation: [8, 12], small: [10, 15] },
+  hypertrophy: { heavy: [6, 10], compound: [8, 12], isolation: [10, 15], small: [12, 20] },
 };
 
 /** When cutting, load is kept high and reps are not chased upwards: the whole range moves down. */

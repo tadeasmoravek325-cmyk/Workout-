@@ -10,8 +10,19 @@ describe('exerciseKind', () => {
     expect(exerciseKind(ex('squat'))).toBe('heavy');
     expect(exerciseKind(ex('db-incline-press'))).toBe('compound');
     expect(exerciseKind(ex('lat-pulldown'))).toBe('compound');
-    expect(exerciseKind(ex('lateral-raise'))).toBe('isolation');
+    expect(exerciseKind(ex('lateral-raise'))).toBe('small');
     expect(exerciseKind(ex('triceps-pushdown'))).toBe('isolation');
+  });
+  it('puts small-muscle work on higher reps and fixes known misclassifications', () => {
+    expect(exerciseKind(ex('standing-calf-raise'))).toBe('small');
+    expect(exerciseKind(ex('cable-crunch'))).toBe('small');
+    expect(exerciseKind(ex('wrist-curl'))).toBe('small');
+    expect(exerciseKind(ex('decline-bench-press'))).toBe('heavy');
+    expect(exerciseKind(ex('hip-thrust'))).toBe('heavy');
+    expect(exerciseKind(ex('leg-extension'))).toBe('isolation');
+    const small = suggestTarget(ex('lateral-raise'), { focus: 'hypertrophy' }).target;
+    const big = suggestTarget(ex('triceps-pushdown'), { focus: 'hypertrophy' }).target;
+    expect(small.repMax).toBeGreaterThan(big.repMax);
   });
   it('does not treat a curl as a compound lift because of the forearms', () => {
     const curl = BUILTIN_EXERCISES.find((e) => /Bicep Curl \(Barbell\)/.test(e.name))!;
@@ -22,7 +33,7 @@ describe('exerciseKind', () => {
 describe('suggestTarget', () => {
   it('uses heavier ranges for barbell compounds than for isolation', () => {
     const heavy = suggestTarget(ex('bench-press'), { focus: 'hypertrophy', phase: 'bulk' }).target;
-    const iso = suggestTarget(ex('lateral-raise'), { focus: 'hypertrophy', phase: 'bulk' }).target;
+    const iso = suggestTarget(ex('triceps-pushdown'), { focus: 'hypertrophy', phase: 'bulk' }).target;
     expect(heavy.repMax).toBeLessThan(iso.repMax);
     expect(heavy.repMin).toBeLessThan(iso.repMin);
   });
@@ -53,7 +64,7 @@ describe('suggestTarget', () => {
 describe('targetForExercise', () => {
   const base = { goal: 'muscle' };
   it('follows training focus and body goal without applying anything', () => {
-    const lat = ex('lateral-raise');
+    const lat = ex('triceps-pushdown');
     expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy' }).repMin).toBe(10);
     expect(targetForExercise(lat, { ...base, trainingFocus: 'strength' }).repMin).toBe(8);
     expect(targetForExercise(lat, { ...base, trainingFocus: 'hypertrophy', phase: 'cut' }).repMin).toBe(8);

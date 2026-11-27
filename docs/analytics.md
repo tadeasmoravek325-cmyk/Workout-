@@ -71,13 +71,21 @@ Increment (`weightIncrement`): 5 kg for barbell leg lifts and deadlifts, 2 kg du
 ## Rep range suggestions (`core/progress/ranges.ts`)
 Settings → **Body goal** (cutting, maintaining, bulking) and **Training focus** (strength, muscle, both). **More → Coach → Rep ranges for your routines** lists every weighted exercise in your routines with a suggested range, sets and RIR; you tick the ones to apply and confirm. Ranges you set yourself are left alone unless you tick them. Nothing is applied automatically, and the number of sets follows your own routine.
 
-Exercise kind is read from the muscle loads: **heavy** (barbell multi-joint lift), **compound** (other multi-joint lift), **isolation**. Multi-joint means three or more muscles at half load or more (forearms do not count), or two at three quarters, or a leg exercise with two big muscles. A few exercises are classified imperfectly (for example the decline bench press counts as isolation); override those in the exercise.
+The suggestion depends on what the exercise is (`exerciseKind`), because that decides how heavy it makes sense to train it:
+- **Heavy barbell lift:** barbell multi-joint lifts (squat, bench, deadlift, row, overhead press, hip thrust).
+- **Compound lift:** other multi-joint lifts (dumbbell, machine and cable presses, rows, pulldowns, leg press, lunges).
+- **Isolation:** one joint, a big muscle (curls, triceps extensions, leg extension and curl, flyes, hip abduction).
+- **Small-muscle isolation:** one joint, a small or light-load muscle (side and rear delts, calves, forearms, core), done with higher reps.
 
-| Focus | Heavy | Compound | Isolation |
-|---|---|---|---|
-| Strength | 3–6 | 5–8 | 8–12 |
-| Both | 4–8 | 6–10 | 8–12 |
-| Muscle | 6–10 | 8–12 | 10–15 |
+Multi-joint is read from the muscle loads: three or more muscles at half load or more (forearms do not count, they only grip), or two at three quarters, or a leg exercise with two big muscles. A few exercises are corrected by hand (the decline bench press is heavy). The type is shown next to every exercise in the suggestions and in the progression target.
+
+| Focus | Heavy | Compound | Isolation | Small muscle |
+|---|---|---|---|---|
+| Strength | 3–6 | 5–8 | 8–12 | 8–12 |
+| Both | 4–8 | 6–10 | 8–12 | 10–15 |
+| Muscle | 6–10 | 8–12 | 10–15 | 12–20 |
+
+The higher reps for small muscles are practice (light loads, little systemic fatigue), not a finding of the studies below.
 
 Body goal: bulking and maintaining use the table as is; **cutting moves both ends down by 2 reps** (never below 3). RIR target 2, except 1 for non-heavy lifts when bulking.
 

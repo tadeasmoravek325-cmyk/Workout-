@@ -1,5 +1,5 @@
 import { useStore } from '../store/store';
-import { targetForExercise } from '../core/progress/ranges';
+import { KIND_LABEL, exerciseKind, targetForExercise } from '../core/progress/ranges';
 import type { Exercise } from '../types';
 import { t } from '../i18n';
 
@@ -30,7 +30,7 @@ export function TargetEditor({ ex }: { ex: Exercise }) {
 
   return (
     <div className="card">
-      <div className="bold">{t('Progression target')}</div>
+      <div className="bold">{t('Progression target')} <span className="tiny muted">· {t(KIND_LABEL[exerciseKind(ex)])}</span></div>
       <div className="small muted" style={{ margin: '4px 0 10px' }}>
         {custom ? t('Set for this exercise. The coach adds weight once every set reaches the top of the range.') : t('Using your training focus. Change a value to set it for this exercise.')}
       </div>
