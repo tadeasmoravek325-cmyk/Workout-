@@ -11,7 +11,7 @@ import { ask, confirmDialog, Segmented, Sheet, Switch, toast, BackLabel } from '
 import type { Equipment, Experience, Goal, Sex } from '../types';
 import { EQUIPMENT_LABELS } from '../data/exercises';
 import { defaultFocus } from '../core/progress/engine';
-import type { Focus } from '../types';
+import type { Focus, Phase } from '../types';
 import { t, tn } from '../i18n';
 
 function Row({ title, desc, children }: { title: string; desc?: string; children: ReactNode }) {
@@ -203,6 +203,13 @@ export default function SettingsPage() {
             </button>
           </Row>
         )}
+        <Row title={t('Body goal')} desc={t('Cutting, maintaining or bulking. Shifts the suggested rep ranges.')}>
+          <select style={{ width: 150 }} value={settings.phase ?? 'maintain'} onChange={(e) => update({ phase: e.target.value as Phase })}>
+            <option value="cut">{t('Cutting (losing weight)')}</option>
+            <option value="maintain">{t('Maintaining')}</option>
+            <option value="bulk">{t('Bulking (gaining)')}</option>
+          </select>
+        </Row>
         <Row title={t('Training focus')} desc={t('Sets the default rep range the coach aims for')}>
           <select
             style={{ width: 150 }}

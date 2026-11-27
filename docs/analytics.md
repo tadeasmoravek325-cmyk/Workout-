@@ -68,6 +68,26 @@ Increment (`weightIncrement`): 5 kg for barbell leg lifts and deadlifts, 2 kg du
 
 **Confidence:** one point for 5 or more sessions, one for a logged RIR. 2 points high, 1 medium, 0 low.
 
+## Rep range suggestions (`core/progress/ranges.ts`)
+Settings → **Body goal** (cutting, maintaining, bulking) and **Training focus** (strength, muscle, both). **More → Coach → Rep ranges for your routines** lists every weighted exercise in your routines with a suggested range, sets and RIR; you tick the ones to apply and confirm. Ranges you set yourself are left alone unless you tick them. Nothing is applied automatically, and the number of sets follows your own routine.
+
+Exercise kind is read from the muscle loads: **heavy** (barbell multi-joint lift), **compound** (other multi-joint lift), **isolation**. Multi-joint means three or more muscles at half load or more (forearms do not count), or two at three quarters, or a leg exercise with two big muscles. A few exercises are classified imperfectly (for example the decline bench press counts as isolation); override those in the exercise.
+
+| Focus | Heavy | Compound | Isolation |
+|---|---|---|---|
+| Strength | 3–6 | 5–8 | 8–12 |
+| Both | 4–8 | 6–10 | 8–12 |
+| Muscle | 6–10 | 8–12 | 10–15 |
+
+Body goal: bulking and maintaining use the table as is; **cutting moves both ends down by 2 reps** (never below 3). RIR target 2, except 1 for non-heavy lifts when bulking.
+
+What the evidence says, and how far it goes:
+- Muscle growth is similar across low, moderate and high loads when sets are taken to or near failure; strength is better with heavier loads ([Lopez 2021](https://pubmed.ncbi.nlm.nih.gov/33433148/), [Schoenfeld 2017](https://pubmed.ncbi.nlm.nih.gov/28834797/)). So the rep range mostly follows strength priority and the fatigue and joint cost of the exercise, which is why heavy barbell lifts sit lowest and isolation highest. That last part is practice, not a finding.
+- In an energy deficit, lean mass gains are impaired while strength gains are comparable ([Murphy and Koehler 2022](https://pubmed.ncbi.nlm.nih.gov/34623696/)). Intensity appears to be the key variable for maintaining performance even when volume and frequency drop ([Spiering 2021](https://pubmed.ncbi.nlm.nih.gov/33629972/)). A review of volume in a deficit found the evidence insufficient to say more volume protects lean mass ([Roth 2022](https://pmc.ncbi.nlm.nih.gov/articles/PMC9012799)). Hence "keep the load, move the range down, holding weights counts as progress when cutting". The two-rep shift is a heuristic.
+- Training to failure is not clearly better than stopping short of it ([Refalo 2023](https://pubmed.ncbi.nlm.nih.gov/36334240/)), hence RIR 1–2 rather than 0.
+
+These sources were read as abstracts and summaries, not in full. The specific ranges and the shifts are rules of thumb built on them, not published prescriptions.
+
 ## Suggestion for the next workout (`suggestNext` in `lib/calc.ts`)
 Order of checks for a weight-and-reps exercise:
 1. Not done for more than 28 days: restart at 90 % (heuristic).

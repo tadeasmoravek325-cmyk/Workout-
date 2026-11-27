@@ -5,6 +5,7 @@ import { coachInsights } from '../lib/insights';
 import { overloadOverview } from '../lib/overload';
 import { defaultFocus, targetFor } from '../core/progress/engine';
 import { describeDelta } from '../components/OverloadPanel';
+import { RangeSuggestions } from '../components/RangeSuggestions';
 import { BackLabel, Empty } from '../components/ui';
 import { t } from '../i18n';
 
@@ -29,6 +30,9 @@ export default function Coach() {
         </button>
       </div>
       <h1 style={{ fontSize: 24 }}>{t('Coach')}</h1>
+
+
+      <RangeSuggestions />
 
       {!insights.length && !overload.length && <Empty title={t('Not enough data yet')}>{t('Log a few workouts and the coach will have something to say.')}</Empty>}
 

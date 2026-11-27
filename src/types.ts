@@ -156,6 +156,9 @@ export type Goal = 'strength' | 'muscle' | 'fitness' | 'weightloss';
 /** What the training is mainly for. Drives default rep ranges for the progression engine. */
 export type Focus = 'strength' | 'hypertrophy' | 'both';
 
+/** What the body is doing: losing weight, holding it, or gaining. Shifts the suggested rep ranges. */
+export type Phase = 'cut' | 'maintain' | 'bulk';
+
 /** Per-exercise progression target. Stored in Settings so it follows the exercise across workouts and sync. */
 export interface ExerciseTarget {
   repMin: number;
@@ -180,6 +183,8 @@ export interface Settings {
   goal: Goal;
   /** Optional; defaults to 'both'. */
   trainingFocus?: Focus;
+  /** Cutting, maintaining or bulking. Optional; treated as maintaining. */
+  phase?: Phase;
   /** Progression targets by exercise id. Missing entries use defaults for the training focus. */
   exerciseTargets?: Record<string, ExerciseTarget>;
   experience: Experience;
